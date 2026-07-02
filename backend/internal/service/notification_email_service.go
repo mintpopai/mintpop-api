@@ -50,7 +50,7 @@ const (
 var (
 	notificationEmailPlaceholderPattern = regexp.MustCompile(`{{\s*([a-zA-Z][a-zA-Z0-9_]*)\s*}}`)
 	notificationEmailLocales            = []string{notificationEmailDefaultLocale, notificationEmailLocaleChinese}
-	notificationEmailCommonPlaceholders = []string{"site_name", "recipient_name", "recipient_email"}
+	notificationEmailCommonPlaceholders = []string{"site_name", "logo_url", "logo_dark_url", "recipient_name", "recipient_email"}
 )
 
 type NotificationEmailService struct {
@@ -493,6 +493,8 @@ func (s *NotificationEmailService) sampleVariables(ctx context.Context, event, l
 		variables[key] = value
 	}
 	variables["site_name"] = s.siteName(ctx)
+	variables["logo_url"] = s.logoURL(ctx)
+	variables["logo_dark_url"] = s.logoDarkURL(ctx)
 	if variables["unsubscribe_url"] == "" && info.Optional {
 		variables["unsubscribe_url"] = "https://example.com/unsubscribe"
 	}
@@ -505,6 +507,8 @@ func (s *NotificationEmailService) runtimeVariables(ctx context.Context, event, 
 		variables[key] = value
 	}
 	variables["site_name"] = s.siteName(ctx)
+	variables["logo_url"] = s.logoURL(ctx)
+	variables["logo_dark_url"] = s.logoDarkURL(ctx)
 	variables["recipient_email"] = input.RecipientEmail
 	if strings.TrimSpace(input.RecipientName) != "" {
 		variables["recipient_name"] = input.RecipientName
@@ -539,6 +543,27 @@ func (s *NotificationEmailService) baseURL(ctx context.Context) string {
 		}
 	}
 	return ""
+}
+
+// logoURL 返回浅色模式头部字标（wordmark）的绝对地址：后端在 /wordmark-dark.png 内嵌托管，
+// 为深色字样 + 透明底，适配浅色卡片背景。依赖已配置的站点基础地址；未配置时返回空串，
+// 头部 <img> 会通过 alt 回退为站点名文字。
+func (s *NotificationEmailService) logoURL(ctx context.Context) string {
+	baseURL := s.baseURL(ctx)
+	if baseURL == "" {
+		return ""
+	}
+	return baseURL + "/wordmark-dark.png"
+}
+
+// logoDarkURL 返回深色模式头部字标的绝对地址：后端在 /wordmark-light.png 内嵌托管，
+// 为浅色字样 + 透明底，适配深色卡片背景。与 logoURL 配合做「双图切换」。
+func (s *NotificationEmailService) logoDarkURL(ctx context.Context) string {
+	baseURL := s.baseURL(ctx)
+	if baseURL == "" {
+		return ""
+	}
+	return baseURL + "/wordmark-light.png"
 }
 
 func (s *NotificationEmailService) buildUnsubscribeURL(ctx context.Context, email, event string) (string, error) {
@@ -1073,7 +1098,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 			HTML: notificationEmailCard("#4f46e5", "Email verification code", `
 <p>Hello {{recipient_name}},</p>
 <p>Your verification code is:</p>
-<p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center;">{{verification_code}}</p>
+<div class="code">{{verification_code}}</div>
 <p>This code expires in <strong>{{expires_in_minutes}}</strong> minutes.</p>
 <p>If you did not request this code, please ignore this email.</p>`),
 		},
@@ -1082,7 +1107,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 			HTML: notificationEmailCard("#4f46e5", "邮箱验证码", `
 <p>{{recipient_name}}，您好：</p>
 <p>您的验证码是：</p>
-<p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center;">{{verification_code}}</p>
+<div class="code">{{verification_code}}</div>
 <p>验证码将在 <strong>{{expires_in_minutes}}</strong> 分钟后失效。</p>
 <p>如果不是您本人操作，请忽略此邮件。</p>`),
 		},
@@ -1116,7 +1141,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>Hello {{recipient_name}},</p>
 <p>You are adding this address as an extra notification email.</p>
 <p>Your verification code is:</p>
-<p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center;">{{verification_code}}</p>
+<div class="code">{{verification_code}}</div>
 <p>This code expires in <strong>{{expires_in_minutes}}</strong> minutes.</p>
 <p>If you did not request this code, please ignore this email.</p>`),
 		},
@@ -1125,7 +1150,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 			HTML: notificationEmailCard("#0ea5e9", "通知邮箱验证", `
 <p>{{recipient_name}}，您好：</p>
 <p>您正在添加额外的通知邮箱，请输入以下验证码完成验证。</p>
-<p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center;">{{verification_code}}</p>
+<div class="code">{{verification_code}}</div>
 <p>验证码将在 <strong>{{expires_in_minutes}}</strong> 分钟后失效。</p>
 <p>如果不是您本人操作，请忽略此邮件。</p>`),
 		},
@@ -1358,29 +1383,81 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 	},
 }
 
+// notificationEmailCard 组装所有通知邮件的统一外壳，风格对齐用户门户「Mint 设计系统」：
+// 暖白背景、薄荷绿主调（#14c28a）、圆角卡片 + 发丝描边与微光影、Space Grotesk / Fredoka / Newsreader 字体族。
+// 入参 accent 为各事件的语义强调色（验证＝靛蓝、充值＝绿、风控＝红等），在这里仅用于顶部细条与标题左侧的强调竖线，
+// 而所有 CTA 按钮/链接统一采用品牌薄荷绿，保证跨事件的品牌一致性。邮件客户端兼容性：table 布局 + 头部 <style>
+// 承载注入内容的类样式，并附 prefers-color-scheme 深色适配（对齐门户 .dark 主题）。
 func notificationEmailCard(accent, title, content string) string {
 	return `<!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <style>
-    body { margin: 0; padding: 24px; background: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #18181b; }
-    .container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 30px rgba(15, 23, 42, 0.10); }
-    .header { background: ` + accent + `; color: #ffffff; padding: 28px 32px; }
-    .header h1 { margin: 0; font-size: 24px; line-height: 1.25; }
-    .content { padding: 32px; font-size: 15px; line-height: 1.7; }
-    .button { display: inline-block; margin-top: 12px; padding: 11px 18px; border-radius: 8px; background: ` + accent + `; color: #ffffff; text-decoration: none; font-weight: 600; }
-    .muted { color: #71717a; font-size: 13px; }
-    .footer { padding: 18px 32px; background: #fafafa; color: #a1a1aa; font-size: 12px; }
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+    body { margin: 0; padding: 0; background: #f1efe9; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    .wrap { width: 100%; background: #f1efe9; padding: 32px 16px; }
+    .card { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #eceae3; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 26px rgba(26,26,26,0.06); font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; }
+    .accent-bar { height: 4px; line-height: 4px; font-size: 0; background: ` + accent + `; }
+    .header { padding: 28px 32px 22px; border-bottom: 1px solid #f0eee7; }
+    .brand { font-family: 'Fredoka', 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 600; letter-spacing: .2px; color: #1a1a1a; }
+    .brand .logo { height: 30px; width: auto; max-width: 190px; vertical-align: middle; border: 0; }
+    .brand .logo-light { display: inline-block; }
+    .brand .logo-dark { display: none; }
+    .brand .tag { color: #9a968c; font-weight: 500; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; vertical-align: middle; }
+    .title { margin: 16px 0 0; padding-left: 13px; border-left: 3px solid ` + accent + `; font-size: 21px; line-height: 1.3; font-weight: 600; color: #1a1a1a; }
+    .content { padding: 26px 32px 30px; font-size: 15px; line-height: 1.75; color: #3a3833; }
+    .content p { margin: 0 0 14px; }
+    .content strong { color: #1a1a1a; font-weight: 600; }
+    .content a { color: #0f9d70; text-decoration: none; font-weight: 600; }
+    .content table { width: 100%; border-collapse: collapse; margin: 6px 0 16px; font-size: 14px; }
+    .content table td { padding: 11px 2px; border-bottom: 1px solid #f4f2eb; color: #3a3833; vertical-align: top; }
+    .content table tr td:first-child { color: #7a766c; white-space: nowrap; padding-right: 18px; }
+    .content table tr:last-child td { border-bottom: 0; }
+    .code { margin: 4px 0 18px; padding: 20px 12px; text-align: center; background: #f3fbf7; border: 1px solid #d4f0e4; border-radius: 14px; font-family: 'Newsreader', Georgia, 'Times New Roman', serif; font-size: 36px; font-weight: 600; letter-spacing: 12px; text-indent: 12px; color: #0f9d70; }
+    .button { display: inline-block; margin: 6px 0 4px; padding: 13px 26px; border-radius: 999px; background: #14c28a; color: #ffffff !important; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 2px 8px rgba(20,194,138,0.28); }
+    .muted { color: #9a968c; font-size: 13px; line-height: 1.6; }
+    .muted a { color: #7a766c; }
+    .footer { padding: 20px 32px 24px; background: #faf9f6; border-top: 1px solid #f0eee7; color: #a8a49a; font-size: 12px; line-height: 1.6; }
+    .footer .fbrand { color: #7a766c; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      body, .wrap { background: #0b0d0b !important; }
+      .card { background: #181a18 !important; border-color: #2a2d2a !important; color: #f2f1ec !important; box-shadow: none !important; }
+      .header { border-bottom-color: #232622 !important; }
+      .brand, .brand .tag { color: #e6e4dd !important; }
+      .brand .tag { color: #9a968c !important; }
+      .brand .logo-light { display: none !important; }
+      .brand .logo-dark { display: inline-block !important; }
+      .title { color: #f2f1ec !important; }
+      .content { color: #b6b3aa !important; }
+      .content strong, .content table td { color: #e6e4dd !important; }
+      .content table tr td:first-child { color: #a6a39b !important; }
+      .content table td { border-bottom-color: #232622 !important; }
+      .content a, .code { color: #22d69a !important; }
+      .code { background: #12241c !important; border-color: #1f4536 !important; }
+      .footer { background: #141613 !important; border-top-color: #232622 !important; color: #8b877e !important; }
+      .footer .fbrand, .muted a { color: #b6b3aa !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header"><h1>` + title + `</h1></div>
-    <div class="content">` + content + `</div>
-    <div class="footer">This email was sent by {{site_name}}. Please do not reply directly.</div>
-  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="wrap"><tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="card">
+      <tr><td class="accent-bar">&nbsp;</td></tr>
+      <tr><td class="header">
+        <div class="brand"><img src="{{logo_url}}" alt="{{site_name}}" height="30" class="logo logo-light" style="height:30px;width:auto;border:0;vertical-align:middle;"><img src="{{logo_dark_url}}" alt="{{site_name}}" height="30" class="logo logo-dark" style="height:30px;width:auto;border:0;vertical-align:middle;display:none;">&nbsp;&nbsp;<span class="tag">API</span></div>
+        <div class="title">` + title + `</div>
+      </td></tr>
+      <tr><td class="content">` + content + `</td></tr>
+      <tr><td class="footer">
+        本邮件由 <span class="fbrand">{{site_name}}</span> 自动发送，请勿直接回复。<br>
+        This is an automated message from {{site_name}}. Please do not reply.
+      </td></tr>
+    </table>
+  </td></tr></table>
 </body>
 </html>`
 }

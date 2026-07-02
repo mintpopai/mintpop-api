@@ -8,8 +8,8 @@ export default {
   tabs: {
     all: 'All',
     pending: 'Pending',
-    paid: 'Paid',
     completed: 'Completed',
+    failed: 'Failed',
     refunded: 'Refunded'
   },
 
@@ -65,9 +65,17 @@ export default {
   status: {
     PENDING: 'Pending',
     PAID: 'Paid',
+    RECHARGING: 'Recharging',
     COMPLETED: 'Completed',
+    EXPIRED: 'Expired',
+    CANCELLED: 'Cancelled',
     FAILED: 'Failed',
-    REFUNDED: 'Refunded'
+    REFUND_REQUESTED: 'Refund Requested',
+    REFUNDING: 'Refunding',
+    REFUND_PENDING: 'Refund Pending',
+    PARTIALLY_REFUNDED: 'Partially Refunded',
+    REFUNDED: 'Refunded',
+    REFUND_FAILED: 'Refund Failed'
   },
 
   // Payment method display labels

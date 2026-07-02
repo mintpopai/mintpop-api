@@ -144,8 +144,21 @@ export interface ApiKeyUsageStat {
 
 // ==================== 支付 / 订单 ====================
 
-// 取值与后端 payment.OrderStatus* 保持字面一致（SCREAMING_SNAKE_CASE）
-export type OrderStatus = 'PENDING' | 'PAID' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
+// 取值与后端 payment.OrderStatus* 保持字面一致（SCREAMING_SNAKE_CASE），全集与 admin 前端 frontend/src/types/payment.ts 对齐
+export type OrderStatus =
+  | 'PENDING'
+  | 'PAID'
+  | 'RECHARGING'
+  | 'COMPLETED'
+  | 'EXPIRED'
+  | 'CANCELLED'
+  | 'FAILED'
+  | 'REFUND_REQUESTED'
+  | 'REFUNDING'
+  | 'REFUND_PENDING'
+  | 'PARTIALLY_REFUNDED'
+  | 'REFUNDED'
+  | 'REFUND_FAILED'
 
 export interface PaymentOrder {
   id: number

@@ -86,12 +86,22 @@ export function formatReasoningEffort(e: string | null | undefined): string {
 /** 订单状态 → 展示文案 + StatusBadge variant（文案随语言切换） */
 export function orderStatusMeta(s: string): { label: string; variant: string } {
   // key 为后端订单状态枚举取值（SCREAMING_SNAKE_CASE），value 为展示变体
+  // 全集与 admin 前端对齐（frontend/src/components/payment/orderUtils.ts）；受本门户配色所限，
+  // frontend 的 info(蓝)/purple 统一并入既有语义变体：进行中→pending、已收款/已完成→paid、失败→neg、终态灰→muted
   const variants: Record<string, string> = {
     PENDING: 'pending',
     PAID: 'paid',
+    RECHARGING: 'paid',
     COMPLETED: 'paid',
+    EXPIRED: 'muted',
+    CANCELLED: 'muted',
     FAILED: 'neg',
-    REFUNDED: 'muted'
+    REFUND_REQUESTED: 'pending',
+    REFUNDING: 'pending',
+    REFUND_PENDING: 'pending',
+    PARTIALLY_REFUNDED: 'muted',
+    REFUNDED: 'muted',
+    REFUND_FAILED: 'neg'
   }
   const variant = variants[s]
   if (!variant) return { label: s, variant: 'muted' }

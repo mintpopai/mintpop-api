@@ -8,8 +8,8 @@ export default {
   tabs: {
     all: '全部',
     pending: '待支付',
-    paid: '已支付',
     completed: '已完成',
+    failed: '失败',
     refunded: '已退款'
   },
 
@@ -65,9 +65,17 @@ export default {
   status: {
     PENDING: '待支付',
     PAID: '已支付',
+    RECHARGING: '充值中',
     COMPLETED: '已完成',
+    EXPIRED: '已过期',
+    CANCELLED: '已取消',
     FAILED: '失败',
-    REFUNDED: '已退款'
+    REFUND_REQUESTED: '退款申请中',
+    REFUNDING: '退款中',
+    REFUND_PENDING: '退款处理中',
+    PARTIALLY_REFUNDED: '部分退款',
+    REFUNDED: '已退款',
+    REFUND_FAILED: '退款失败'
   },
 
   // 支付方式展示文案

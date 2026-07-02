@@ -25,8 +25,8 @@ const { rows, total, page, pageSize, statusFilter, search, loading, error, loade
 const tabs = computed(() => [
   { label: t('orders.tabs.all'), value: '' },
   { label: t('orders.tabs.pending'), value: 'PENDING' },
-  { label: t('orders.tabs.paid'), value: 'PAID' },
   { label: t('orders.tabs.completed'), value: 'COMPLETED' },
+  { label: t('orders.tabs.failed'), value: 'FAILED' },
   { label: t('orders.tabs.refunded'), value: 'REFUNDED' },
 ])
 

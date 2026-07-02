@@ -1,5 +1,12 @@
 import { apiClient, TOKEN_KEY, REFRESH_KEY } from './client'
-import type { LoginRequest, LoginResponse, RegisterRequest, PublicSettings, User } from './types'
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  PublicSettings,
+  User,
+  ValidatePromoCodeResult
+} from './types'
 
 /** 登录：成功后落地 token 到 localStorage */
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
@@ -28,6 +35,12 @@ export async function getPublicSettings(): Promise<PublicSettings> {
 /** 发送邮箱验证码（注册场景） */
 export async function sendVerifyCode(email: string): Promise<void> {
   await apiClient.post('/auth/send-verify-code', { email })
+}
+
+/** 校验优惠码（公开接口，注册前调用），返回是否有效及赠送金额 */
+export async function validatePromoCode(code: string): Promise<ValidatePromoCodeResult> {
+  const { data } = await apiClient.post<ValidatePromoCodeResult>('/auth/validate-promo-code', { code })
+  return data
 }
 
 /** 当前登录用户（含 balance 等基础信息） */

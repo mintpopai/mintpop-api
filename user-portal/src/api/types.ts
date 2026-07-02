@@ -57,6 +57,18 @@ export interface RegisterRequest {
   password: string
   verify_code?: string
   invitation_code?: string
+  /** 优惠码（选填），有效时注册后赠送对应余额 */
+  promo_code?: string
+}
+
+/** 优惠码校验结果（对齐后端 ValidatePromoCodeResponse） */
+export interface ValidatePromoCodeResult {
+  valid: boolean
+  /** 有效时的赠送金额（USD） */
+  bonus_amount?: number
+  /** 无效原因错误码，如 PROMO_CODE_NOT_FOUND / PROMO_CODE_EXPIRED 等 */
+  error_code?: string
+  message?: string
 }
 
 /** 公开站点设置（仅取本前端所需字段） */
@@ -64,6 +76,8 @@ export interface PublicSettings {
   registration_enabled: boolean
   email_verify_enabled: boolean
   invitation_code_enabled: boolean
+  /** 是否开启优惠码功能（关闭时前端不展示优惠码输入框） */
+  promo_code_enabled: boolean
   password_reset_enabled: boolean
   payment_enabled: boolean
   linuxdo_oauth_enabled: boolean

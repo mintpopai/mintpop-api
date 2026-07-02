@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import * as authApi from '@/api/auth'
@@ -17,6 +17,7 @@ const email = ref('')
 const password = ref('')
 const confirm = ref('')
 const invitation = ref('')
+const promo = ref('')
 const verifyCode = ref('')
 const agreed = ref(true)
 
@@ -27,13 +28,79 @@ const error = ref<string | null>(null)
 const sending = ref(false)
 const countdown = ref(0)
 
+// 优惠码实时校验状态（有效时展示赠送金额，无效时阻止提交）
+const promoValidating = ref(false)
+const promoValid = ref(false)
+const promoInvalid = ref(false)
+const promoBonus = ref<number | null>(null)
+const promoMsg = ref<string | null>(null)
+let promoTimer: ReturnType<typeof setTimeout> | null = null
+
 onMounted(async () => {
   try {
     settings.value = await authApi.getPublicSettings()
   } catch {
-    // 拉取失败时按最常见配置（无邀请码 / 无邮箱验证）兜底
+    // 拉取失败时按最常见配置（无邀请码 / 无邮箱验证 / 无优惠码）兜底
   }
 })
+
+onUnmounted(() => {
+  if (promoTimer) clearTimeout(promoTimer)
+})
+
+function promoErrorMessage(code?: string): string {
+  switch (code) {
+    case 'PROMO_CODE_NOT_FOUND':
+      return t('auth.promoNotFound')
+    case 'PROMO_CODE_EXPIRED':
+      return t('auth.promoExpired')
+    case 'PROMO_CODE_DISABLED':
+      return t('auth.promoDisabled')
+    case 'PROMO_CODE_MAX_USED':
+      return t('auth.promoMaxUsed')
+    case 'PROMO_CODE_ALREADY_USED':
+      return t('auth.promoAlreadyUsed')
+    default:
+      return t('auth.promoInvalid')
+  }
+}
+
+function onPromoInput() {
+  promoValid.value = false
+  promoInvalid.value = false
+  promoBonus.value = null
+  promoMsg.value = null
+  if (promoTimer) clearTimeout(promoTimer)
+  const code = promo.value.trim()
+  if (!code) {
+    promoValidating.value = false
+    return
+  }
+  promoTimer = setTimeout(() => runPromoValidation(code), 500)
+}
+
+async function runPromoValidation(code: string) {
+  promoValidating.value = true
+  try {
+    const res = await authApi.validatePromoCode(code)
+    if (res.valid) {
+      promoValid.value = true
+      promoInvalid.value = false
+      promoBonus.value = res.bonus_amount ?? 0
+      promoMsg.value = null
+    } else {
+      promoValid.value = false
+      promoInvalid.value = true
+      promoMsg.value = promoErrorMessage(res.error_code)
+    }
+  } catch {
+    promoValid.value = false
+    promoInvalid.value = true
+    promoMsg.value = t('auth.promoInvalid')
+  } finally {
+    promoValidating.value = false
+  }
+}
 
 async function sendCode() {
   if (!email.value) {
@@ -73,6 +140,21 @@ async function onSubmit() {
     error.value = t('auth.errAgreeRequired')
     return
   }
+  // 填了优惠码时：若尚未得到校验结论（在防抖窗口内点击提交），先取消防抖并同步校验一次，
+  // 堵住「防抖未触发 → 结论未出 → 直接放行注册」的竞态；无效则阻止提交
+  if (promo.value.trim()) {
+    if (promoTimer) {
+      clearTimeout(promoTimer)
+      promoTimer = null
+    }
+    if (!promoValid.value && !promoInvalid.value) {
+      await runPromoValidation(promo.value.trim())
+    }
+    if (promoInvalid.value) {
+      error.value = t('auth.errPromoInvalid')
+      return
+    }
+  }
   loading.value = true
   error.value = null
   try {
@@ -80,7 +162,8 @@ async function onSubmit() {
       email: email.value,
       password: password.value,
       verify_code: settings.value?.email_verify_enabled ? verifyCode.value : undefined,
-      invitation_code: invitation.value || undefined
+      invitation_code: invitation.value || undefined,
+      promo_code: promo.value.trim() || undefined
     })
     // 后端由邮箱派生用户名，若填写了昵称则注册后补充资料
     if (username.value.trim()) {
@@ -298,7 +381,7 @@ async function onSubmit() {
           </div>
 
           <div
-            v-if="settings?.invitation_code_enabled !== false"
+            v-if="settings?.invitation_code_enabled === true"
             class="mb-[22px]"
           >
             <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.invitationLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
@@ -325,6 +408,56 @@ async function onSubmit() {
                 :placeholder="t('auth.invitationPlaceholder')"
               >
             </div>
+          </div>
+
+          <!-- 优惠码（仅在站点开启优惠码时显示；settings 未加载完成时为 null 不渲染，避免闪烁） -->
+          <div
+            v-if="settings?.promo_code_enabled"
+            class="mb-[22px]"
+          >
+            <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.promoLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
+            <div class="relative">
+              <svg
+                class="ico"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              ><rect
+                x="3"
+                y="8"
+                width="18"
+                height="4"
+                rx="1"
+              /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
+              <input
+                v-model="promo"
+                type="text"
+                class="fld"
+                :placeholder="t('auth.promoPlaceholder')"
+                @input="onPromoInput"
+              >
+            </div>
+            <p
+              v-if="promoValidating"
+              class="mt-1.5 text-xs text-subtle"
+            >
+              {{ t('auth.promoValidating') }}
+            </p>
+            <p
+              v-else-if="promoValid"
+              class="mt-1.5 text-xs font-medium text-pos"
+            >
+              {{ t('auth.promoValid', { amount: (promoBonus ?? 0).toFixed(2) }) }}
+            </p>
+            <p
+              v-else-if="promoInvalid"
+              class="mt-1.5 text-xs text-neg"
+            >
+              {{ promoMsg }}
+            </p>
           </div>
 
           <label class="mb-[22px] flex cursor-pointer items-start gap-[9px] text-[13px] leading-snug text-text3">

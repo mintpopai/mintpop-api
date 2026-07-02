@@ -18,15 +18,12 @@ const menuOpen = ref(false)
 const toggleMenu = () => (menuOpen.value = !menuOpen.value)
 const closeMenu = () => (menuOpen.value = false)
 
-// 分布卡片文案模式：APPLICATION 模式下额外展示「定价」tab（与 VendorDistribution 同源开关）
-const IS_APPLICATION =
-  (import.meta.env.VITE_PORTAL_DISTRIBUTION_MODE ?? 'MODEL').trim().toUpperCase() === 'APPLICATION'
-
+// 「定价」tab 无条件展示（不再受分布模式 VITE_PORTAL_DISTRIBUTION_MODE 约束）
 const tabs = computed(() => [
   { name: 'Dashboard', label: t('nav.dashboard'), to: '/dashboard' },
   { name: 'Usage', label: t('nav.usage'), to: '/usage' },
   { name: 'Keys', label: t('nav.keys'), to: '/keys' },
-  ...(IS_APPLICATION ? [{ name: 'Pricing', label: t('nav.pricing'), to: '/pricing' }] : [])
+  { name: 'Pricing', label: t('nav.pricing'), to: '/pricing' }
 ])
 
 const username = computed(() => authStore.user?.username || t('nav.defaultUser'))

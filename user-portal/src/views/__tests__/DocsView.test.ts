@@ -8,6 +8,12 @@ vi.mock('@/docs/loaders', () => ({
   docKey: vi.fn((slug: string, locale: string) => `./${slug}.${locale}.md`)
 }))
 
+// mock 公开设置接口：DocsView 渲染前会 ensureLoaded（供占位符取 api_base_url），
+// 不 mock 会在 jsdom 里发真实 XHR（虽被 store 吞掉，但产生告警噪声）
+vi.mock('@/api/settings', () => ({
+  getPublicSettings: vi.fn().mockResolvedValue({ api_base_url: 'https://api.example.com' })
+}))
+
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'

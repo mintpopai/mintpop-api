@@ -4,11 +4,14 @@ import { useRoute } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import { DOCS } from '@/docs/_manifest'
 import { loadDoc } from '@/docs/loaders'
+import { docPlaceholderValues, resolveDocPlaceholders } from '@/docs/placeholders'
 import { renderMarkdown } from '@/utils/markdown'
 import { useLocaleStore } from '@/stores/locale'
+import { useSettingsStore } from '@/stores/settings'
 
 const route = useRoute()
 const localeStore = useLocaleStore()
+const settingsStore = useSettingsStore()
 
 // 当前篇 slug：路由无 / 非法 → 回退首篇
 const activeSlug = computed(() => {
@@ -30,8 +33,10 @@ watch(
   [activeSlug, () => localeStore.current],
   async ([slug, locale]) => {
     try {
+      // 占位符（BASE_URL 等）取自公开设置；ensureLoaded 失败不抛，settings 为 null 时占位符回退站点 origin
+      await settingsStore.ensureLoaded()
       const src = await loadDoc(slug, locale)
-      html.value = renderMarkdown(src)
+      html.value = renderMarkdown(resolveDocPlaceholders(src, docPlaceholderValues(settingsStore.settings)))
     } catch {
       html.value = ''
     }

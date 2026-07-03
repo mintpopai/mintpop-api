@@ -27,18 +27,22 @@ function navTitle(slug: string): string {
 }
 
 const html = ref('')
+const loadError = ref(false)
 
 // slug 或语言变化 → 重新加载并渲染
 watch(
   [activeSlug, () => localeStore.current],
   async ([slug, locale]) => {
+    loadError.value = false
     try {
       // 占位符（BASE_URL 等）取自公开设置；ensureLoaded 失败不抛，settings 为 null 时占位符回退站点 origin
       await settingsStore.ensureLoaded()
       const src = await loadDoc(slug, locale)
       html.value = renderMarkdown(resolveDocPlaceholders(src, docPlaceholderValues(settingsStore.settings)))
     } catch {
+      // 加载失败（如网络异常拉不到 chunk）：展示可见的失败态而非静默空白
       html.value = ''
+      loadError.value = true
     }
   },
   { immediate: true }
@@ -65,9 +69,16 @@ watch(
 
       <!-- 右侧正文 -->
       <article class="min-w-0 flex-1">
+        <div
+          v-if="loadError"
+          class="rounded-xl2 bg-card p-6 text-sm text-text3"
+        >
+          {{ $t('common.loadFailed') }}
+        </div>
         <!-- v-html 注入的是本项目自有的可信文档 markdown 渲染结果（非用户输入），故禁用该规则 -->
         <!-- eslint-disable vue/no-v-html -->
         <div
+          v-else
           class="prose prose-neutral max-w-none dark:prose-invert"
           v-html="html"
         />

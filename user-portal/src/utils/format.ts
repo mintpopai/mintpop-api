@@ -11,9 +11,14 @@ export function formatBalance(n: number): string {
   return usd2.format(Number.isFinite(n) ? n : 0)
 }
 
-/** 消费金额，保留 4 位（与后端计费精度一致） */
+const usd4 = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 4,
+  maximumFractionDigits: 4
+})
+
+/** 消费金额，保留 4 位（与后端计费精度一致）；与 formatBalance 统一走 Intl（含千分位） */
 export function formatCost(n: number): string {
-  return (Number.isFinite(n) ? n : 0).toFixed(4)
+  return usd4.format(Number.isFinite(n) ? n : 0)
 }
 
 /** 千分位整数 */
@@ -106,6 +111,11 @@ export function orderStatusMeta(s: string): { label: string; variant: string } {
   const variant = variants[s]
   if (!variant) return { label: s, variant: 'muted' }
   return { label: i18n.global.t(`orders.status.${s}`), variant }
+}
+
+/** 订单类型 → 展示文案（balance=余额充值 / subscription=订阅，文案随语言切换） */
+export function orderKind(orderType: string): string {
+  return i18n.global.t(orderType === 'balance' ? 'orders.orderType.balance' : 'orders.orderType.subscription')
 }
 
 /** 注册月份 Jun 2026 */

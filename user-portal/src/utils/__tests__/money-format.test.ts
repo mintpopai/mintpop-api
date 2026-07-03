@@ -13,6 +13,7 @@ describe('金额格式化', () => {
     expect(formatCost(0.1234)).toBe('0.1234')
     expect(formatCost(2)).toBe('2.0000')
     expect(formatCost(NaN)).toBe('0.0000')
+    expect(formatCost(1234.5)).toBe('1,234.5000')
   })
 
   it('formatCNY：两位小数 + 千分位', () => {

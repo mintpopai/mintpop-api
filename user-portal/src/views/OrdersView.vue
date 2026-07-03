@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -15,8 +16,10 @@ import { useOrders } from '@/composables/useOrders'
 import { useAuthStore } from '@/stores/auth'
 import { formatBalance, formatDateMinute, orderStatusMeta } from '@/utils/format'
 import type { PaymentOrder } from '@/api/types'
+import { errMessage } from '@/utils/error'
 
 const { t } = useI18n()
+const toast = useToast()
 const router = useRouter()
 const authStore = useAuthStore()
 const { rows, total, page, pageSize, statusFilter, search, loading, error, loaded, load, setPage, cancel } = useOrders()
@@ -98,7 +101,7 @@ async function confirmCancel() {
     cancelOpen.value = false
     cancelTarget.value = null
   } catch (e) {
-    cancelError.value = (e as { message?: string }).message || t('orders.cancelFailed')
+    cancelError.value = errMessage(e, t('orders.cancelFailed'))
   } finally {
     cancelLoading.value = false
   }
@@ -107,7 +110,6 @@ async function confirmCancel() {
 // === 立即支付弹窗 ===
 const payOpen = ref(false)
 const payOrder = ref<PaymentOrder | null>(null)
-const paySuccessNote = ref(false)
 
 function handlePay(order: PaymentOrder) {
   payOrder.value = order
@@ -118,9 +120,7 @@ async function handlePaid() {
   payOpen.value = false
   // 刷新订单列表 + 余额
   await Promise.all([load(), authStore.fetchUser()])
-  // 短暂提示
-  paySuccessNote.value = true
-  setTimeout(() => { paySuccessNote.value = false }, 3000)
+  toast.success(t('orders.paySuccess'))
 }
 
 function handleReorder() {
@@ -263,14 +263,6 @@ onMounted(load)
         />
       </div>
     </template>
-
-    <!-- 支付成功提示 -->
-    <div
-      v-if="paySuccessNote"
-      class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-pos px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(14,158,114,.35)]"
-    >
-      {{ $t('orders.paySuccess') }}
-    </div>
 
     <!-- 立即支付弹窗 -->
     <PaymentResultModal

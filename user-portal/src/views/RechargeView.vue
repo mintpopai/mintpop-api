@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PortalLayout from '@/layouts/PortalLayout.vue'
@@ -18,6 +18,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { getPlans, verifyOrder } from '@/api/payment'
 import { formatBalance } from '@/utils/format'
 import type { CreateOrderResult, SubscriptionPlan } from '@/api/types'
+import { errMessage } from '@/utils/error'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -80,7 +81,7 @@ async function handleSubmit() {
     currentOrder.value = result
     payModalOpen.value = true
   } catch (e) {
-    submitError.value = (e as { message?: string }).message || t('recharge.errCreateOrder')
+    submitError.value = errMessage(e, t('recharge.errCreateOrder'))
   } finally {
     submitting.value = false
   }
@@ -153,7 +154,7 @@ async function handleConfirmSubscribe() {
     currentOrder.value = result
     payModalOpen.value = true
   } catch (e) {
-    subscribeError.value = (e as { message?: string }).message || t('recharge.errCreateOrder')
+    subscribeError.value = errMessage(e, t('recharge.errCreateOrder'))
   } finally {
     subscribing.value = false
   }
@@ -185,11 +186,19 @@ const RESUME_PENDING_STATUSES = new Set(['PENDING', 'CREATED', 'WAITING', 'PROCE
 const RESUME_POLL_INTERVAL_MS = 2000
 const RESUME_POLL_MAX_ATTEMPTS = 15
 
+// 组件卸载后中断回流轮询（用户切走路由时不再空转最多 30s、也不再写已卸载组件的状态）
+let resumeAborted = false
+onUnmounted(() => {
+  resumeAborted = true
+})
+
 async function resumeRedirectPayment(outTradeNo: string) {
   // 最多轮询约 30s（15 次 × 2s），等后端收到 Stripe webhook 确认到账
   for (let i = 0; i < RESUME_POLL_MAX_ATTEMPTS; i++) {
+    if (resumeAborted) return
     try {
       const order = await verifyOrder(outTradeNo)
+      if (resumeAborted) return
       const status = String(order.status || '').trim().toUpperCase()
       if (RESUME_SUCCESS_STATUSES.has(status)) {
         await authStore.fetchUser()

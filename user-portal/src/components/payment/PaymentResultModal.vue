@@ -2,6 +2,7 @@
 import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/ui/Modal.vue'
+import QRCode from 'qrcode'
 import { verifyOrder, getCheckoutInfo } from '@/api/payment'
 import type { Stripe, StripeElements, StripePaymentElement, StripeElementLocale } from '@stripe/stripe-js'
 
@@ -70,12 +71,25 @@ let publishableKey = ''
 // 当前订单是否为 Stripe（存在 client_secret 即走卡支付）
 const isStripe = computed(() => !!props.order?.client_secret)
 
-// 生成 QR 码图片 URL（使用 qrserver.com 公共 API 渲染）
-const qrImageUrl = computed(() => {
-  const qr = props.order?.qr_code ?? ''
-  if (!qr) return ''
-  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qr)}`
-})
+// 二维码本地生成为 data URL（qrcode 库，与主前端 PaymentQRDialog 一致）：
+// 不走第三方渲染服务——支付链接不出站，也不受境外服务在大陆可达性影响
+const qrImageUrl = ref('')
+watch(
+  () => props.order?.qr_code ?? '',
+  async (qr) => {
+    if (!qr) {
+      qrImageUrl.value = ''
+      return
+    }
+    try {
+      qrImageUrl.value = await QRCode.toDataURL(qr, { width: 200, margin: 2, errorCorrectionLevel: 'L' })
+    } catch {
+      // 生成失败（仅非法输入可能触发）：留空，模板不渲染图片
+      qrImageUrl.value = ''
+    }
+  },
+  { immediate: true }
+)
 
 // 弹窗标题：Stripe 卡支付用「完成支付」，其余用「扫码支付」
 const modalTitle = computed(() => (isStripe.value ? t('payment.payTitle') : t('payment.scanToPay')))

@@ -37,7 +37,8 @@ export default {
   registerSubtitle: 'Fill in the details below to start using MintPop API.',
   usernameLabel: 'Username',
   usernamePlaceholder: 'Pick a name for yourself',
-  emailPlaceholder: 'you@example.com',
+  // @ 是 vue-i18n 消息语法的 linked-message 前导符，须用 {'@'} 字面插值转义，否则 t() 直接抛编译错
+  emailPlaceholder: "you{'@'}example.com",
   verifyCodeLabel: 'Email verification code',
   verifyCodePlaceholder: '6-digit code',
   sendCode: 'Send code',

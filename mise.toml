@@ -154,7 +154,8 @@ run = "go test -tags=e2e -v -timeout=300s ./internal/integration/..."
 [tasks.audit-backend]
 description = "后端依赖漏洞扫描（govulncheck）"
 dir = "backend"
-run = "go run golang.org/x/vuln/cmd/govulncheck@latest ./..."
+# 版本钉死保证可复现（漏洞库数据本身仍是实时拉取的，钉版本不影响新漏洞覆盖）
+run = "go run golang.org/x/vuln/cmd/govulncheck@v1.5.0 ./..."
 
 [tasks.audit-frontend]
 description = "frontend 依赖漏洞审计（pnpm audit + 按 .github/audit-exceptions.yml 过滤例外）"

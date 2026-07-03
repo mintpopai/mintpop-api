@@ -4,3 +4,4 @@
 user-portal/node_modules
 user-portal/dist
 **/.git
+user-portal/.env.local

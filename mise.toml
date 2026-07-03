@@ -137,7 +137,8 @@ run = [
 [tasks.test-user-portal]
 description = "user-portal 类型检查 + 单元测试（vitest）"
 dir = "user-portal"
-run = "pnpm exec vue-tsc --noEmit && pnpm exec vitest run"
+# 必须用 -b：根 tsconfig 是 solution 式（files:[] + references），裸 --noEmit 一个文件都不检查（静默 no-op）
+run = "pnpm exec vue-tsc -b && pnpm exec vitest run"
 
 [tasks.coverage-frontend]
 description = "frontend 覆盖率测试（vitest run --coverage）"

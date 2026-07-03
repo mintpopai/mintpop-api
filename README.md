@@ -6,7 +6,7 @@ MintPop API 是一个 **AI API 网关服务**：把上游 AI 订阅（Claude / O
 
 ## 快速部署（Docker Compose）
 
-仅支持 Docker 部署，编排两个镜像：`mintpop-api`（后端，内嵌 admin 前端）与 `mintpop-api-user-portal`（用户门户）。PostgreSQL 与 Redis 为外部独立服务，通过 `.env` 配置。
+仅支持 Docker 部署，编排两个镜像：`mintpop-api-backend`（后端，内嵌 admin 前端）与 `mintpop-api-user-portal`（用户门户）。PostgreSQL 与 Redis 为外部独立服务，通过 `.env` 配置。
 
 ```bash
 # 1. 准备环境变量（配置 OWNER、数据库、Redis 等）
@@ -31,7 +31,7 @@ mise run build-backend # 编译后端单二进制（内嵌前端）
 mise run test-backend / test-frontend / test-user-portal
 ```
 
-更多开发说明见 `CLAUDE.md` 与 `DEV_GUIDE.md`。
+更多开发说明见 `CLAUDE.md`。
 
 ## 声明
 

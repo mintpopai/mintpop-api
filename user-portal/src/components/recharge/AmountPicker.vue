@@ -107,18 +107,27 @@ const validationMsg = computed(() => {
       <span class="text-[13px] text-subtle">{{ $t('recharge.unitNote') }}</span>
     </div>
 
-    <!-- 预设金额（手机 2 列 / 桌面 4 列） -->
-    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <!-- 预设金额（手机 2 列 / 桌面 4 列）；radio 语义 + Enter/Space 可选，键盘可达 -->
+    <div
+      role="radiogroup"
+      :aria-label="$t('recharge.selectRechargeAmount')"
+      class="grid grid-cols-2 gap-3 sm:grid-cols-4"
+    >
       <div
         v-for="v in presets"
         :key="v"
-        class="relative cursor-pointer rounded-xl2 border-[1.5px] p-[18px_16px_16px] transition-[border-color,background,box-shadow] duration-[140ms]"
+        role="radio"
+        :aria-checked="!isCustom && selectedPreset === v"
+        tabindex="0"
+        class="relative cursor-pointer rounded-xl2 border-[1.5px] p-[18px_16px_16px] transition-[border-color,background,box-shadow] duration-[140ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
           !isCustom && selectedPreset === v
             ? 'border-accent bg-accent/[0.07] shadow-[0_2px_10px_rgba(20,194,138,0.14)]'
             : 'border-border2 bg-card hover:border-[#9FE6CD] hover:bg-hover'
         "
         @click="pickPreset(v)"
+        @keydown.enter.prevent="pickPreset(v)"
+        @keydown.space.prevent="pickPreset(v)"
       >
         <!-- 热门徽标 -->
         <span

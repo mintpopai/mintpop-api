@@ -21,8 +21,13 @@ export function useProfile() {
 
   async function load() {
     loading.value = true
+    error.value = null
     try {
       await authStore.fetchUser()
+      // fetchUser 失败不抛（内部吞错），故以 user 是否就位判定失败，供视图展示错误态
+      if (!authStore.user) {
+        error.value = t('common.loadFailed')
+      }
     } finally {
       loading.value = false
     }

@@ -62,13 +62,6 @@ const emit = defineEmits<{
             {{ $t('profile.binding.desc.email', { email: props.user.email }) }}
           </div>
         </div>
-        <!-- 占位按钮（不接流程） -->
-        <button
-          class="cursor-pointer rounded-[9px] border-[1.5px] border-border2 bg-card px-[18px] py-[9px] text-[13px] font-medium text-text"
-          type="button"
-        >
-          {{ $t('profile.binding.manageEmail') }}
-        </button>
       </div>
 
       <!-- LinuxDo -->

@@ -42,18 +42,27 @@ function pick(key: string) {
       </span>
     </div>
 
-    <!-- 方式列表 -->
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <!-- 方式列表；radio 语义 + Enter/Space 可选，键盘可达 -->
+    <div
+      role="radiogroup"
+      :aria-label="$t('recharge.paymentMethod')"
+      class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+    >
       <div
         v-for="key in availableMethods"
         :key="key"
-        class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-[140ms]"
+        role="radio"
+        :aria-checked="modelValue === key"
+        tabindex="0"
+        class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-[140ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
           modelValue === key
             ? 'border-accent bg-accent/[0.06]'
             : 'border-border2 bg-card hover:border-[#9FE6CD]'
         "
         @click="pick(key)"
+        @keydown.enter.prevent="pick(key)"
+        @keydown.space.prevent="pick(key)"
       >
         <!-- 品牌图标 -->
         <span

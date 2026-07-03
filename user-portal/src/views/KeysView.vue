@@ -11,12 +11,16 @@ import KeyTable from '@/components/keys/KeyTable.vue'
 import CreateKeyModal from '@/components/keys/CreateKeyModal.vue'
 import EditKeyModal from '@/components/keys/EditKeyModal.vue'
 import UseKeyModal from '@/components/keys/UseKeyModal.vue'
+import { useI18n } from 'vue-i18n'
 import { useKeys } from '@/composables/useKeys'
+import { useToast } from '@/composables/useToast'
 import { useSettingsStore } from '@/stores/settings'
 import { formatCost } from '@/utils/format'
 import type { ApiKey, CreateApiKeyRequest, UpdateApiKeyRequest } from '@/api/types'
 
 const k = useKeys()
+const toast = useToast()
+const { t } = useI18n()
 const settingsStore = useSettingsStore()
 const showCreate = ref(false)
 const editTarget = ref<ApiKey | null>(null)
@@ -51,11 +55,15 @@ async function doCreate(payload: CreateApiKeyRequest, done: (nk: ApiKey | null) 
   }
 }
 
-async function doEdit(id: number, patch: UpdateApiKeyRequest) {
+async function doEdit(id: number, patch: UpdateApiKeyRequest, done: () => void) {
   try {
     await k.update(id, patch)
-  } finally {
     editTarget.value = null
+  } catch (e) {
+    // 失败保持弹窗与表单、提示后可重试（与 doCreate 的失败语义一致）
+    toast.error((e as { message?: string }).message || t('common.requestFailed'))
+  } finally {
+    done()
   }
 }
 

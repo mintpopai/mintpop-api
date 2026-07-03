@@ -14,9 +14,9 @@ export default {
   disable: 'Disable',
   stats: {
     totalLabel: 'Total Keys',
-    statusHint: '{active} active · {inactive} disabled',
+    statusHint: 'This page: {active} active · {inactive} disabled',
     cost30dLabel: 'Spend (Last 30 Days)',
-    costHint: 'All keys combined'
+    costHint: 'Keys on this page combined'
   },
   filter: {
     allGroups: 'All Groups',

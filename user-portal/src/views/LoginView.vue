@@ -158,7 +158,6 @@ async function onSubmit() {
           <div class="mb-[14px]">
             <div class="mb-[9px] flex items-baseline justify-between">
               <label class="text-xs font-semibold tracking-wide text-text2">{{ t('auth.passwordLabel') }}</label>
-              <span class="cursor-pointer text-xs font-medium text-neg">{{ t('auth.forgotPassword') }}</span>
             </div>
             <div class="relative">
               <svg

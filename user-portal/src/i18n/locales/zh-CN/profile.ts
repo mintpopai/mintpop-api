@@ -50,7 +50,6 @@ export default {
     unbound: '未绑定',
     bind: '绑定',
     unbind: '解绑',
-    manageEmail: '管理邮箱',
     // 各登录方式展示名（品牌英文名不翻译）
     providers: {
       email: '邮箱',

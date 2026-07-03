@@ -14,7 +14,11 @@ export function useOrders() {
   const error = ref<string | null>(null)
   const loaded = ref(false)
 
+  // 竞态守卫：翻页/改筛选连发请求时只让最后一次的响应落地
+  let loadSeq = 0
+
   async function load() {
+    const seq = ++loadSeq
     loading.value = true
     error.value = null
     try {
@@ -23,13 +27,15 @@ export function useOrders() {
         page_size: pageSize.value,
         status: statusFilter.value || undefined
       })
+      if (seq !== loadSeq) return
       rows.value = res.items
       total.value = res.total
       loaded.value = true
     } catch (e) {
+      if (seq !== loadSeq) return // 已被更新的请求取代，过期失败不展示
       error.value = (e as { message?: string }).message || i18n.global.t('common.loadFailed')
     } finally {
-      loading.value = false
+      if (seq === loadSeq) loading.value = false
     }
   }
 

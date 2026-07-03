@@ -14,9 +14,9 @@ export default {
   disable: '禁用',
   stats: {
     totalLabel: '密钥总数',
-    statusHint: '{active} 个已启用 · {inactive} 个已禁用',
+    statusHint: '本页 {active} 个已启用 · {inactive} 个已禁用',
     cost30dLabel: '近 30 天消费',
-    costHint: '所有密钥合计'
+    costHint: '本页密钥合计'
   },
   filter: {
     allGroups: '全部分组',

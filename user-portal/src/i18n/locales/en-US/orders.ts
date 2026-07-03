@@ -16,9 +16,9 @@ export default {
   // Stat cards
   stats: {
     total: 'Total Orders',
-    totalHint: '{paid} paid · {pending} pending',
-    totalRecharge: 'Total Recharge',
-    totalRechargeHint: 'Sum of completed orders',
+    totalHint: 'This page: {paid} paid · {pending} pending',
+    totalRecharge: 'Recharge (This Page)',
+    totalRechargeHint: 'Completed orders on this page',
     latest: 'Latest Order'
   },
 

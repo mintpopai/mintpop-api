@@ -50,7 +50,6 @@ export default {
     unbound: 'Not bound',
     bind: 'Bind',
     unbind: 'Unbind',
-    manageEmail: 'Manage email',
     // Provider display names (brand names left untranslated)
     providers: {
       email: 'Email',

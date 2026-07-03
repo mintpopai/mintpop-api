@@ -33,19 +33,31 @@ export function useUsage() {
     }
   }
 
+  // 竞态守卫：翻页/改筛选连发请求时只让最后一次的响应落地；旧列表请求直接取消
+  let loadSeq = 0
+  let loadAbort: AbortController | null = null
+
   async function load() {
+    const seq = ++loadSeq
+    loadAbort?.abort()
+    loadAbort = new AbortController()
     loading.value = true
     error.value = null
     try {
-      const [res, s] = await Promise.all([queryUsage(params()), getDashboardStats()])
+      const [res, s] = await Promise.all([
+        queryUsage(params(), { signal: loadAbort.signal }),
+        getDashboardStats()
+      ])
+      if (seq !== loadSeq) return
       rows.value = res.items
       total.value = res.total
       stats.value = s
       loaded.value = true
     } catch (e) {
+      if (seq !== loadSeq) return // 已被更新的请求取代（含主动取消），过期失败不展示
       error.value = (e as { message?: string }).message || i18n.global.t('common.loadFailed')
     } finally {
-      loading.value = false
+      if (seq === loadSeq) loading.value = false
     }
   }
 

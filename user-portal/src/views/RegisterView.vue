@@ -19,7 +19,8 @@ const confirm = ref('')
 const invitation = ref('')
 const promo = ref('')
 const verifyCode = ref('')
-const agreed = ref(true)
+// 协议勾选必须默认不勾选：预勾选在 GDPR 等合规口径下不构成有效同意
+const agreed = ref(false)
 
 const settings = ref<PublicSettings | null>(null)
 const loading = ref(false)
@@ -35,6 +36,7 @@ const promoInvalid = ref(false)
 const promoBonus = ref<number | null>(null)
 const promoMsg = ref<string | null>(null)
 let promoTimer: ReturnType<typeof setTimeout> | null = null
+let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
   try {
@@ -46,6 +48,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (promoTimer) clearTimeout(promoTimer)
+  // 验证码倒计时一并清理，避免离开页面后 interval 空转最多 60s
+  if (countdownTimer) clearInterval(countdownTimer)
 })
 
 function promoErrorMessage(code?: string): string {
@@ -112,9 +116,12 @@ async function sendCode() {
   try {
     await authApi.sendVerifyCode(email.value)
     countdown.value = 60
-    const timer = setInterval(() => {
+    countdownTimer = setInterval(() => {
       countdown.value -= 1
-      if (countdown.value <= 0) clearInterval(timer)
+      if (countdown.value <= 0 && countdownTimer) {
+        clearInterval(countdownTimer)
+        countdownTimer = null
+      }
     }, 1000)
   } catch (e) {
     error.value = (e as { message?: string }).message || t('auth.errSendCodeFailed')

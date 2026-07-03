@@ -14,7 +14,6 @@ export default {
   loginSubtitle: 'Sign in to your account to continue.',
   emailLabel: 'Email',
   passwordLabel: 'Password',
-  forgotPassword: 'Forgot password?',
   passwordPlaceholder: 'Enter your password',
   rememberDevice: 'Remember this device',
   signingIn: 'Signing in…',

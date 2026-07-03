@@ -14,7 +14,6 @@ export default {
   loginSubtitle: '登录您的账户以继续使用控制台。',
   emailLabel: '邮箱',
   passwordLabel: '密码',
-  forgotPassword: '忘记密码？',
   passwordPlaceholder: '请输入密码',
   rememberDevice: '记住此设备',
   signingIn: '登录中…',

@@ -11,7 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  submit: [id: number, patch: UpdateApiKeyRequest]
+  submit: [id: number, patch: UpdateApiKeyRequest, done: () => void]
 }>()
 
 const name = ref('')
@@ -41,12 +41,21 @@ watch(
 function submit() {
   if (!props.target || !name.value.trim() || submitting.value) return
   submitting.value = true
-  emit('submit', props.target.id, {
-    name: name.value.trim(),
-    status: status.value,
-    // 「不指定分组」对应 null，确保清除分组也能持久化
-    group_id: groupId.value
-  })
+  emit(
+    'submit',
+    props.target.id,
+    {
+      name: name.value.trim(),
+      status: status.value,
+      // 「不指定分组」对应 null，确保清除分组也能持久化
+      group_id: groupId.value
+    },
+    // 与 CreateKeyModal 同款 done 回调：父组件处理完调用，无论成败复位提交态
+    // （此前只在弹窗关闭时复位，父组件失败不关弹窗会永久卡在「保存中」）
+    () => {
+      submitting.value = false
+    }
+  )
 }
 </script>
 

@@ -9,7 +9,11 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(false)
 
-  const isAuthenticated = computed(() => !!localStorage.getItem(TOKEN_KEY))
+  // 故意用普通函数而非 computed：localStorage 不是响应式源，computed 会在首次求值后
+  // 永久缓存，login/logout 后不更新（潜伏 bug）。需要响应式登录态请以 user ref 为源。
+  function isAuthenticated(): boolean {
+    return !!localStorage.getItem(TOKEN_KEY)
+  }
   const balance = computed(() => user.value?.balance ?? 0)
 
   /** 拉取用户资料（含余额）。失败时不抛，调用方按 isAuthenticated 兜底 */

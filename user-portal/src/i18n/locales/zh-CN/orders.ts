@@ -16,9 +16,9 @@ export default {
   // 统计卡片
   stats: {
     total: '订单总数',
-    totalHint: '{paid} 笔已支付 · {pending} 笔待支付',
-    totalRecharge: '累计充值',
-    totalRechargeHint: '已完成订单合计',
+    totalHint: '本页 {paid} 笔已支付 · {pending} 笔待支付',
+    totalRecharge: '本页充值合计',
+    totalRechargeHint: '本页已完成订单合计',
     latest: '最近订单'
   },
 

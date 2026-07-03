@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { updateProfile } from '@/api/user'
 import { startBind, unbind as unbindApi } from '@/api/binding'
+import { errMessage } from '@/utils/error'
 
 export function useProfile() {
   const authStore = useAuthStore()
@@ -14,10 +15,6 @@ export function useProfile() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  /** 从异常中取可读信息，兜底用通用失败文案 */
-  function errMsg(e: unknown, fallback: string): string {
-    return (e as { message?: string })?.message || fallback
-  }
 
   async function load() {
     loading.value = true
@@ -39,7 +36,7 @@ export function useProfile() {
       await authStore.fetchUser()
       toast.success(t('profile.toast.updateSuccess'))
     } catch (e) {
-      toast.error(errMsg(e, t('profile.toast.updateFailed')))
+      toast.error(errMessage(e, t('profile.toast.updateFailed')))
     }
   }
 
@@ -49,7 +46,7 @@ export function useProfile() {
       await authStore.fetchUser()
       toast.success(t('profile.toast.avatarSuccess'))
     } catch (e) {
-      toast.error(errMsg(e, t('profile.toast.avatarFailed')))
+      toast.error(errMessage(e, t('profile.toast.avatarFailed')))
     }
   }
 
@@ -59,7 +56,7 @@ export function useProfile() {
       await authStore.fetchUser()
       toast.success(t('profile.toast.avatarRemoved'))
     } catch (e) {
-      toast.error(errMsg(e, t('profile.toast.avatarFailed')))
+      toast.error(errMessage(e, t('profile.toast.avatarFailed')))
     }
   }
 
@@ -68,7 +65,7 @@ export function useProfile() {
       const { authorize_url } = await startBind({ provider, redirect_to: window.location.origin + '/profile' })
       window.location.href = authorize_url
     } catch (e) {
-      toast.error(errMsg(e, t('profile.toast.bindFailed')))
+      toast.error(errMessage(e, t('profile.toast.bindFailed')))
     }
   }
 
@@ -78,7 +75,7 @@ export function useProfile() {
       await authStore.fetchUser()
       toast.success(t('profile.toast.unbindSuccess'))
     } catch (e) {
-      toast.error(errMsg(e, t('profile.toast.unbindFailed')))
+      toast.error(errMessage(e, t('profile.toast.unbindFailed')))
     }
   }
 

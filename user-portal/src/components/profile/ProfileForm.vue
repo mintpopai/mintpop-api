@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import type { User } from '@/api/types'
 import { compressToDataUrl } from '@/utils/avatar'
 
@@ -44,10 +45,6 @@ function onSaveUsername() {
   emit('save-username', name)
 }
 
-/** 头像预览：优先用 avatar_url，无则首字 */
-function avatarChar(u: User): string {
-  return (u.username ?? u.email ?? '?').charAt(0).toUpperCase()
-}
 </script>
 
 <template>
@@ -63,16 +60,10 @@ function avatarChar(u: User): string {
       <!-- 头像区域 -->
       <div class="flex items-center gap-[18px]">
         <!-- 头像预览 -->
-        <div
-          class="flex h-[72px] w-[72px] flex-none items-center justify-center rounded-[18px] font-serif text-[28px] font-semibold text-white"
-          :style="
-            props.user.avatar_url
-              ? `background:url(${props.user.avatar_url}) center/cover no-repeat;font-size:0`
-              : 'background:#14C28A'
-          "
-        >
-          <span v-if="!props.user.avatar_url">{{ avatarChar(props.user) }}</span>
-        </div>
+        <UserAvatar
+          :user="props.user"
+          box-class="h-[72px] w-[72px] rounded-[18px] text-[28px]"
+        />
 
         <div>
           <div class="mb-[5px] text-[14px] font-semibold text-text">

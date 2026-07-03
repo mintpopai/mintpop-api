@@ -4,6 +4,7 @@ import { queryUsage, getDashboardStats, type UsageQueryParams } from '@/api/usag
 import { listKeys } from '@/api/keys'
 import type { UsageLog, UserDashboardStats, ApiKey } from '@/api/types'
 import { toLocalDate } from '@/utils/format'
+import { errMessage } from '@/utils/error'
 
 export function useUsage() {
   const rows = ref<UsageLog[]>([])
@@ -55,7 +56,7 @@ export function useUsage() {
       loaded.value = true
     } catch (e) {
       if (seq !== loadSeq) return // 已被更新的请求取代（含主动取消），过期失败不展示
-      error.value = (e as { message?: string }).message || i18n.global.t('common.loadFailed')
+      error.value = errMessage(e, i18n.global.t('common.loadFailed'))
     } finally {
       if (seq === loadSeq) loading.value = false
     }

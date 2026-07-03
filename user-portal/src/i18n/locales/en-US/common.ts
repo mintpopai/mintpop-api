@@ -15,6 +15,7 @@ export default {
   back: 'Back',
   copy: 'Copy',
   copied: 'Copied ✓',
+  copyFailed: 'Copy failed, please copy manually',
   search: 'Search',
   reset: 'Reset',
   // States

@@ -1,18 +1,12 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import Modal from '@/components/ui/Modal.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { orderStatusMeta, formatCNY, formatBalance, formatDateMinute } from '@/utils/format'
+import { orderStatusMeta, orderKind, formatCNY, formatBalance, formatDateMinute } from '@/utils/format'
 import type { PaymentOrder } from '@/api/types'
-
-const { t } = useI18n()
 
 defineProps<{ open: boolean; order: PaymentOrder | null }>()
 const emit = defineEmits<{ close: [] }>()
 
-function orderKind(orderType: string): string {
-  return orderType === 'balance' ? t('orders.orderType.balance') : t('orders.orderType.subscription')
-}
 </script>
 
 <template>

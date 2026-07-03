@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import type { User } from '@/api/types'
 import { formatBalance, formatRegMonth } from '@/utils/format'
 
 const props = defineProps<{ user: User }>()
 const { t } = useI18n()
-
-/** 取用户名首字作为头像默认字符 */
-function avatarChar(u: User): string {
-  return (u.username ?? u.email ?? '?').charAt(0).toUpperCase()
-}
 
 /** 角色标签 */
 function roleLabel(role: string | undefined): string {
@@ -38,16 +34,10 @@ function roleLabel(role: string | undefined): string {
     <!-- 用户基本信息行 -->
     <div class="relative mb-[26px] flex items-center gap-[22px]">
       <!-- 头像 -->
-      <div
-        class="flex h-[74px] w-[74px] flex-none items-center justify-center rounded-[20px] font-serif text-[30px] font-semibold text-white"
-        :style="
-          props.user.avatar_url
-            ? `background:url(${props.user.avatar_url}) center/cover no-repeat;font-size:0`
-            : 'background:#14C28A'
-        "
-      >
-        <span v-if="!props.user.avatar_url">{{ avatarChar(props.user) }}</span>
-      </div>
+      <UserAvatar
+        :user="props.user"
+        box-class="h-[74px] w-[74px] rounded-[20px] text-[30px]"
+      />
 
       <!-- 姓名 / 角色 / 邮箱 -->
       <div>

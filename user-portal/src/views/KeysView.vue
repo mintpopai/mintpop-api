@@ -17,6 +17,7 @@ import { useToast } from '@/composables/useToast'
 import { useSettingsStore } from '@/stores/settings'
 import { formatCost } from '@/utils/format'
 import type { ApiKey, CreateApiKeyRequest, UpdateApiKeyRequest } from '@/api/types'
+import { errMessage } from '@/utils/error'
 
 const k = useKeys()
 const toast = useToast()
@@ -61,7 +62,7 @@ async function doEdit(id: number, patch: UpdateApiKeyRequest, done: () => void) 
     editTarget.value = null
   } catch (e) {
     // 失败保持弹窗与表单、提示后可重试（与 doCreate 的失败语义一致）
-    toast.error((e as { message?: string }).message || t('common.requestFailed'))
+    toast.error(errMessage(e, t('common.requestFailed')))
   } finally {
     done()
   }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import { maskApiKey, formatCost } from '@/utils/format'
 import type { ApiKey, ApiKeyUsageStat } from '@/api/types'
+import { useCopy } from '@/composables/useCopy'
 
 defineProps<{
   rows: ApiKey[]
@@ -16,19 +16,11 @@ const emit = defineEmits<{
   use: [key: ApiKey]
 }>()
 
-// 复制反馈：记录当前已复制的行 id
-const copiedId = ref<number | null>(null)
+// 复制反馈：copiedId = 最近复制的行 id
+const { copiedKey: copiedId, copy } = useCopy()
 
-async function copyKey(row: ApiKey) {
-  try {
-    await navigator.clipboard.writeText(row.key)
-    copiedId.value = row.id
-    setTimeout(() => {
-      if (copiedId.value === row.id) copiedId.value = null
-    }, 1500)
-  } catch {
-    // 忽略复制失败
-  }
+function copyKey(row: ApiKey) {
+  copy(row.key, row.id)
 }
 
 function platformDot(platform: string | undefined): string {

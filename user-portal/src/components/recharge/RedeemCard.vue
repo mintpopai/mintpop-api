@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { redeem } from '@/api/redeem'
 import type { RedeemResult } from '@/api/types'
 import { formatBalance } from '@/utils/format'
+import { errMessage } from '@/utils/error'
 
 const { t } = useI18n()
 
@@ -29,7 +30,7 @@ async function handleRedeem() {
     code.value = ''
     emit('redeemed')
   } catch (e) {
-    errorMsg.value = (e as { message?: string }).message || t('recharge.errRedeem')
+    errorMsg.value = errMessage(e, t('recharge.errRedeem'))
   } finally {
     submitting.value = false
   }

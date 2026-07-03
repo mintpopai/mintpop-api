@@ -2,12 +2,12 @@
 import { computed } from 'vue'
 import type { PlatformDashboardStats } from '@/api/types'
 import { formatNumber, percent } from '@/utils/format'
+import { IS_APPLICATION_MODE } from '@/config/portal'
 
 const props = defineProps<{ byPlatform: PlatformDashboardStats[] }>()
 
-// 分布卡片文案模式：MODEL=模型厂商分布（Claude/GPT/Gemini）；APPLICATION=应用类型分布（Text/Vision/Voice）
-// 由发版构建时的 VITE_PORTAL_DISTRIBUTION_MODE 决定，缺省为 MODEL
-const IS_APPLICATION = (import.meta.env.VITE_PORTAL_DISTRIBUTION_MODE ?? 'MODEL').trim().toUpperCase() === 'APPLICATION'
+// 分布卡片文案模式（解析收口在 config/portal.ts，与登录页共用）
+const IS_APPLICATION = IS_APPLICATION_MODE
 // 标题随模式切换：MODEL → 模型厂商分布；APPLICATION → 应用类型分布
 const TITLE_KEY = IS_APPLICATION ? 'dashboard.vendor.titleApp' : 'dashboard.vendor.title'
 

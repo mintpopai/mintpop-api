@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, h, watch, onMounted, onBeforeUnmount, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useCopy } from '@/composables/useCopy'
 
 interface Props {
   open: boolean
@@ -15,7 +16,7 @@ const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
 
-const copiedIndex = ref<number | null>(null)
+const { copiedKey: copiedIndex, copy } = useCopy(2000)
 const activeTab = ref<string>('unix')
 const activeClientTab = ref<string>('claude')
 
@@ -529,16 +530,8 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
   }
 }
 
-async function copyContent(content: string, index: number) {
-  try {
-    await navigator.clipboard.writeText(content)
-    copiedIndex.value = index
-    setTimeout(() => {
-      copiedIndex.value = null
-    }, 2000)
-  } catch {
-    // 忽略复制失败
-  }
+function copyContent(content: string, index: number) {
+  copy(content, index)
 }
 </script>
 

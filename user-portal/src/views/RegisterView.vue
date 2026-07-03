@@ -3,10 +3,12 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import * as authApi from '@/api/auth'
+import { getPublicSettings } from '@/api/settings'
 import { updateProfile } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import type { PublicSettings } from '@/api/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { errMessage } from '@/utils/error'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -40,7 +42,7 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
   try {
-    settings.value = await authApi.getPublicSettings()
+    settings.value = await getPublicSettings()
   } catch {
     // 拉取失败时按最常见配置（无邀请码 / 无邮箱验证 / 无优惠码）兜底
   }
@@ -124,7 +126,7 @@ async function sendCode() {
       }
     }, 1000)
   } catch (e) {
-    error.value = (e as { message?: string }).message || t('auth.errSendCodeFailed')
+    error.value = errMessage(e, t('auth.errSendCodeFailed'))
   } finally {
     sending.value = false
   }
@@ -183,7 +185,7 @@ async function onSubmit() {
     await authStore.fetchUser()
     router.push('/dashboard')
   } catch (e) {
-    error.value = (e as { message?: string }).message || t('auth.errRegisterFailed')
+    error.value = errMessage(e, t('auth.errRegisterFailed'))
   } finally {
     loading.value = false
   }

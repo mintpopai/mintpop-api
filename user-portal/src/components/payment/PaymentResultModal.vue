@@ -5,6 +5,7 @@ import Modal from '@/components/ui/Modal.vue'
 import QRCode from 'qrcode'
 import { verifyOrder, getCheckoutInfo } from '@/api/payment'
 import type { Stripe, StripeElements, StripePaymentElement, StripeElementLocale } from '@stripe/stripe-js'
+import { errMessage } from '@/utils/error'
 
 const { t, locale } = useI18n()
 
@@ -175,7 +176,7 @@ async function handleManualVerify() {
   try {
     await doVerify(props.order.out_trade_no)
   } catch (e) {
-    errMsg.value = (e as { message?: string }).message || t('payment.errVerify')
+    errMsg.value = errMessage(e, t('payment.errVerify'))
   } finally {
     verifying.value = false
   }

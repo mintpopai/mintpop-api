@@ -4,15 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { errMessage } from '@/utils/error'
+import { IS_APPLICATION_MODE } from '@/config/portal'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const authStore = useAuthStore()
 
-// 分发模式：MODEL=模型厂商（Claude/GPT/Gemini）；APPLICATION=应用能力（Text/Vision/Voice）
-// 由发版构建时的 VITE_PORTAL_DISTRIBUTION_MODE 决定，缺省 MODEL；与仪表盘分布卡片保持一致
-const IS_APPLICATION = (import.meta.env.VITE_PORTAL_DISTRIBUTION_MODE ?? 'MODEL').trim().toUpperCase() === 'APPLICATION'
+// 分发模式（解析收口在 config/portal.ts，与仪表盘分布卡片共用）
+const IS_APPLICATION = IS_APPLICATION_MODE
 // 左侧品牌区标语：APPLICATION 模式改用应用能力文案
 const brandDescKey = IS_APPLICATION ? 'auth.loginBrandDescApp' : 'auth.loginBrandDesc'
 // 模型/能力标签：MODEL → 厂商名；APPLICATION → 应用能力名（两端均英文不翻译）
@@ -36,8 +37,7 @@ async function onSubmit() {
     const redirect = (route.query.redirect as string) || '/dashboard'
     router.push(redirect)
   } catch (e) {
-    const err = e as { message?: string }
-    error.value = err.message || t('auth.errLoginFailed')
+    error.value = errMessage(e, t('auth.errLoginFailed'))
   } finally {
     loading.value = false
   }

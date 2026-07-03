@@ -15,6 +15,7 @@ export default {
   back: '返回',
   copy: '复制',
   copied: '已复制 ✓',
+  copyFailed: '复制失败，请手动选择复制',
   search: '搜索',
   reset: '重置',
   // 状态

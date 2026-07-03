@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { orderStatusMeta, formatCNY, formatBalance, formatDateMinute } from '@/utils/format'
+import { orderStatusMeta, orderKind, formatCNY, formatBalance, formatDateMinute } from '@/utils/format'
 import type { PaymentOrder } from '@/api/types'
 
 const { t } = useI18n()
@@ -29,9 +29,6 @@ function paymentLabel(type: string | null | undefined): string {
   return type || '—'
 }
 
-function orderKind(orderType: string): string {
-  return orderType === 'balance' ? t('orders.orderType.balance') : t('orders.orderType.subscription')
-}
 </script>
 
 <template>

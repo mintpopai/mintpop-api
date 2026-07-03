@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/ui/Modal.vue'
 import type { Group, CreateApiKeyRequest, ApiKey } from '@/api/types'
+import { useCopy } from '@/composables/useCopy'
 
 const { t } = useI18n()
 
@@ -18,7 +19,8 @@ const expiresInDays = ref<number | null>(null)
 const quota = ref<number | null>(null)
 const submitting = ref(false)
 const createdKey = ref<ApiKey | null>(null)
-const copied = ref(false)
+const { copiedKey, copy: copyText, reset: resetCopied } = useCopy()
+const copied = computed(() => copiedKey.value !== null)
 const errorMsg = ref('')
 
 watch(
@@ -30,7 +32,7 @@ watch(
       expiresInDays.value = null
       quota.value = null
       createdKey.value = null
-      copied.value = false
+      resetCopied()
       submitting.value = false
       errorMsg.value = ''
     }
@@ -61,17 +63,9 @@ function submit() {
   )
 }
 
-async function copyKey() {
+function copyKey() {
   if (!createdKey.value) return
-  try {
-    await navigator.clipboard.writeText(createdKey.value.key)
-    copied.value = true
-    setTimeout(() => {
-      copied.value = false
-    }, 1500)
-  } catch {
-    // 忽略复制失败
-  }
+  copyText(createdKey.value.key)
 }
 </script>
 

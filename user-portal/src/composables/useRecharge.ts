@@ -3,6 +3,7 @@ import i18n from '@/i18n'
 import { getCheckoutInfo, createOrder, verifyOrder } from '@/api/payment'
 import { redeem as redeemApi } from '@/api/redeem'
 import type { CheckoutInfoResponse, CreateOrderResult, RedeemResult, SubscriptionPlan } from '@/api/types'
+import { errMessage } from '@/utils/error'
 
 // 预设充值档位（精简为业界主流的少量档位，大额靠自定义输入兜底）
 const PRESETS = [10, 50, 100, 200]
@@ -32,7 +33,7 @@ export function useRecharge() {
       }
       loaded.value = true
     } catch (e) {
-      error.value = (e as { message?: string }).message || i18n.global.t('common.loadFailed')
+      error.value = errMessage(e, i18n.global.t('common.loadFailed'))
     } finally {
       loading.value = false
     }

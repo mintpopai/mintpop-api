@@ -3,7 +3,6 @@ import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
-  PublicSettings,
   User,
   ValidatePromoCodeResult
 } from './types'
@@ -23,12 +22,6 @@ export async function register(payload: RegisterRequest): Promise<LoginResponse>
   const token = data.access_token || data.token
   if (token) localStorage.setItem(TOKEN_KEY, token)
   if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
-  return data
-}
-
-/** 公开站点设置（无需鉴权） */
-export async function getPublicSettings(): Promise<PublicSettings> {
-  const { data } = await apiClient.get<PublicSettings>('/settings/public')
   return data
 }
 

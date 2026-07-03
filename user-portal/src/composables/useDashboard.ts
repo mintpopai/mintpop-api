@@ -14,6 +14,7 @@ import type {
 } from '@/api/types'
 import { toLocalDate } from '@/utils/format'
 import { useAuthStore } from '@/stores/auth'
+import { errMessage } from '@/utils/error'
 
 /** Dashboard 数据加载与状态管理 */
 export function useDashboard() {
@@ -61,8 +62,7 @@ export function useDashboard() {
       }
     } catch (e) {
       if (seq !== loadSeq) return // 已被更新的请求取代，过期失败不展示
-      const err = e as { message?: string }
-      error.value = err.message || i18n.global.t('common.loadFailed')
+      error.value = errMessage(e, i18n.global.t('common.loadFailed'))
       console.error('加载 Dashboard 失败:', e)
     } finally {
       if (seq === loadSeq) loading.value = false

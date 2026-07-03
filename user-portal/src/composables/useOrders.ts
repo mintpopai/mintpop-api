@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import i18n from '@/i18n'
 import { getMyOrders, cancelOrder } from '@/api/payment'
 import type { PaymentOrder } from '@/api/types'
+import { errMessage } from '@/utils/error'
 
 export function useOrders() {
   const rows = ref<PaymentOrder[]>([])
@@ -33,7 +34,7 @@ export function useOrders() {
       loaded.value = true
     } catch (e) {
       if (seq !== loadSeq) return // 已被更新的请求取代，过期失败不展示
-      error.value = (e as { message?: string }).message || i18n.global.t('common.loadFailed')
+      error.value = errMessage(e, i18n.global.t('common.loadFailed'))
     } finally {
       if (seq === loadSeq) loading.value = false
     }

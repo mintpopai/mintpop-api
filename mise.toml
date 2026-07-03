@@ -113,9 +113,9 @@ dir = "frontend"
 run = "pnpm exec eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts"
 
 [tasks.lint-user-portal]
-description = "user-portal ESLint 检查"
+description = "user-portal ESLint 检查（--max-warnings 0：warn 级规则也拦截，否则降档规则在 CI 零约束力）"
 dir = "user-portal"
-run = "pnpm exec eslint . --ext .vue,.ts,.tsx"
+run = "pnpm exec eslint . --ext .vue,.ts,.tsx --max-warnings 0"
 
 # ---------- 质量：test ----------
 [tasks.test-backend]
@@ -166,6 +166,20 @@ set -euo pipefail
 audit_json="$(mktemp)"
 trap 'rm -f "${audit_json}"' EXIT
 pnpm --dir frontend audit --prod --audit-level=high --json > "${audit_json}" || true
+python3 tools/check_pnpm_audit_exceptions.py \
+  --audit "${audit_json}" \
+  --exceptions .github/audit-exceptions.yml
+'''
+
+[tasks.audit-user-portal]
+description = "user-portal 依赖漏洞审计（pnpm audit + 按 .github/audit-exceptions.yml 过滤例外）"
+# 与 audit-frontend 同一套例外过滤脚本与例外清单
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+audit_json="$(mktemp)"
+trap 'rm -f "${audit_json}"' EXIT
+pnpm --dir user-portal audit --prod --audit-level=high --json > "${audit_json}" || true
 python3 tools/check_pnpm_audit_exceptions.py \
   --audit "${audit_json}" \
   --exceptions .github/audit-exceptions.yml

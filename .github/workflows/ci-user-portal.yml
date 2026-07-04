@@ -4,7 +4,18 @@ on:
   push:
     # 仅分支 push；排除 tag push（发版 tag 走 release workflow，这里无需重复跑）
     branches: ['**']
+    # 只在 user-portal / 工具链 / 门禁定义变化时触发，避免 backend 等无关改动重复跑
+    paths:
+      - 'user-portal/**'
+      - 'mise.toml'
+      - '.github/workflows/ci-user-portal.yml'
+      - '.github/workflows/quality-user-portal.yml'
   pull_request:
+    paths:
+      - 'user-portal/**'
+      - 'mise.toml'
+      - '.github/workflows/ci-user-portal.yml'
+      - '.github/workflows/quality-user-portal.yml'
 
 concurrency:
   group: ci-user-portal-${{ github.ref }}

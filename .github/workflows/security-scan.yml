@@ -4,7 +4,24 @@ on:
   push:
     # 仅分支 push；排除 tag push（发版 tag 走 release workflow，这里无需重复跑）
     branches: ['**']
+    # 只在依赖/扫描配置可能变化的路径上触发；每周一 cron 仍做全量兜底（漏洞库更新不依赖代码变更）
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'user-portal/**'
+      - 'mise.toml'
+      - '.github/audit-exceptions.yml'
+      - '.github/workflows/security-scan.yml'
+      - 'tools/check_pnpm_audit_exceptions.py'
   pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'user-portal/**'
+      - 'mise.toml'
+      - '.github/audit-exceptions.yml'
+      - '.github/workflows/security-scan.yml'
+      - 'tools/check_pnpm_audit_exceptions.py'
   schedule:
     - cron: '0 3 * * 1'
 

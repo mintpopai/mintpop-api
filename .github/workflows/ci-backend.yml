@@ -4,7 +4,22 @@ on:
   push:
     # 仅分支 push；排除 tag push（发版 tag 走 release workflow，这里无需重复跑）
     branches: ['**']
+    # 只在相关组件/工具链/门禁定义变化时触发，避免 user-portal 等无关改动全量跑 Go/前端质量
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'mise.toml'
+      - '.github/workflows/ci-backend.yml'
+      - '.github/workflows/quality-backend.yml'
+      - '.github/workflows/quality-frontend.yml'
   pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'mise.toml'
+      - '.github/workflows/ci-backend.yml'
+      - '.github/workflows/quality-backend.yml'
+      - '.github/workflows/quality-frontend.yml'
 
 concurrency:
   group: ci-backend-${{ github.ref }}

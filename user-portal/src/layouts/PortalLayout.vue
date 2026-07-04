@@ -183,6 +183,7 @@ onMounted(() => {
               @click="closeMenu"
             />
             <div
+              role="menu"
               class="absolute right-0 top-[54px] z-50 w-[268px] rounded-2xl border border-border bg-card p-2 shadow-menu"
             >
               <!-- 用户信息 -->
@@ -212,6 +213,7 @@ onMounted(() => {
 
               <button
                 type="button"
+                role="menuitem"
                 class="mi font-semibold text-accent"
                 @click="go('/recharge')"
               >
@@ -219,6 +221,7 @@ onMounted(() => {
               </button>
               <button
                 type="button"
+                role="menuitem"
                 class="mi"
                 @click="go('/orders')"
               >
@@ -226,6 +229,7 @@ onMounted(() => {
               </button>
               <button
                 type="button"
+                role="menuitem"
                 class="mi"
                 @click="go('/profile')"
               >
@@ -236,6 +240,7 @@ onMounted(() => {
 
               <button
                 type="button"
+                role="menuitem"
                 class="mi text-mtext"
                 @click="themeStore.toggle()"
               >
@@ -244,6 +249,7 @@ onMounted(() => {
               <button
                 v-if="!localeStore.locked"
                 type="button"
+                role="menuitem"
                 class="mi text-mtext"
                 @click="localeStore.toggle()"
               >
@@ -251,6 +257,7 @@ onMounted(() => {
               </button>
               <button
                 type="button"
+                role="menuitem"
                 class="mi text-neg"
                 @click="handleLogout"
               >

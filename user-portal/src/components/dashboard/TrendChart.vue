@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -15,16 +15,27 @@ import {
 } from 'chart.js'
 import type { TrendDataPoint } from '@/api/types'
 import { formatTokens } from '@/utils/format'
+import { useThemeStore } from '@/stores/theme'
 
 ChartJS.register(Filler, LineElement, PointElement, LinearScale, CategoryScale, Tooltip)
 
 const props = defineProps<{ trend: TrendDataPoint[] }>()
 
+const themeStore = useThemeStore()
+
 const accent = ref('#14C28A')
-onMounted(() => {
+
+function readAccentFromCss() {
   const c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
   if (c) accent.value = c
-})
+}
+
+onMounted(readAccentFromCss)
+
+// 明暗切换会让 --accent 的计算值随之改变（class .dark 的 CSS 变量重定义），
+// 监听主题 store 的模式变化并重读取，图表配色（chartData/chartOptions 依赖 accent）随之刷新；
+// watch 在 <script setup> 内同步创建，绑定组件生命周期，随组件卸载自动停止，无需手动清理
+watch(() => themeStore.mode, readAccentFromCss)
 
 // 把 #RRGGBB 转成带透明度的 rgba
 function withAlpha(hex: string, alpha: number): string {

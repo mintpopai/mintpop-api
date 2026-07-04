@@ -5,8 +5,8 @@ const props = withDefaults(
   defineProps<{
     open: boolean
     title?: string
-    /** 面板宽度：md=460px（默认）/ lg=640px */
-    size?: 'md' | 'lg'
+    /** 面板宽度：md=460px（默认）/ lg=640px / xl=720px */
+    size?: 'md' | 'lg' | 'xl'
   }>(),
   { title: undefined, size: 'md' }
 )
@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
         :aria-label="title"
         tabindex="-1"
         class="relative z-10 w-full rounded-xl4 bg-card p-7 shadow-menu outline-none"
-        :class="size === 'lg' ? 'max-w-[640px]' : 'max-w-[460px]'"
+        :class="size === 'xl' ? 'max-w-[720px]' : size === 'lg' ? 'max-w-[640px]' : 'max-w-[460px]'"
       >
         <h3
           v-if="title"

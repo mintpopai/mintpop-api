@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, h, watch, onMounted, onBeforeUnmount, type Component } from 'vue'
+import { ref, computed, h, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Modal from '@/components/ui/Modal.vue'
 import { useCopy } from '@/composables/useCopy'
+import { buildKeyFiles } from './keySnippets'
 
 interface Props {
   open: boolean
@@ -19,13 +21,6 @@ const { t } = useI18n()
 const { copiedKey: copiedIndex, copy } = useCopy(2000)
 const activeTab = ref<string>('unix')
 const activeClientTab = ref<string>('claude')
-
-// Escape 关闭
-function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && props.open) emit('close')
-}
-onMounted(() => window.addEventListener('keydown', onKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 // 切换平台时重置 tab
 const defaultClientTab = computed(() => {
@@ -103,21 +98,6 @@ interface TabConfig {
   id: string
   label: string
   icon: Component
-}
-
-interface FileConfig {
-  path: string
-  content: string
-  hint?: string
-  highlighted?: string
-}
-
-// opencode.json 里单个 provider 条目的形状：options 必有，npm/name/models 按平台按需追加
-interface OpenCodeProvider {
-  options: { baseURL: string; apiKey: string }
-  npm?: string
-  name?: string
-  models?: Record<string, unknown>
 }
 
 const clientTabs = computed((): TabConfig[] => {
@@ -212,323 +192,16 @@ const platformNote = computed(() => {
 
 const showPlatformNote = computed(() => activeClientTab.value !== 'opencode')
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-
-const wrapToken = (className: string, value: string) => `<span class="${className}">${escapeHtml(value)}</span>`
-
-const keyword = (value: string) => wrapToken('text-emerald-300', value)
-const variable = (value: string) => wrapToken('text-sky-200', value)
-const operator = (value: string) => wrapToken('text-slate-400', value)
-const string = (value: string) => wrapToken('text-amber-200', value)
-const comment = (value: string) => wrapToken('text-slate-500', value)
-
-// 根据平台与当前 tab 生成配置文件
-const currentFiles = computed((): FileConfig[] => {
-  const baseUrl = props.baseUrl || window.location.origin
-  const apiKey = props.apiKey
-  const baseRoot = baseUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '')
-  const ensureV1 = (value: string) => {
-    const trimmed = value.replace(/\/+$/, '')
-    return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`
-  }
-  const apiBase = ensureV1(baseRoot)
-  const antigravityBase = ensureV1(`${baseRoot}/antigravity`)
-  const antigravityGeminiBase = (() => {
-    const trimmed = `${baseRoot}/antigravity`.replace(/\/+$/, '')
-    return trimmed.endsWith('/v1beta') ? trimmed : `${trimmed}/v1beta`
-  })()
-  const geminiBase = (() => {
-    const trimmed = baseRoot.replace(/\/+$/, '')
-    return trimmed.endsWith('/v1beta') ? trimmed : `${trimmed}/v1beta`
-  })()
-
-  if (activeClientTab.value === 'opencode') {
-    switch (props.platform) {
-      case 'anthropic':
-        return [generateOpenCodeConfig('anthropic', apiBase, apiKey)]
-      case 'openai':
-        return [generateOpenCodeConfig('openai', apiBase, apiKey)]
-      case 'gemini':
-        return [generateOpenCodeConfig('gemini', geminiBase, apiKey)]
-      case 'antigravity':
-        return [
-          generateOpenCodeConfig('antigravity-claude', antigravityBase, apiKey, 'opencode.json (Claude)'),
-          generateOpenCodeConfig('antigravity-gemini', antigravityGeminiBase, apiKey, 'opencode.json (Gemini)')
-        ]
-      default:
-        return [generateOpenCodeConfig('openai', apiBase, apiKey)]
-    }
-  }
-
-  switch (props.platform) {
-    case 'openai':
-      if (activeClientTab.value === 'claude') {
-        return generateAnthropicFiles(baseUrl, apiKey)
-      }
-      if (activeClientTab.value === 'codex-ws') {
-        return generateOpenAIWsFiles(baseUrl, apiKey)
-      }
-      return generateOpenAIFiles(baseUrl, apiKey)
-    case 'gemini':
-      return [generateGeminiCliContent(baseUrl, apiKey)]
-    case 'antigravity':
-      if (activeClientTab.value === 'gemini') {
-        return [generateGeminiCliContent(`${baseUrl}/antigravity`, apiKey)]
-      }
-      return generateAnthropicFiles(`${baseUrl}/antigravity`, apiKey)
-    default:
-      return generateAnthropicFiles(baseUrl, apiKey)
-  }
-})
-
-function generateAnthropicFiles(baseUrl: string, apiKey: string): FileConfig[] {
-  let path: string
-  let content: string
-
-  switch (activeTab.value) {
-    case 'unix':
-      path = 'Terminal'
-      content = `export ANTHROPIC_BASE_URL="${baseUrl}"
-export ANTHROPIC_AUTH_TOKEN="${apiKey}"
-export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-export CLAUDE_CODE_ATTRIBUTION_HEADER=0`
-      break
-    case 'cmd':
-      path = 'Command Prompt'
-      content = `set ANTHROPIC_BASE_URL=${baseUrl}
-set ANTHROPIC_AUTH_TOKEN=${apiKey}
-set CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-set CLAUDE_CODE_ATTRIBUTION_HEADER=0`
-      break
-    case 'powershell':
-      path = 'PowerShell'
-      content = `$env:ANTHROPIC_BASE_URL="${baseUrl}"
-$env:ANTHROPIC_AUTH_TOKEN="${apiKey}"
-$env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-$env:CLAUDE_CODE_ATTRIBUTION_HEADER=0`
-      break
-    default:
-      path = 'Terminal'
-      content = ''
-  }
-
-  const vscodeSettingsPath = activeTab.value === 'unix' ? '~/.claude/settings.json' : '%userprofile%\\.claude\\settings.json'
-
-  const vscodeContent = `{
-  "env": {
-    "ANTHROPIC_BASE_URL": "${baseUrl}",
-    "ANTHROPIC_AUTH_TOKEN": "${apiKey}",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0"
-  }
-}`
-
-  return [
-    { path, content },
-    { path: vscodeSettingsPath, content: vscodeContent, hint: 'VSCode Claude Code' }
-  ]
-}
-
-function generateGeminiCliContent(baseUrl: string, apiKey: string): FileConfig {
-  const model = 'gemini-2.0-flash'
-  const modelComment = t('keys.useKeyModal.gemini.modelComment')
-  let path: string
-  let content: string
-  let highlighted: string
-
-  switch (activeTab.value) {
-    case 'unix':
-      path = 'Terminal'
-      content = `export GOOGLE_GEMINI_BASE_URL="${baseUrl}"
-export GEMINI_API_KEY="${apiKey}"
-export GEMINI_MODEL="${model}"  # ${modelComment}`
-      highlighted = `${keyword('export')} ${variable('GOOGLE_GEMINI_BASE_URL')}${operator('=')}${string(`"${baseUrl}"`)}
-${keyword('export')} ${variable('GEMINI_API_KEY')}${operator('=')}${string(`"${apiKey}"`)}
-${keyword('export')} ${variable('GEMINI_MODEL')}${operator('=')}${string(`"${model}"`)}  ${comment(`# ${modelComment}`)}`
-      break
-    case 'cmd':
-      path = 'Command Prompt'
-      content = `set GOOGLE_GEMINI_BASE_URL=${baseUrl}
-set GEMINI_API_KEY=${apiKey}
-set GEMINI_MODEL=${model}`
-      highlighted = `${keyword('set')} ${variable('GOOGLE_GEMINI_BASE_URL')}${operator('=')}${string(baseUrl)}
-${keyword('set')} ${variable('GEMINI_API_KEY')}${operator('=')}${string(apiKey)}
-${keyword('set')} ${variable('GEMINI_MODEL')}${operator('=')}${string(model)}
-${comment(`REM ${modelComment}`)}`
-      break
-    case 'powershell':
-      path = 'PowerShell'
-      content = `$env:GOOGLE_GEMINI_BASE_URL="${baseUrl}"
-$env:GEMINI_API_KEY="${apiKey}"
-$env:GEMINI_MODEL="${model}"  # ${modelComment}`
-      highlighted = `${keyword('$env:')}${variable('GOOGLE_GEMINI_BASE_URL')}${operator('=')}${string(`"${baseUrl}"`)}
-${keyword('$env:')}${variable('GEMINI_API_KEY')}${operator('=')}${string(`"${apiKey}"`)}
-${keyword('$env:')}${variable('GEMINI_MODEL')}${operator('=')}${string(`"${model}"`)}  ${comment(`# ${modelComment}`)}`
-      break
-    default:
-      path = 'Terminal'
-      content = ''
-      highlighted = ''
-  }
-
-  return { path, content, highlighted }
-}
-
-function generateOpenAIFiles(baseUrl: string, apiKey: string): FileConfig[] {
-  const isWindows = activeTab.value === 'windows'
-  const configDir = isWindows ? '%userprofile%\\.codex' : '~/.codex'
-
-  const configContent = `model_provider = "OpenAI"
-model = "gpt-5.5"
-review_model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
-disable_response_storage = true
-network_access = "enabled"
-windows_wsl_setup_acknowledged = true
-
-[model_providers.OpenAI]
-name = "OpenAI"
-base_url = "${baseUrl}"
-wire_api = "responses"
-requires_openai_auth = true
-
-[features]
-goals = true`
-
-  const authContent = `{
-  "OPENAI_API_KEY": "${apiKey}"
-}`
-
-  return [
-    { path: `${configDir}/config.toml`, content: configContent, hint: t('keys.useKeyModal.openai.configTomlHint') },
-    { path: `${configDir}/auth.json`, content: authContent }
-  ]
-}
-
-function generateOpenAIWsFiles(baseUrl: string, apiKey: string): FileConfig[] {
-  const isWindows = activeTab.value === 'windows'
-  const configDir = isWindows ? '%userprofile%\\.codex' : '~/.codex'
-
-  const configContent = `model_provider = "OpenAI"
-model = "gpt-5.5"
-review_model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
-disable_response_storage = true
-network_access = "enabled"
-windows_wsl_setup_acknowledged = true
-
-[model_providers.OpenAI]
-name = "OpenAI"
-base_url = "${baseUrl}"
-wire_api = "responses"
-supports_websockets = true
-requires_openai_auth = true
-
-[features]
-responses_websockets_v2 = true
-goals = true`
-
-  const authContent = `{
-  "OPENAI_API_KEY": "${apiKey}"
-}`
-
-  return [
-    { path: `${configDir}/config.toml`, content: configContent, hint: t('keys.useKeyModal.openai.configTomlHint') },
-    { path: `${configDir}/auth.json`, content: authContent }
-  ]
-}
-
-function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: string, pathLabel?: string): FileConfig {
-  const provider: Record<string, OpenCodeProvider> = {
-    [platform]: {
-      options: {
-        baseURL: baseUrl,
-        apiKey
-      }
-    }
-  }
-  const openaiModels = {
-    'gpt-5.2': { name: 'GPT-5.2', limit: { context: 400000, output: 128000 }, options: { store: false }, variants: { low: {}, medium: {}, high: {}, xhigh: {} } },
-    'gpt-5.5': { name: 'GPT-5.5', limit: { context: 1050000, output: 128000 }, options: { store: false }, variants: { low: {}, medium: {}, high: {}, xhigh: {} } },
-    'gpt-5.4': { name: 'GPT-5.4', limit: { context: 1050000, output: 128000 }, options: { store: false }, variants: { low: {}, medium: {}, high: {}, xhigh: {} } },
-    'gpt-5.4-mini': { name: 'GPT-5.4 Mini', limit: { context: 400000, output: 128000 }, options: { store: false }, variants: { low: {}, medium: {}, high: {}, xhigh: {} } },
-    'gpt-5.3-codex-spark': { name: 'GPT-5.3 Codex Spark', limit: { context: 128000, output: 32000 }, options: { store: false }, variants: { low: {}, medium: {}, high: {}, xhigh: {} } },
-    'gpt-5.3-codex': { name: 'GPT-5.3 Codex', limit: { context: 400000, output: 128000 }, options: { store: false }, variants: { low: {}, medium: {}, high: {}, xhigh: {} } },
-    'codex-mini-latest': { name: 'Codex Mini', limit: { context: 200000, output: 100000 }, options: { store: false }, variants: { low: {}, medium: {}, high: {} } }
-  }
-  const geminiModels = {
-    'gemini-2.0-flash': { name: 'Gemini 2.0 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] } },
-    'gemini-2.5-flash': { name: 'Gemini 2.5 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] } },
-    'gemini-2.5-pro': { name: 'Gemini 2.5 Pro', limit: { context: 2097152, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-3.5-flash': { name: 'Gemini 3.5 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] } },
-    'gemini-3-flash-preview': { name: 'Gemini 3 Flash Preview', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] } },
-    'gemini-3-pro-preview': { name: 'Gemini 3 Pro Preview', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-3.1-pro-preview': { name: 'Gemini 3.1 Pro Preview', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } }
-  }
-
-  const antigravityGeminiModels = {
-    'gemini-2.5-flash': { name: 'Gemini 2.5 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'disable' } } },
-    'gemini-2.5-flash-lite': { name: 'Gemini 2.5 Flash Lite', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-2.5-flash-thinking': { name: 'Gemini 2.5 Flash (Thinking)', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-3-flash': { name: 'Gemini 3 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-3.1-pro-low': { name: 'Gemini 3.1 Pro Low', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-3.1-pro-high': { name: 'Gemini 3.1 Pro High', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-2.5-flash-image': { name: 'Gemini 2.5 Flash Image', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image'], output: ['image'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'gemini-3.1-flash-image': { name: 'Gemini 3.1 Flash Image', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image'], output: ['image'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } }
-  }
-  const claudeModels = {
-    'claude-fable-5': { name: 'Claude Fable 5', limit: { context: 1048576, output: 128000 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { type: 'adaptive' } } },
-    'claude-opus-4-6-thinking': { name: 'Claude 4.6 Opus (Thinking)', limit: { context: 200000, output: 128000 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
-    'claude-sonnet-4-6': { name: 'Claude 4.6 Sonnet', limit: { context: 200000, output: 64000 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } }
-  }
-
-  if (platform === 'gemini') {
-    provider[platform].npm = '@ai-sdk/google'
-    provider[platform].models = geminiModels
-  } else if (platform === 'anthropic') {
-    provider[platform].npm = '@ai-sdk/anthropic'
-  } else if (platform === 'antigravity-claude') {
-    provider[platform].npm = '@ai-sdk/anthropic'
-    provider[platform].name = 'Antigravity (Claude)'
-    provider[platform].models = claudeModels
-  } else if (platform === 'antigravity-gemini') {
-    provider[platform].npm = '@ai-sdk/google'
-    provider[platform].name = 'Antigravity (Gemini)'
-    provider[platform].models = antigravityGeminiModels
-  } else if (platform === 'openai') {
-    provider[platform].models = openaiModels
-  }
-
-  const agent =
-    platform === 'openai'
-      ? {
-          build: { options: { store: false } },
-          plan: { options: { store: false } }
-        }
-      : undefined
-
-  const content = JSON.stringify(
-    {
-      provider,
-      ...(agent ? { agent } : {}),
-      $schema: 'https://opencode.ai/config.json'
-    },
-    null,
-    2
-  )
-
-  return {
-    path: pathLabel ?? 'opencode.json',
-    content,
-    hint: t('keys.useKeyModal.opencode.hint')
-  }
-}
+// 配置文件内容生成全部收口在 keySnippets.ts（含 opencode 模型清单等高频变更数据）
+const currentFiles = computed(() =>
+  buildKeyFiles({
+    platform: props.platform,
+    clientTab: activeClientTab.value,
+    shellTab: activeTab.value,
+    baseUrl: props.baseUrl,
+    apiKey: props.apiKey
+  })
+)
 
 function copyContent(content: string, index: number) {
   copy(content, index)
@@ -536,29 +209,196 @@ function copyContent(content: string, index: number) {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  <Modal
+    :open="open"
+    :title="$t('keys.useKeyModal.title')"
+    size="xl"
+    @close="emit('close')"
   >
-    <div
-      class="absolute inset-0 bg-black/40"
-      @click="emit('close')"
-    />
-    <div class="relative z-10 flex max-h-[88vh] w-full max-w-[720px] flex-col rounded-xl4 bg-card shadow-menu">
-      <!-- 标题 -->
-      <h3 class="border-b border-track px-7 pb-4 pt-6 font-serif text-xl font-medium text-text">
-        {{ $t('keys.useKeyModal.title') }}
-      </h3>
+    <!-- 正文（可滚动；负边距让上下分隔线贯穿面板全宽） -->
+    <div class="-mx-7 max-h-[62vh] space-y-4 overflow-y-auto border-y border-track px-7 py-5">
+      <!-- 未分配分组提示 -->
+      <div
+        v-if="!platform"
+        class="flex items-start gap-3 rounded-xl2 border border-[#F59E0B]/40 bg-[#F59E0B]/[0.07] p-4"
+      >
+        <svg
+          class="mt-0.5 h-5 w-5 flex-shrink-0 text-[#F59E0B]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+          />
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-[#C77800]">
+            {{ $t('keys.useKeyModal.noGroupTitle') }}
+          </p>
+          <p class="mt-1 text-sm text-[#C77800]/85">
+            {{ $t('keys.useKeyModal.noGroupDescription') }}
+          </p>
+        </div>
+      </div>
 
-      <!-- 正文（可滚动） -->
-      <div class="flex-1 space-y-4 overflow-y-auto px-7 py-5">
-        <!-- 未分配分组提示 -->
+      <!-- 平台相关内容 -->
+      <template v-else>
+        <!-- 描述 -->
+        <p class="text-sm text-text2">
+          {{ platformDescription }}
+        </p>
+
+        <!-- 客户端 Tab -->
         <div
-          v-if="!platform"
-          class="flex items-start gap-3 rounded-xl2 border border-[#F59E0B]/40 bg-[#F59E0B]/[0.07] p-4"
+          v-if="clientTabs.length"
+          class="border-b border-track"
+        >
+          <nav
+            class="-mb-px flex space-x-6"
+            aria-label="Client"
+          >
+            <button
+              v-for="tab in clientTabs"
+              :key="tab.id"
+              :class="[
+                'whitespace-nowrap border-b-2 px-1 py-2.5 text-sm font-medium transition-colors',
+                activeClientTab === tab.id
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-text3 hover:border-border2 hover:text-text'
+              ]"
+              @click="activeClientTab = tab.id"
+            >
+              <span class="flex items-center gap-2">
+                <component :is="tab.icon" />
+                {{ tab.label }}
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- 系统 / Shell Tab -->
+        <div
+          v-if="showShellTabs"
+          class="border-b border-track"
+        >
+          <nav
+            class="-mb-px flex space-x-4"
+            aria-label="Tabs"
+          >
+            <button
+              v-for="tab in currentTabs"
+              :key="tab.id"
+              :class="[
+                'whitespace-nowrap border-b-2 px-1 py-2.5 text-sm font-medium transition-colors',
+                activeTab === tab.id
+                  ? 'border-accent text-accent'
+                  : 'border-transparent text-text3 hover:border-border2 hover:text-text'
+              ]"
+              @click="activeTab = tab.id"
+            >
+              <span class="flex items-center gap-2">
+                <component :is="tab.icon" />
+                {{ tab.label }}
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- 代码块（多文件堆叠） -->
+        <div class="space-y-4">
+          <div
+            v-for="(file, index) in currentFiles"
+            :key="index"
+            class="relative"
+          >
+            <p
+              v-if="file.hint"
+              class="mb-1.5 flex items-center gap-1 text-xs text-[#C77800]"
+            >
+              <svg
+                class="h-3.5 w-3.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                stroke-width="1.8"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                />
+              </svg>
+              {{ file.hint }}
+            </p>
+            <div class="overflow-hidden rounded-xl2 bg-gray-900">
+              <!-- 代码头部 -->
+              <div class="flex items-center justify-between border-b border-gray-700 bg-gray-800 px-4 py-2">
+                <span class="font-mono text-xs text-gray-400">{{ file.path }}</span>
+                <button
+                  class="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
+                  :class="
+                    copiedIndex === index
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                  "
+                  @click="copyContent(file.content, index)"
+                >
+                  <svg
+                    v-if="copiedIndex === index"
+                    class="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <svg
+                    v-else
+                    class="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
+                    />
+                  </svg>
+                  {{ copiedIndex === index ? $t('keys.useKeyModal.copied') : $t('keys.useKeyModal.copy') }}
+                </button>
+              </div>
+              <!-- 代码内容 -->
+              <!-- eslint-disable vue/no-v-html -- highlighted 由 keySnippets.ts 拼装，动态值均经 escapeHtml 转义，无注入面 -->
+              <pre class="overflow-x-auto p-4 font-mono text-sm text-gray-100"><code
+                v-if="file.highlighted"
+                v-html="file.highlighted"
+              /><code
+                v-else
+                v-text="file.content"
+              /></pre>
+              <!-- eslint-enable vue/no-v-html -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 使用提示 -->
+        <div
+          v-if="showPlatformNote"
+          class="flex items-start gap-3 rounded-xl2 border border-accent/30 bg-accent/[0.08] p-3"
         >
           <svg
-            class="mt-0.5 h-5 w-5 flex-shrink-0 text-[#F59E0B]"
+            class="mt-0.5 h-5 w-5 flex-shrink-0 text-accent"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -567,200 +407,23 @@ function copyContent(content: string, index: number) {
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
             />
           </svg>
-          <div>
-            <p class="text-sm font-medium text-[#C77800]">
-              {{ $t('keys.useKeyModal.noGroupTitle') }}
-            </p>
-            <p class="mt-1 text-sm text-[#C77800]/85">
-              {{ $t('keys.useKeyModal.noGroupDescription') }}
-            </p>
-          </div>
-        </div>
-
-        <!-- 平台相关内容 -->
-        <template v-else>
-          <!-- 描述 -->
           <p class="text-sm text-text2">
-            {{ platformDescription }}
+            {{ platformNote }}
           </p>
-
-          <!-- 客户端 Tab -->
-          <div
-            v-if="clientTabs.length"
-            class="border-b border-track"
-          >
-            <nav
-              class="-mb-px flex space-x-6"
-              aria-label="Client"
-            >
-              <button
-                v-for="tab in clientTabs"
-                :key="tab.id"
-                :class="[
-                  'whitespace-nowrap border-b-2 px-1 py-2.5 text-sm font-medium transition-colors',
-                  activeClientTab === tab.id
-                    ? 'border-accent text-accent'
-                    : 'border-transparent text-text3 hover:border-border2 hover:text-text'
-                ]"
-                @click="activeClientTab = tab.id"
-              >
-                <span class="flex items-center gap-2">
-                  <component :is="tab.icon" />
-                  {{ tab.label }}
-                </span>
-              </button>
-            </nav>
-          </div>
-
-          <!-- 系统 / Shell Tab -->
-          <div
-            v-if="showShellTabs"
-            class="border-b border-track"
-          >
-            <nav
-              class="-mb-px flex space-x-4"
-              aria-label="Tabs"
-            >
-              <button
-                v-for="tab in currentTabs"
-                :key="tab.id"
-                :class="[
-                  'whitespace-nowrap border-b-2 px-1 py-2.5 text-sm font-medium transition-colors',
-                  activeTab === tab.id
-                    ? 'border-accent text-accent'
-                    : 'border-transparent text-text3 hover:border-border2 hover:text-text'
-                ]"
-                @click="activeTab = tab.id"
-              >
-                <span class="flex items-center gap-2">
-                  <component :is="tab.icon" />
-                  {{ tab.label }}
-                </span>
-              </button>
-            </nav>
-          </div>
-
-          <!-- 代码块（多文件堆叠） -->
-          <div class="space-y-4">
-            <div
-              v-for="(file, index) in currentFiles"
-              :key="index"
-              class="relative"
-            >
-              <p
-                v-if="file.hint"
-                class="mb-1.5 flex items-center gap-1 text-xs text-[#C77800]"
-              >
-                <svg
-                  class="h-3.5 w-3.5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.8"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                  />
-                </svg>
-                {{ file.hint }}
-              </p>
-              <div class="overflow-hidden rounded-xl2 bg-gray-900">
-                <!-- 代码头部 -->
-                <div class="flex items-center justify-between border-b border-gray-700 bg-gray-800 px-4 py-2">
-                  <span class="font-mono text-xs text-gray-400">{{ file.path }}</span>
-                  <button
-                    class="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
-                    :class="
-                      copiedIndex === index
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
-                    "
-                    @click="copyContent(file.content, index)"
-                  >
-                    <svg
-                      v-if="copiedIndex === index"
-                      class="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      stroke-width="2"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <svg
-                      v-else
-                      class="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
-                      />
-                    </svg>
-                    {{ copiedIndex === index ? $t('keys.useKeyModal.copied') : $t('keys.useKeyModal.copy') }}
-                  </button>
-                </div>
-                <!-- 代码内容 -->
-                <!-- eslint-disable vue/no-v-html -- highlighted 由本组件代码拼装，动态值均经 escapeHtml 转义，无注入面 -->
-                <pre class="overflow-x-auto p-4 font-mono text-sm text-gray-100"><code
-                  v-if="file.highlighted"
-                  v-html="file.highlighted"
-                /><code
-                  v-else
-                  v-text="file.content"
-                /></pre>
-                <!-- eslint-enable vue/no-v-html -->
-              </div>
-            </div>
-          </div>
-
-          <!-- 使用提示 -->
-          <div
-            v-if="showPlatformNote"
-            class="flex items-start gap-3 rounded-xl2 border border-accent/30 bg-accent/[0.08] p-3"
-          >
-            <svg
-              class="mt-0.5 h-5 w-5 flex-shrink-0 text-accent"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-              />
-            </svg>
-            <p class="text-sm text-text2">
-              {{ platformNote }}
-            </p>
-          </div>
-        </template>
-      </div>
-
-      <!-- 底部 -->
-      <div class="flex justify-end border-t border-track px-7 pb-6 pt-4">
-        <button
-          class="rounded-full border border-border px-5 py-2 text-sm font-medium text-text2 transition-colors hover:border-border2 hover:text-text"
-          @click="emit('close')"
-        >
-          {{ $t('common.close') }}
-        </button>
-      </div>
+        </div>
+      </template>
     </div>
-  </div>
+
+    <template #footer>
+      <button
+        class="rounded-full border border-border px-5 py-2 text-sm font-medium text-text2 transition-colors hover:border-border2 hover:text-text"
+        @click="emit('close')"
+      >
+        {{ $t('common.close') }}
+      </button>
+    </template>
+  </Modal>
 </template>

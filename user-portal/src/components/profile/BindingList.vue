@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { User, PublicSettings } from '@/api/types'
 
 const props = defineProps<{
@@ -7,9 +9,43 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'bind', provider: string): void
-  (e: 'unbind', provider: string): void
+  bind: [provider: string]
+  unbind: [provider: string]
 }>()
+
+const { t } = useI18n()
+
+/** 一个可绑定的第三方渠道行；四个渠道结构同构，数据驱动渲染（新增渠道只需加一条配置） */
+interface ProviderRow {
+  key: string
+  name: string
+  desc: string
+  bound: boolean
+  /** 文本图标（LinuxDo/钉钉/OIDC 用单字符） */
+  iconChar?: string
+  /** 特殊 SVG 图标（目前仅微信） */
+  iconType?: 'wechat'
+}
+
+const providers = computed<ProviderRow[]>(() => {
+  const s = props.settings
+  const u = props.user
+  if (!s) return []
+  const rows: ProviderRow[] = []
+  if (s.linuxdo_oauth_enabled) {
+    rows.push({ key: 'linuxdo', name: 'LinuxDo', desc: t('profile.binding.desc.linuxdo'), bound: !!u.linuxdo_bound, iconChar: 'L' })
+  }
+  if (s.dingtalk_oauth_enabled) {
+    rows.push({ key: 'dingtalk', name: t('profile.binding.providers.dingtalk'), desc: t('profile.binding.desc.dingtalk'), bound: !!u.dingtalk_bound, iconChar: '钉' })
+  }
+  if (s.oidc_oauth_enabled) {
+    rows.push({ key: 'oidc', name: s.oidc_oauth_provider_name || 'OIDC', desc: t('profile.binding.desc.oidc'), bound: !!u.oidc_bound, iconChar: 'O' })
+  }
+  if (s.wechat_oauth_enabled) {
+    rows.push({ key: 'wechat', name: t('profile.binding.providers.wechat'), desc: t('profile.binding.desc.wechat'), bound: !!u.wechat_bound, iconType: 'wechat' })
+  }
+  return rows
+})
 </script>
 
 <template>
@@ -22,11 +58,10 @@ const emit = defineEmits<{
     </p>
 
     <div class="flex flex-col gap-[12px]">
-      <!-- 邮箱行：始终显示 -->
+      <!-- 邮箱行：始终显示、不可解绑，样式与渠道行略有差异，单独保留 -->
       <div
         class="flex items-center gap-[16px] rounded-[14px] border-[1.5px] border-border bg-hover px-[20px] py-[18px]"
       >
-        <!-- 图标 -->
         <div
           class="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[12px] bg-[rgba(20,194,138,0.12)] text-pos"
         >
@@ -48,7 +83,6 @@ const emit = defineEmits<{
             <path d="M3.5 7l8.5 6 8.5-6" />
           </svg>
         </div>
-        <!-- 文字 -->
         <div class="flex-1">
           <div class="mb-[3px] flex items-center gap-[9px]">
             <span class="text-[14px] font-semibold text-text">{{ $t('profile.binding.providers.email') }}</span>
@@ -64,158 +98,15 @@ const emit = defineEmits<{
         </div>
       </div>
 
-      <!-- LinuxDo -->
+      <!-- 第三方渠道行（数据驱动） -->
       <div
-        v-if="props.settings?.linuxdo_oauth_enabled"
+        v-for="p in providers"
+        :key="p.key"
         class="flex items-center gap-[16px] rounded-[14px] border-[1.5px] border-border px-[20px] py-[18px]"
       >
+        <!-- 图标 -->
         <div
-          class="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[12px] bg-muted text-[16px] font-semibold text-text3"
-        >
-          L
-        </div>
-        <div class="flex-1">
-          <div class="mb-[3px] flex items-center gap-[9px]">
-            <span class="text-[14px] font-semibold text-text">LinuxDo</span>
-            <span
-              v-if="props.user.linuxdo_bound"
-              class="rounded-[6px] bg-[rgba(20,194,138,0.12)] px-[8px] py-[2px] text-[11px] font-semibold text-pos"
-            >
-              {{ $t('profile.binding.bound') }}
-            </span>
-            <span
-              v-else
-              class="rounded-[6px] bg-track px-[8px] py-[2px] text-[11px] font-semibold text-subtle"
-            >
-              {{ $t('profile.binding.unbound') }}
-            </span>
-          </div>
-          <div class="text-[13px] text-subtle">
-            {{ $t('profile.binding.desc.linuxdo') }}
-          </div>
-        </div>
-        <button
-          v-if="props.user.linuxdo_bound"
-          class="cursor-pointer rounded-[9px] border-[1.5px] border-border2 bg-card px-[18px] py-[9px] text-[13px] font-medium text-text2 hover:text-neg"
-          type="button"
-          @click="emit('unbind', 'linuxdo')"
-        >
-          {{ $t('profile.binding.unbind') }}
-        </button>
-        <button
-          v-else
-          class="cursor-pointer rounded-[9px] border-[1.5px] border-[rgba(20,194,138,0.35)] bg-[rgba(20,194,138,0.1)] px-[18px] py-[9px] text-[13px] font-semibold text-pos hover:bg-[rgba(20,194,138,0.18)]"
-          type="button"
-          @click="emit('bind', 'linuxdo')"
-        >
-          {{ $t('profile.binding.bind') }}
-        </button>
-      </div>
-
-      <!-- 钉钉 -->
-      <div
-        v-if="props.settings?.dingtalk_oauth_enabled"
-        class="flex items-center gap-[16px] rounded-[14px] border-[1.5px] border-border px-[20px] py-[18px]"
-      >
-        <div
-          class="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[12px] bg-muted text-[16px] font-semibold text-text3"
-        >
-          钉
-        </div>
-        <div class="flex-1">
-          <div class="mb-[3px] flex items-center gap-[9px]">
-            <span class="text-[14px] font-semibold text-text">{{ $t('profile.binding.providers.dingtalk') }}</span>
-            <span
-              v-if="props.user.dingtalk_bound"
-              class="rounded-[6px] bg-[rgba(20,194,138,0.12)] px-[8px] py-[2px] text-[11px] font-semibold text-pos"
-            >
-              {{ $t('profile.binding.bound') }}
-            </span>
-            <span
-              v-else
-              class="rounded-[6px] bg-track px-[8px] py-[2px] text-[11px] font-semibold text-subtle"
-            >
-              {{ $t('profile.binding.unbound') }}
-            </span>
-          </div>
-          <div class="text-[13px] text-subtle">
-            {{ $t('profile.binding.desc.dingtalk') }}
-          </div>
-        </div>
-        <button
-          v-if="props.user.dingtalk_bound"
-          class="cursor-pointer rounded-[9px] border-[1.5px] border-border2 bg-card px-[18px] py-[9px] text-[13px] font-medium text-text2 hover:text-neg"
-          type="button"
-          @click="emit('unbind', 'dingtalk')"
-        >
-          {{ $t('profile.binding.unbind') }}
-        </button>
-        <button
-          v-else
-          class="cursor-pointer rounded-[9px] border-[1.5px] border-[rgba(20,194,138,0.35)] bg-[rgba(20,194,138,0.1)] px-[18px] py-[9px] text-[13px] font-semibold text-pos hover:bg-[rgba(20,194,138,0.18)]"
-          type="button"
-          @click="emit('bind', 'dingtalk')"
-        >
-          {{ $t('profile.binding.bind') }}
-        </button>
-      </div>
-
-      <!-- OIDC -->
-      <div
-        v-if="props.settings?.oidc_oauth_enabled"
-        class="flex items-center gap-[16px] rounded-[14px] border-[1.5px] border-border px-[20px] py-[18px]"
-      >
-        <div
-          class="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[12px] bg-muted text-[16px] font-semibold text-text3"
-        >
-          O
-        </div>
-        <div class="flex-1">
-          <div class="mb-[3px] flex items-center gap-[9px]">
-            <span class="text-[14px] font-semibold text-text">
-              {{ props.settings.oidc_oauth_provider_name || 'OIDC' }}
-            </span>
-            <span
-              v-if="props.user.oidc_bound"
-              class="rounded-[6px] bg-[rgba(20,194,138,0.12)] px-[8px] py-[2px] text-[11px] font-semibold text-pos"
-            >
-              {{ $t('profile.binding.bound') }}
-            </span>
-            <span
-              v-else
-              class="rounded-[6px] bg-track px-[8px] py-[2px] text-[11px] font-semibold text-subtle"
-            >
-              {{ $t('profile.binding.unbound') }}
-            </span>
-          </div>
-          <div class="text-[13px] text-subtle">
-            {{ $t('profile.binding.desc.oidc') }}
-          </div>
-        </div>
-        <button
-          v-if="props.user.oidc_bound"
-          class="cursor-pointer rounded-[9px] border-[1.5px] border-border2 bg-card px-[18px] py-[9px] text-[13px] font-medium text-text2 hover:text-neg"
-          type="button"
-          @click="emit('unbind', 'oidc')"
-        >
-          {{ $t('profile.binding.unbind') }}
-        </button>
-        <button
-          v-else
-          class="cursor-pointer rounded-[9px] border-[1.5px] border-[rgba(20,194,138,0.35)] bg-[rgba(20,194,138,0.1)] px-[18px] py-[9px] text-[13px] font-semibold text-pos hover:bg-[rgba(20,194,138,0.18)]"
-          type="button"
-          @click="emit('bind', 'oidc')"
-        >
-          {{ $t('profile.binding.bind') }}
-        </button>
-      </div>
-
-      <!-- 微信 -->
-      <div
-        v-if="props.settings?.wechat_oauth_enabled"
-        class="flex items-center gap-[16px] rounded-[14px] border-[1.5px] border-border px-[20px] py-[18px]"
-      >
-        <div
+          v-if="p.iconType === 'wechat'"
           class="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[12px] bg-[rgba(9,187,7,0.1)] text-[#09BB07]"
         >
           <svg
@@ -229,11 +120,19 @@ const emit = defineEmits<{
             />
           </svg>
         </div>
+        <div
+          v-else
+          class="flex h-[42px] w-[42px] flex-none items-center justify-center rounded-[12px] bg-muted text-[16px] font-semibold text-text3"
+        >
+          {{ p.iconChar }}
+        </div>
+
+        <!-- 文字 -->
         <div class="flex-1">
           <div class="mb-[3px] flex items-center gap-[9px]">
-            <span class="text-[14px] font-semibold text-text">{{ $t('profile.binding.providers.wechat') }}</span>
+            <span class="text-[14px] font-semibold text-text">{{ p.name }}</span>
             <span
-              v-if="props.user.wechat_bound"
+              v-if="p.bound"
               class="rounded-[6px] bg-[rgba(20,194,138,0.12)] px-[8px] py-[2px] text-[11px] font-semibold text-pos"
             >
               {{ $t('profile.binding.bound') }}
@@ -246,14 +145,16 @@ const emit = defineEmits<{
             </span>
           </div>
           <div class="text-[13px] text-subtle">
-            {{ $t('profile.binding.desc.wechat') }}
+            {{ p.desc }}
           </div>
         </div>
+
+        <!-- 操作 -->
         <button
-          v-if="props.user.wechat_bound"
+          v-if="p.bound"
           class="cursor-pointer rounded-[9px] border-[1.5px] border-border2 bg-card px-[18px] py-[9px] text-[13px] font-medium text-text2 hover:text-neg"
           type="button"
-          @click="emit('unbind', 'wechat')"
+          @click="emit('unbind', p.key)"
         >
           {{ $t('profile.binding.unbind') }}
         </button>
@@ -261,7 +162,7 @@ const emit = defineEmits<{
           v-else
           class="cursor-pointer rounded-[9px] border-[1.5px] border-[rgba(20,194,138,0.35)] bg-[rgba(20,194,138,0.1)] px-[18px] py-[9px] text-[13px] font-semibold text-pos hover:bg-[rgba(20,194,138,0.18)]"
           type="button"
-          @click="emit('bind', 'wechat')"
+          @click="emit('bind', p.key)"
         >
           {{ $t('profile.binding.bind') }}
         </button>

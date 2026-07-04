@@ -20,9 +20,8 @@ export function useProfile() {
     loading.value = true
     error.value = null
     try {
-      await authStore.fetchUser()
-      // fetchUser 失败不抛（内部吞错），故以 user 是否就位判定失败，供视图展示错误态
-      if (!authStore.user) {
+      // fetchUser 失败不抛而是返回 false，据此展示错误态（不再用 user 是否为 null 反推）
+      if (!(await authStore.fetchUser())) {
         error.value = t('common.loadFailed')
       }
     } finally {

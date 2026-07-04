@@ -13,7 +13,7 @@ import axios, {
   type AxiosResponse
 } from 'axios'
 import type { ApiResponse } from './types'
-import i18n from '@/i18n'
+import i18n, { LOCALE_STORAGE_KEY } from '@/i18n'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
@@ -37,7 +37,7 @@ const getTimezone = (): string => {
 
 const getLocale = (): string => {
   try {
-    return localStorage.getItem('locale') || navigator.language || 'zh-CN'
+    return localStorage.getItem(LOCALE_STORAGE_KEY) || navigator.language || 'zh-CN'
   } catch {
     return 'zh-CN'
   }
@@ -91,7 +91,9 @@ function clearAuthAndRedirect(): void {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(REFRESH_KEY)
   if (!window.location.pathname.startsWith('/login')) {
-    window.location.href = '/login'
+    // 带上当前地址作为 ?redirect=，登录成功后回到原页（与路由守卫的约定一致，LoginView 会消费该参数）
+    const target = window.location.pathname + window.location.search + window.location.hash
+    window.location.href = `/login?redirect=${encodeURIComponent(target)}`
   }
 }
 

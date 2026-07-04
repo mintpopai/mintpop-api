@@ -1,3 +1,5 @@
+import typography from '@tailwindcss/typography'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
@@ -28,7 +30,6 @@ export default {
         faint: 'var(--faint)'
       },
       fontFamily: {
-        display: ["'Fredoka'", 'sans-serif'],
         serif: ["'Newsreader'", 'serif'],
         sans: ["'Space Grotesk'", 'sans-serif']
       },
@@ -45,5 +46,5 @@ export default {
       }
     }
   },
-  plugins: [require('@tailwindcss/typography')]
+  plugins: [typography]
 }

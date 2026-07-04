@@ -14,6 +14,7 @@ export default {
   statusPaid: '支付成功',
   statusFailed: '支付失败',
   statusCancelled: '已取消',
+  statusRefunded: '已退款',
   errVerify: '查询失败',
   // 二维码区
   qrAlt: '支付二维码',

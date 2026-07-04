@@ -32,8 +32,8 @@ export default {
 
   // Cancel confirmation modal
   cancelTitle: 'Cancel Order',
-  cancelConfirmPrefix: 'Are you sure you want to cancel order',
-  cancelConfirmSuffix: '? This action cannot be undone.',
+  // {orderNo} 由模板以样式化插槽注入（<i18n-t>）
+  cancelConfirm: 'Are you sure you want to cancel order {orderNo}? This action cannot be undone.',
   cancelReconsider: 'Never mind',
   cancelling: 'Cancelling…',
   confirmCancel: 'Confirm Cancel',

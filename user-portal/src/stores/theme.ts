@@ -7,6 +7,15 @@ type Mode = 'light' | 'dark'
 export const useThemeStore = defineStore('theme', () => {
   const mode = ref<Mode>(readInitial())
 
+  // 用户未手动选过主题时跟随系统深浅色（声明前置，setMode 会写它）
+  let followSystem = (() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === null
+    } catch {
+      return false
+    }
+  })()
+
   function readInitial(): Mode {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
@@ -36,14 +45,7 @@ export const useThemeStore = defineStore('theme', () => {
     setMode(mode.value === 'dark' ? 'light' : 'dark')
   }
 
-  // 用户未手动选过主题时，跟随系统深浅色切换（store 与应用同生命周期，监听无需清理）
-  let followSystem = (() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY) === null
-    } catch {
-      return false
-    }
-  })()
+  // 跟随系统深浅色切换（store 与应用同生命周期，监听无需清理）
   try {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if (!followSystem) return

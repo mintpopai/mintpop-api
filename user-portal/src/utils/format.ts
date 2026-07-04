@@ -21,21 +21,21 @@ export function formatCost(n: number): string {
   return usd4.format(Number.isFinite(n) ? n : 0)
 }
 
-/** 千分位整数 */
-export function formatNumber(n: number): string {
+/** 千分位整数（入参可能来自 API 缺失字段，故容忍 null/undefined） */
+export function formatNumber(n: number | null | undefined): string {
   return (n ?? 0).toLocaleString()
 }
 
-/** Token 数缩写：K / M */
-export function formatTokens(n: number): string {
+/** Token 数缩写：K / M（入参可能来自 API 缺失字段，故容忍 null/undefined） */
+export function formatTokens(n: number | null | undefined): string {
   const v = n ?? 0
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
   if (v >= 1000) return `${(v / 1000).toFixed(1)}K`
   return String(v)
 }
 
-/** 时长：ms / s */
-export function formatDuration(ms: number): string {
+/** 时长：ms / s（入参可能来自 API 缺失字段，故容忍 null/undefined） */
+export function formatDuration(ms: number | null | undefined): string {
   const v = ms ?? 0
   return v >= 1000 ? `${(v / 1000).toFixed(2)}s` : `${v.toFixed(0)}ms`
 }
@@ -88,6 +88,14 @@ export function formatReasoningEffort(e: string | null | undefined): string {
   return map[e] ?? (e.charAt(0).toUpperCase() + e.slice(1))
 }
 
+/**
+ * 订单状态口径（唯一定义，各视图引用、不再各自手写集合）：
+ * - ORDER_PAID_STATUSES：「已支付」展示口径 —— PAID（已收款）与 COMPLETED（已完成）
+ * - ORDER_SETTLING_STATUSES：支付回流轮询的「成功」口径 —— 在已支付之上加 RECHARGING（已付款、到账中的瞬时态）
+ */
+export const ORDER_PAID_STATUSES: readonly string[] = ['PAID', 'COMPLETED']
+export const ORDER_SETTLING_STATUSES: readonly string[] = [...ORDER_PAID_STATUSES, 'RECHARGING']
+
 /** 订单状态 → 展示文案 + StatusBadge variant（文案随语言切换） */
 export function orderStatusMeta(s: string): { label: string; variant: string } {
   // key 为后端订单状态枚举取值（SCREAMING_SNAKE_CASE），value 为展示变体
@@ -126,15 +134,15 @@ export function formatRegMonth(s: string | null | undefined): string {
   return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(d)
 }
 
-const cny0 = new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const cny2 = new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 /** 人民币金额（2 位小数，无符号，调用方自行加 ¥） */
 export function formatCNY(n: number): string {
-  return cny0.format(Number.isFinite(n) ? n : 0)
+  return cny2.format(Number.isFinite(n) ? n : 0)
 }
 
-/** 缓存命中率 0-100 整数 */
-export function cacheHitRate(cacheRead: number, input: number): number {
-  return percent(cacheRead, (input ?? 0) + (cacheRead ?? 0))
+/** 缓存命中率 0-100 整数（入参可能来自 API 缺失字段，故容忍 null/undefined） */
+export function cacheHitRate(cacheRead: number | null | undefined, input: number | null | undefined): number {
+  return percent(cacheRead ?? 0, (input ?? 0) + (cacheRead ?? 0))
 }
 
 /** 计费类型：0=按量，1=订阅 */

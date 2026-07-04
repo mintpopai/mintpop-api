@@ -16,13 +16,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
   const balance = computed(() => user.value?.balance ?? 0)
 
-  /** 拉取用户资料（含余额）。失败时不抛，调用方按 isAuthenticated 兜底 */
-  async function fetchUser(): Promise<void> {
+  /**
+   * 拉取用户资料（含余额）。失败不抛、返回 false：
+   * - 需要展示错误态的调用方（如 useProfile.load）检查返回值；
+   * - 「操作成功后刷新资料」类调用可忽略返回值（刷新失败不该把成功操作误报成失败）。
+   */
+  async function fetchUser(): Promise<boolean> {
     loading.value = true
     try {
       user.value = await getProfile()
+      return true
     } catch (e) {
       console.warn('加载用户资料失败:', e)
+      return false
     } finally {
       loading.value = false
     }

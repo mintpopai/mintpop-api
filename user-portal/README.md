@@ -51,12 +51,13 @@ src/
                groups.ts binding.ts redeem.ts settings.ts types.ts
   stores/      auth.ts(含余额) theme.ts(深浅色) locale.ts(语言) settings.ts(公开设置)
   router/      index.ts(守卫：无 token 跳登录)
-  composables/ useDashboard useKeys useOrders useProfile useRecharge useToast useUsage
+  composables/ useCopy useDashboard useKeys useOrders useProfile useRecharge useToast useUsage
   i18n/        index.ts + locales/{zh-CN,en-US}/ 按命名空间分文件（两侧 key 有对齐守护测试）
   layouts/     PortalLayout.vue(顶栏+用户菜单+语言/主题切换)
   components/  common/ dashboard/ keys/ orders/ payment/ profile/ recharge/ ui/ usage/
   views/       Dashboard Keys Usage Orders Recharge Profile Docs Legal Pricing Login Register
   docs/        接入文档 md（{{占位符}} 渲染时注入，见 placeholders.ts）+ _manifest.ts
   views/legal/ 法务条款 md（协议/隐私/退款/联系，en 为权威版本）
-  utils/       format.ts csv.ts avatar.ts markdown.ts platform.ts
+  utils/       format.ts csv.ts avatar.ts markdown.ts platform.ts error.ts
+  config/      portal.ts(分发模式) pricing.ts(定价页数据，接入后端定价前的单一来源)
 ```

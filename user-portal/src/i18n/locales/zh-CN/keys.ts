@@ -45,8 +45,8 @@ export default {
   },
   delete: {
     confirmTitle: '确认删除',
-    confirmPrefix: '确认删除密钥 ',
-    confirmSuffix: '？此操作不可撤销。',
+    // {name} 由模板以样式化插槽注入（<i18n-t>）
+    confirm: '确认删除密钥 {name}？此操作不可撤销。',
     confirmBtn: '确认删除',
     deleting: '删除中…'
   },
@@ -68,6 +68,8 @@ export default {
   copied: '已复制！',
   useKeyModal: {
     title: '使用 API 密钥',
+    clientTabsAria: '客户端选择',
+    shellTabsAria: '系统 / Shell 选择',
     description: '将以下环境变量添加到您的终端配置文件或直接在终端中运行。',
     copy: '复制',
     copied: '已复制',

@@ -14,6 +14,7 @@ export default {
   statusPaid: 'Payment successful',
   statusFailed: 'Payment failed',
   statusCancelled: 'Cancelled',
+  statusRefunded: 'Refunded',
   errVerify: 'Query failed',
   // QR code area
   qrAlt: 'Payment QR code',

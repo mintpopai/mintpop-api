@@ -76,7 +76,9 @@ export function useUsage() {
   }
 
   async function fetchForExport(): Promise<UsageLog[]> {
-    return (await queryUsage(params(1000))).items
+    // 导出语义是「当前筛选条件下的前 1000 条」，与浏览页码无关：
+    // 必须强制 page:1，否则翻到第 2 页导出会带上 page=2（offset 1000），内容偏移甚至为空
+    return (await queryUsage({ ...params(1000), page: 1 })).items
   }
 
   return {

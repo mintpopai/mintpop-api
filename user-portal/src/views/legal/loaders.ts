@@ -12,6 +12,16 @@ export function legalKey(slug: string, locale: AppLocale): string {
   return `./content/${slug}.${locale}.md`
 }
 
+/** 是否存在某分节某语言的条款文件（守护测试用） */
+export function hasLegal(slug: string, locale: AppLocale): boolean {
+  return legalKey(slug, locale) in loaders
+}
+
+/** 全部条款文件的 glob key（守护测试用：反向校验文件都已登记进 manifest） */
+export function legalContentKeys(): string[] {
+  return Object.keys(loaders)
+}
+
 /**
  * 加载某分节条款原文。命中当前语言即返回；缺当前语言回退 en-US
  * （法律文本以英文版为权威）；两者都缺则抛错（调用方决定如何兜底）。

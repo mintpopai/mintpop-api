@@ -15,7 +15,6 @@ export default {
   emailLabel: 'Email',
   passwordLabel: 'Password',
   passwordPlaceholder: 'Enter your password',
-  rememberDevice: 'Remember this device',
   signingIn: 'Signing in…',
   signIn: 'Sign in',
   noAccount: "Don't have an account?",

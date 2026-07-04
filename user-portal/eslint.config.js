@@ -8,8 +8,9 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   // 让 `eslint .` 把 ts/vue 一并纳入（flat config 下 CLI 只认 files 声明过的扩展名）
   { files: ['**/*.{js,mjs,cjs,ts,mts,tsx,vue}'] },
-  // 与旧 ignorePatterns 对齐：构建产物与各类 config 文件不检查
-  { ignores: ['dist/**', 'node_modules/**', '*.config.js', '*.config.ts', 'vite.config.*'] },
+  // 只排除构建产物与 vue-tsc -b 的本地生成物（vite.config.js/.d.ts，已 gitignore）；
+  // 各类 config 源文件（vite.config.ts / tailwind / postcss / 本文件）纳入 lint 覆盖
+  { ignores: ['dist/**', 'node_modules/**', 'vite.config.js', 'vite.config.d.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/recommended'],

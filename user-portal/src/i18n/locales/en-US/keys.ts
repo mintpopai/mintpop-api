@@ -45,8 +45,8 @@ export default {
   },
   delete: {
     confirmTitle: 'Confirm Deletion',
-    confirmPrefix: 'Delete API key ',
-    confirmSuffix: '? This action cannot be undone.',
+    // {name} 由模板以样式化插槽注入（<i18n-t>）
+    confirm: 'Delete API key {name}? This action cannot be undone.',
     confirmBtn: 'Confirm Delete',
     deleting: 'Deleting…'
   },
@@ -68,6 +68,8 @@ export default {
   copied: 'Copied!',
   useKeyModal: {
     title: 'Use API Key',
+    clientTabsAria: 'Client',
+    shellTabsAria: 'OS / Shell',
     description:
       'Add the following environment variables to your terminal profile or run directly in terminal to configure API access.',
     copy: 'Copy',

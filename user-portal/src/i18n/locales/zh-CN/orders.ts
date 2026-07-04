@@ -32,8 +32,8 @@ export default {
 
   // 取消确认弹窗
   cancelTitle: '取消订单',
-  cancelConfirmPrefix: '确定要取消订单',
-  cancelConfirmSuffix: '吗？该操作无法撤销。',
+  // {orderNo} 由模板以样式化插槽注入（<i18n-t>）
+  cancelConfirm: '确定要取消订单 {orderNo} 吗？该操作无法撤销。',
   cancelReconsider: '再想想',
   cancelling: '取消中…',
   confirmCancel: '确认取消',

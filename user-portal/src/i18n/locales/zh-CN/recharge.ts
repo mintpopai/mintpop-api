@@ -10,6 +10,7 @@ export default {
   paySuccessTitle: '支付成功',
   rechargeSuccess: '充值成功！余额已更新。',
   subscribeSuccess: '订阅成功！套餐已生效。',
+  resumeUnknown: '未能确认到账，请稍后在「订单」页查看订单状态。',
   // —— 账户卡 ——
   rechargeAccount: '充值账户',
   currentBalance: '当前余额',
@@ -21,7 +22,7 @@ export default {
   // —— 订阅确认弹窗 ——
   confirmSubscribe: '确认订阅',
   planFallback: '套餐',
-  validityPrefix: '有效期：',
+  validityLine: '有效期：{days}{unit}',
   dayUnit: '天',
   // —— AmountPicker ——
   selectRechargeAmount: '选择充值金额',
@@ -44,10 +45,9 @@ export default {
   stripeSecured: '支付由 Stripe 加密保障',
   // —— PayMethodPicker ——
   paymentMethod: '支付方式',
-  poweredByPre: '由',
-  poweredBySuf: '安全处理',
-  securityNotePre: '微信支付与支付宝均通过',
-  securityNoteSuf: '安全处理，到账与额度一致。',
+  // {provider} 由模板以样式化插槽注入（<i18n-t>），语序由词条自身承载
+  poweredBy: '由 {provider} 安全处理',
+  securityNote: '微信支付与支付宝均通过 {provider} 安全处理，到账与额度一致。',
   methodWxpay: '微信支付',
   methodAlipay: '支付宝',
   methodStripe: 'Stripe',

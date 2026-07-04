@@ -10,6 +10,7 @@ export default {
   paySuccessTitle: 'Payment successful',
   rechargeSuccess: 'Recharge successful! Your balance has been updated.',
   subscribeSuccess: 'Subscription successful! Your plan is now active.',
+  resumeUnknown: 'Could not confirm the payment. Please check the order status on the Orders page later.',
   // —— Account card ——
   rechargeAccount: 'Recharge account',
   currentBalance: 'Current balance',
@@ -21,7 +22,7 @@ export default {
   // —— Subscription confirm modal ——
   confirmSubscribe: 'Confirm subscription',
   planFallback: 'Plan',
-  validityPrefix: 'Validity: ',
+  validityLine: 'Validity: {days}{unit}',
   dayUnit: ' days',
   // —— AmountPicker ——
   selectRechargeAmount: 'Select recharge amount',
@@ -44,10 +45,9 @@ export default {
   stripeSecured: 'Payments secured by Stripe',
   // —— PayMethodPicker ——
   paymentMethod: 'Payment method',
-  poweredByPre: 'Processed securely by',
-  poweredBySuf: '',
-  securityNotePre: 'WeChat Pay and Alipay are both processed securely by',
-  securityNoteSuf: '— credited at the same amount.',
+  // {provider} 由模板以样式化插槽注入（<i18n-t>），语序由词条自身承载
+  poweredBy: 'Processed securely by {provider}',
+  securityNote: 'WeChat Pay and Alipay are both processed securely by {provider} — credited at the same amount.',
   methodWxpay: 'WeChat Pay',
   methodAlipay: 'Alipay',
   methodStripe: 'Stripe',

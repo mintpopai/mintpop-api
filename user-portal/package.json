@@ -4,7 +4,6 @@
   "version": "0.1.10",
   "type": "module",
   "dependencies": {
-    "@fontsource/fredoka": "^5.2.10",
     "@fontsource/newsreader": "^5.2.10",
     "@fontsource/space-grotesk": "^5.2.10",
     "@stripe/stripe-js": "^9.0.1",

@@ -23,7 +23,8 @@ export const LOCALE_LABELS: Record<AppLocale, string> = {
 }
 
 export const DEFAULT_LOCALE: AppLocale = 'zh-CN'
-const STORAGE_KEY = 'locale'
+/** locale 持久化键的唯一定义：stores/locale.ts 持久化、api/client.ts 的 Accept-Language 均引用此常量 */
+export const LOCALE_STORAGE_KEY = 'locale'
 
 function isSupported(value: string): value is AppLocale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(value)
@@ -49,7 +50,7 @@ export const LOCALE_LOCKED: boolean = LOCKED_LOCALE !== null
 export function detectLocale(): AppLocale {
   if (LOCKED_LOCALE) return LOCKED_LOCALE
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStorage.getItem(LOCALE_STORAGE_KEY)
     if (saved && isSupported(saved)) return saved
     const nav = (navigator.language || '').toLowerCase()
     if (nav.startsWith('en')) return 'en-US'

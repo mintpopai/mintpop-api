@@ -15,7 +15,6 @@ export default {
   emailLabel: '邮箱',
   passwordLabel: '密码',
   passwordPlaceholder: '请输入密码',
-  rememberDevice: '记住此设备',
   signingIn: '登录中…',
   signIn: '登录',
   noAccount: '还没有账户？',

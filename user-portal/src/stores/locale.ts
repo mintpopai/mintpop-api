@@ -1,8 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import i18n, { SUPPORTED_LOCALES, LOCALE_LABELS, LOCALE_LOCKED, type AppLocale } from '@/i18n'
-
-const STORAGE_KEY = 'locale'
+import i18n, { SUPPORTED_LOCALES, LOCALE_LABELS, LOCALE_LOCKED, LOCALE_STORAGE_KEY, type AppLocale } from '@/i18n'
 
 /**
  * 语言状态：以 i18n 当前 locale 为初值，切换时同步到 vue-i18n、持久化到
@@ -21,7 +19,7 @@ export const useLocaleStore = defineStore('locale', () => {
     current.value = locale
     i18n.global.locale.value = locale
     try {
-      localStorage.setItem(STORAGE_KEY, locale)
+      localStorage.setItem(LOCALE_STORAGE_KEY, locale)
     } catch {
       // 忽略持久化失败
     }

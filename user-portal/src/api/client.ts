@@ -77,6 +77,9 @@ async function doRefresh(): Promise<string | null> {
       { withCredentials: true }
     )
     const body = resp.data as ApiResponse<{ access_token?: string; token?: string; refresh_token?: string }>
+    // 兜底分支：兼容「响应体未走统一包装」的历史契约，直接读裸 resp.data。
+    // 业务失败（code!==0）也会落到这里，但此时该分支读不到 access_token/token 字段，
+    // newToken 自然为 null，走下面的登出逻辑，不会误把失败响应当续期成功。
     const data = body?.code === 0 ? body.data : (resp.data as Record<string, string>)
     const newToken = data?.access_token || data?.token || null
     if (newToken) localStorage.setItem(TOKEN_KEY, newToken)

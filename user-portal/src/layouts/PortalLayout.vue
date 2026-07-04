@@ -165,6 +165,8 @@ onMounted(() => {
         <div class="relative">
           <button
             class="flex items-center gap-2.5 rounded-full border border-border bg-card py-[5px] pl-3.5 pr-1.5 shadow-pill"
+            aria-haspopup="menu"
+            :aria-expanded="menuOpen"
             @click="toggleMenu"
           >
             <span class="whitespace-nowrap text-[13px] font-medium text-mtext">{{ username }}</span>
@@ -208,38 +210,52 @@ onMounted(() => {
 
               <div class="mx-1.5 my-1 h-px bg-track" />
 
-              <a
+              <button
+                type="button"
                 class="mi font-semibold text-accent"
                 @click="go('/recharge')"
-              >{{ t('nav.recharge') }}<span class="text-accent">→</span></a>
-              <a
+              >
+                {{ t('nav.recharge') }}<span class="text-accent">→</span>
+              </button>
+              <button
+                type="button"
                 class="mi"
                 @click="go('/orders')"
-              >{{ t('nav.orders') }}<span>→</span></a>
-              <a
+              >
+                {{ t('nav.orders') }}<span>→</span>
+              </button>
+              <button
+                type="button"
                 class="mi"
                 @click="go('/profile')"
-              >{{ t('nav.profile') }}<span>→</span></a>
+              >
+                {{ t('nav.profile') }}<span>→</span>
+              </button>
 
               <div class="mx-1.5 my-1.5 h-px bg-track" />
 
-              <a
+              <button
+                type="button"
                 class="mi text-mtext"
                 @click="themeStore.toggle()"
               >
                 {{ isDark ? t('nav.lightMode') : t('nav.darkMode') }}<span>{{ isDark ? '☀' : '☾' }}</span>
-              </a>
-              <a
+              </button>
+              <button
                 v-if="!localeStore.locked"
+                type="button"
                 class="mi text-mtext"
                 @click="localeStore.toggle()"
               >
                 {{ t('nav.language') }}<span>{{ otherLocaleLabel }} ⇄</span>
-              </a>
-              <a
+              </button>
+              <button
+                type="button"
                 class="mi text-neg"
                 @click="handleLogout"
-              >{{ t('nav.logout') }}<span class="text-neg">↪</span></a>
+              >
+                {{ t('nav.logout') }}<span class="text-neg">↪</span>
+              </button>
             </div>
           </template>
         </div>
@@ -282,9 +298,13 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  width: 100%;
   padding: 10px 14px;
+  border: 0;
   border-radius: 9px;
-  font: 500 13px 'Space Grotesk';
+  background: none;
+  font: 500 13px 'Space Grotesk', sans-serif;
+  text-align: left;
   color: var(--mtext);
   cursor: pointer;
   text-decoration: none;

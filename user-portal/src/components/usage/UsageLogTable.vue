@@ -37,7 +37,7 @@ defineProps<{ rows: UsageLog[] }>()
       <div
         v-for="row in rows"
         :key="row.id"
-        class="grid items-center gap-[14px] border-b border-[#F4F2EB] px-[26px] py-[18px] transition-colors duration-[120ms] hover:bg-hover"
+        class="grid items-center gap-[14px] border-b border-rowline px-[26px] py-[18px] transition-colors duration-[120ms] hover:bg-hover"
         style="grid-template-columns: 0.7fr 1.3fr 0.8fr 1fr 0.7fr 0.8fr 1fr 0.9fr 0.7fr 0.7fr 1.1fr"
       >
         <!-- 密钥 -->

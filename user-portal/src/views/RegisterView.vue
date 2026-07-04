@@ -265,7 +265,10 @@ async function onSubmit() {
 
         <form @submit.prevent="onSubmit">
           <div class="mb-4">
-            <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.usernameLabel') }}</label>
+            <label
+              for="reg-username"
+              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+            >{{ t('auth.usernameLabel') }}</label>
             <div class="relative">
               <svg
                 class="ico"
@@ -281,6 +284,7 @@ async function onSubmit() {
                 r="4"
               /><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /></svg>
               <input
+                id="reg-username"
                 v-model="username"
                 type="text"
                 class="fld"
@@ -290,7 +294,10 @@ async function onSubmit() {
           </div>
 
           <div class="mb-4">
-            <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.emailLabel') }}</label>
+            <label
+              for="reg-email"
+              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+            >{{ t('auth.emailLabel') }}</label>
             <div class="relative">
               <svg
                 class="ico"
@@ -308,6 +315,7 @@ async function onSubmit() {
                 rx="2.5"
               /><path d="M3.5 7l8.5 6 8.5-6" /></svg>
               <input
+                id="reg-email"
                 v-model="email"
                 type="email"
                 class="fld"
@@ -321,9 +329,13 @@ async function onSubmit() {
             v-if="settings?.email_verify_enabled"
             class="mb-4"
           >
-            <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.verifyCodeLabel') }}</label>
+            <label
+              for="reg-verify-code"
+              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+            >{{ t('auth.verifyCodeLabel') }}</label>
             <div class="flex gap-2">
               <input
+                id="reg-verify-code"
                 v-model="verifyCode"
                 type="text"
                 class="fld !pl-4"
@@ -342,7 +354,10 @@ async function onSubmit() {
 
           <div class="mb-4 grid grid-cols-2 gap-3">
             <div>
-              <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.passwordLabel') }}</label>
+              <label
+                for="reg-password"
+                class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+              >{{ t('auth.passwordLabel') }}</label>
               <div class="relative">
                 <svg
                   class="ico"
@@ -360,6 +375,7 @@ async function onSubmit() {
                   rx="2"
                 /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
                 <input
+                  id="reg-password"
                   v-model="password"
                   type="password"
                   class="fld"
@@ -368,7 +384,10 @@ async function onSubmit() {
               </div>
             </div>
             <div>
-              <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.confirmPasswordLabel') }}</label>
+              <label
+                for="reg-confirm-password"
+                class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+              >{{ t('auth.confirmPasswordLabel') }}</label>
               <div class="relative">
                 <svg
                   class="ico"
@@ -380,6 +399,7 @@ async function onSubmit() {
                   stroke-width="1.7"
                 ><path d="M5 13l4 4 10-10" /></svg>
                 <input
+                  id="reg-confirm-password"
                   v-model="confirm"
                   type="password"
                   class="fld"
@@ -393,7 +413,10 @@ async function onSubmit() {
             v-if="settings?.invitation_code_enabled === true"
             class="mb-[22px]"
           >
-            <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.invitationLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
+            <label
+              for="reg-invitation"
+              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+            >{{ t('auth.invitationLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
             <div class="relative">
               <svg
                 class="ico"
@@ -411,6 +434,7 @@ async function onSubmit() {
                 rx="2"
               /><path d="M3 12h18M12 8V5a2 2 0 0 1 4 0M12 8V5a2 2 0 0 0-4 0" /></svg>
               <input
+                id="reg-invitation"
                 v-model="invitation"
                 type="text"
                 class="fld"
@@ -424,7 +448,10 @@ async function onSubmit() {
             v-if="settings?.promo_code_enabled"
             class="mb-[22px]"
           >
-            <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.promoLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
+            <label
+              for="reg-promo"
+              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+            >{{ t('auth.promoLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
             <div class="relative">
               <svg
                 class="ico"
@@ -442,6 +469,7 @@ async function onSubmit() {
                 rx="1"
               /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
               <input
+                id="reg-promo"
                 v-model="promo"
                 type="text"
                 class="fld"

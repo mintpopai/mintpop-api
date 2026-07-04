@@ -21,7 +21,6 @@ const brandTags = IS_APPLICATION ? ['Text', 'Vision', 'Voice'] : ['Claude', 'GPT
 
 const account = ref('')
 const password = ref('')
-const remember = ref(true)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
@@ -128,7 +127,10 @@ async function onSubmit() {
 
         <form @submit.prevent="onSubmit">
           <div class="mb-[18px]">
-            <label class="mb-[9px] block text-xs font-semibold tracking-wide text-text2">{{ t('auth.emailLabel') }}</label>
+            <label
+              for="login-email"
+              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+            >{{ t('auth.emailLabel') }}</label>
             <div class="relative">
               <svg
                 class="pointer-events-none absolute left-[15px] top-1/2 -translate-y-1/2 text-faint"
@@ -146,6 +148,7 @@ async function onSubmit() {
                 rx="2.5"
               /><path d="M3.5 7l8.5 6 8.5-6" /></svg>
               <input
+                id="login-email"
                 v-model="account"
                 type="text"
                 autocomplete="username"
@@ -155,9 +158,12 @@ async function onSubmit() {
             </div>
           </div>
 
-          <div class="mb-[14px]">
+          <div class="mb-[26px]">
             <div class="mb-[9px] flex items-baseline justify-between">
-              <label class="text-xs font-semibold tracking-wide text-text2">{{ t('auth.passwordLabel') }}</label>
+              <label
+                for="login-password"
+                class="text-xs font-semibold tracking-wide text-text2"
+              >{{ t('auth.passwordLabel') }}</label>
             </div>
             <div class="relative">
               <svg
@@ -176,6 +182,7 @@ async function onSubmit() {
                 rx="2"
               /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
               <input
+                id="login-password"
                 v-model="password"
                 type="password"
                 autocomplete="current-password"
@@ -184,15 +191,6 @@ async function onSubmit() {
               >
             </div>
           </div>
-
-          <label class="mb-[26px] flex cursor-pointer items-center gap-[9px] text-[13px] text-text3">
-            <input
-              v-model="remember"
-              type="checkbox"
-              class="h-[17px] w-[17px] rounded-[5px] accent-accent"
-            >
-            {{ t('auth.rememberDevice') }}
-          </label>
 
           <p
             v-if="error"

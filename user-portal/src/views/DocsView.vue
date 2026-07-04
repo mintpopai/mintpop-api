@@ -30,16 +30,21 @@ const html = ref('')
 const loadError = ref(false)
 
 // slug 或语言变化 → 重新加载并渲染
+// 竞态守卫：快速切换 slug/语言连发加载时只让最后一次的结果落地（与 useKeys/useUsage 的 loadSeq 模式一致）
+let loadSeq = 0
 watch(
   [activeSlug, () => localeStore.current],
   async ([slug, locale]) => {
+    const seq = ++loadSeq
     loadError.value = false
     try {
       // 占位符（BASE_URL 等）取自公开设置；ensureLoaded 失败不抛，settings 为 null 时占位符回退站点 origin
       await settingsStore.ensureLoaded()
       const src = await loadDoc(slug, locale)
+      if (seq !== loadSeq) return
       html.value = renderMarkdown(resolveDocPlaceholders(src, docPlaceholderValues(settingsStore.settings)))
     } catch {
+      if (seq !== loadSeq) return
       // 加载失败（如网络异常拉不到 chunk）：展示可见的失败态而非静默空白
       html.value = ''
       loadError.value = true
@@ -52,8 +57,8 @@ watch(
 <template>
   <PortalLayout>
     <div class="flex gap-10">
-      <!-- 左侧目录 -->
-      <aside class="w-56 shrink-0">
+      <!-- 左侧目录（移动端隐藏，与 LegalView 目录同策略） -->
+      <aside class="hidden w-56 shrink-0 lg:block">
         <nav class="sticky top-[90px] flex flex-col gap-1">
           <router-link
             v-for="doc in DOCS"

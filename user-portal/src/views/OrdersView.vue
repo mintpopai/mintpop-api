@@ -14,7 +14,7 @@ import OrderDetailModal from '@/components/orders/OrderDetailModal.vue'
 import PaymentResultModal from '@/components/payment/PaymentResultModal.vue'
 import { useOrders } from '@/composables/useOrders'
 import { useAuthStore } from '@/stores/auth'
-import { formatBalance, formatDateMinute, orderStatusMeta } from '@/utils/format'
+import { formatBalance, formatDateMinute, orderStatusMeta, ORDER_PAID_STATUSES } from '@/utils/format'
 import type { PaymentOrder } from '@/api/types'
 import { errMessage } from '@/utils/error'
 
@@ -48,7 +48,7 @@ const filteredRows = computed(() => {
 })
 
 // === StatCard 派生数据 ===
-const paidCount = computed(() => rows.value.filter(r => r.status === 'PAID' || r.status === 'COMPLETED').length)
+const paidCount = computed(() => rows.value.filter(r => ORDER_PAID_STATUSES.includes(r.status)).length)
 const pendingCount = computed(() => rows.value.filter(r => r.status === 'PENDING').length)
 
 const totalRecharge = computed(() => {
@@ -233,8 +233,9 @@ onMounted(load)
           </svg>
           <input
             v-model="search"
-            class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card py-[11px] pl-10 pr-4 text-sm text-text outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="w-full input-base py-[11px] pl-10 pr-4"
             :placeholder="$t('orders.searchPlaceholder')"
+            :aria-label="$t('orders.searchPlaceholder')"
           >
           <p
             v-if="search.trim()"
@@ -285,11 +286,17 @@ onMounted(load)
       :title="$t('orders.cancelTitle')"
       @close="cancelOpen = false"
     >
-      <p class="text-sm text-text2">
-        {{ $t('orders.cancelConfirmPrefix') }}
-        <span class="font-medium text-text">{{ cancelTarget?.out_trade_no }}</span>
-        {{ $t('orders.cancelConfirmSuffix') }}
-      </p>
+      <!-- 具名插值 + 样式化插槽（vue-i18n <i18n-t>）：语序由词条承载，不再拆前后缀 -->
+      <i18n-t
+        keypath="orders.cancelConfirm"
+        tag="p"
+        scope="global"
+        class="text-sm text-text2"
+      >
+        <template #orderNo>
+          <span class="font-medium text-text">{{ cancelTarget?.out_trade_no }}</span>
+        </template>
+      </i18n-t>
       <p
         v-if="cancelError"
         class="mt-3 text-[13px] text-neg"

@@ -259,7 +259,7 @@ function copyContent(content: string, index: number) {
         >
           <nav
             class="-mb-px flex space-x-6"
-            aria-label="Client"
+            :aria-label="t('keys.useKeyModal.clientTabsAria')"
           >
             <button
               v-for="tab in clientTabs"
@@ -287,7 +287,7 @@ function copyContent(content: string, index: number) {
         >
           <nav
             class="-mb-px flex space-x-4"
-            aria-label="Tabs"
+            :aria-label="t('keys.useKeyModal.shellTabsAria')"
           >
             <button
               v-for="tab in currentTabs"

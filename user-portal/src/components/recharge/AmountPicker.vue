@@ -15,19 +15,16 @@ const props = defineProps<{
   min: number
   /** 最高充值额 */
   max?: number
-  /** 当前选中金额（v-model） */
-  modelValue: number | null
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number | null]
-}>()
+// Vue 3.4+ 官方推荐的 v-model 宏：当前选中金额
+const model = defineModel<number | null>({ required: true })
 
 // 自定义输入框的文本值
 const customInput = ref('')
 
-// 当前选中的预设（用于高亮）
-const selectedPreset = ref<number | null>(props.modelValue ?? 100)
+// 当前选中的预设（用于高亮）。初始高亮取 v-model 初值；父组件未传初值时取首个预设，不硬编码金额
+const selectedPreset = ref<number | null>(model.value ?? props.presets[0] ?? null)
 
 // 自定义输入是否有效数值
 const customNum = computed(() => {
@@ -48,7 +45,7 @@ function bonusFor(v: number): number {
 function pickPreset(v: number) {
   selectedPreset.value = v
   customInput.value = ''
-  emit('update:modelValue', v)
+  model.value = v
 }
 
 // 自定义输入变化时
@@ -58,34 +55,26 @@ function onCustomInput(e: Event) {
   const n = parseFloat(val)
   if (!isNaN(n) && n > 0) {
     selectedPreset.value = null
-    emit('update:modelValue', n)
+    model.value = n
   } else if (val === '') {
     // 清空自定义时，回到上次选中的预设
-    if (selectedPreset.value !== null) {
-      emit('update:modelValue', selectedPreset.value)
-    } else {
-      emit('update:modelValue', null)
-    }
+    model.value = selectedPreset.value !== null ? selectedPreset.value : null
   } else {
-    emit('update:modelValue', null)
+    model.value = null
   }
 }
 
-// 外部 v-model 变化时同步（如初始化）
-watch(
-  () => props.modelValue,
-  (v) => {
-    if (v !== null && v !== undefined && customNum.value === null) {
-      if (!props.presets.includes(v)) {
-        // 外部传入的不是预设值，视为自定义
-        customInput.value = String(v)
-      } else {
-        selectedPreset.value = v
-      }
+// 外部改动 v-model 时同步内部高亮/输入框（初始化不走这里：初始高亮由 selectedPreset 初值完成）
+watch(model, (v) => {
+  if (v !== null && v !== undefined && customNum.value === null) {
+    if (!props.presets.includes(v)) {
+      // 外部传入的不是预设值，视为自定义
+      customInput.value = String(v)
+    } else {
+      selectedPreset.value = v
     }
-  },
-  { immediate: false }
-)
+  }
+})
 
 // 校验提示
 const validationMsg = computed(() => {
@@ -157,7 +146,7 @@ const validationMsg = computed(() => {
         class="absolute left-4 top-1/2 -translate-y-1/2 text-base font-medium text-subtle"
       >$</span>
       <input
-        class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card py-[15px] pl-[38px] pr-4 text-base font-medium text-text outline-none transition-[border-color] duration-[140ms] placeholder:font-normal placeholder:text-faint focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+        class="w-full input-base py-[15px] pl-[38px] pr-4 text-base font-medium placeholder:font-normal duration-[140ms]"
         :placeholder="min > 0 ? $t('recharge.amountPlaceholder', { min }) : $t('recharge.amountPlaceholderNoMin')"
         :value="customInput"
         inputmode="decimal"

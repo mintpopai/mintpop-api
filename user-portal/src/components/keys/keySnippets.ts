@@ -46,7 +46,8 @@ const GEMINI_MODELS = {
 }
 
 const ANTIGRAVITY_GEMINI_MODELS = {
-  'gemini-2.5-flash': { name: 'Gemini 2.5 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'disable' } } },
+  // 普通 flash 关闭 thinking（要 thinking 用下方 -thinking 变体），关闭时不带 budgetTokens
+  'gemini-2.5-flash': { name: 'Gemini 2.5 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { type: 'disabled' } } },
   'gemini-2.5-flash-lite': { name: 'Gemini 2.5 Flash Lite', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
   'gemini-2.5-flash-thinking': { name: 'Gemini 2.5 Flash (Thinking)', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
   'gemini-3-flash': { name: 'Gemini 3 Flash', limit: { context: 1048576, output: 65536 }, modalities: { input: ['text', 'image', 'pdf'], output: ['text'] }, options: { thinking: { budgetTokens: 24576, type: 'enabled' } } },
@@ -271,6 +272,14 @@ export function buildKeyFiles(args: {
 }): FileConfig[] {
   const { platform, clientTab, shellTab, apiKey } = args
   const baseUrl = args.baseUrl || window.location.origin
+  // URL 契约：管理员配置的 api_base_url 可能带也可能不带 /v1，所有片段一律先归一化到
+  // baseRoot（不带 /v1 的根），再按各客户端的预期自行拼后缀，不依赖配置形态：
+  // - Claude Code：ANTHROPIC_BASE_URL 给根（它自己拼 /v1/messages）
+  // - Codex：base_url 按 OpenAI 惯例带 /v1（wire_api 再拼 /responses）
+  // - Gemini CLI：GOOGLE_GEMINI_BASE_URL 给根（SDK 自己拼 /v1beta/...）
+  // - opencode：@ai-sdk/* 的 baseURL 需要完整前缀（/v1 或 /v1beta）
+  // 后端在根路径与 /v1 下都注册了兼容别名（backend/internal/server/routes/gateway.go），
+  // 但生成片段不赌这个兜底，始终产出各客户端的标准形态。
   const baseRoot = baseUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '')
   const ensureV1 = (value: string) => {
     const trimmed = value.replace(/\/+$/, '')
@@ -306,17 +315,17 @@ export function buildKeyFiles(args: {
   switch (platform) {
     case 'openai':
       if (clientTab === 'claude') {
-        return generateAnthropicFiles(shellTab, baseUrl, apiKey)
+        return generateAnthropicFiles(shellTab, baseRoot, apiKey)
       }
-      return generateCodexFiles(shellTab, baseUrl, apiKey, clientTab === 'codex-ws')
+      return generateCodexFiles(shellTab, apiBase, apiKey, clientTab === 'codex-ws')
     case 'gemini':
-      return [generateGeminiCliContent(shellTab, baseUrl, apiKey)]
+      return [generateGeminiCliContent(shellTab, baseRoot, apiKey)]
     case 'antigravity':
       if (clientTab === 'gemini') {
-        return [generateGeminiCliContent(shellTab, `${baseUrl}/antigravity`, apiKey)]
+        return [generateGeminiCliContent(shellTab, `${baseRoot}/antigravity`, apiKey)]
       }
-      return generateAnthropicFiles(shellTab, `${baseUrl}/antigravity`, apiKey)
+      return generateAnthropicFiles(shellTab, `${baseRoot}/antigravity`, apiKey)
     default:
-      return generateAnthropicFiles(shellTab, baseUrl, apiKey)
+      return generateAnthropicFiles(shellTab, baseRoot, apiKey)
   }
 }

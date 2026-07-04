@@ -6,6 +6,7 @@ import QRCode from 'qrcode'
 import { verifyOrder, getCheckoutInfo } from '@/api/payment'
 import type { Stripe, StripeElements, StripePaymentElement, StripeElementLocale } from '@stripe/stripe-js'
 import { errMessage } from '@/utils/error'
+import { ORDER_PAID_STATUSES } from '@/utils/format'
 
 const { t, locale } = useI18n()
 
@@ -112,7 +113,8 @@ const statusLabel = computed(() => {
     PAID: t('payment.statusPaid'),
     COMPLETED: t('payment.statusPaid'),
     FAILED: t('payment.statusFailed'),
-    CANCELLED: t('payment.statusCancelled')
+    CANCELLED: t('payment.statusCancelled'),
+    REFUNDED: t('payment.statusRefunded')
   }
   return map[s] ?? t('payment.statusPending')
 })
@@ -143,20 +145,25 @@ function startCountdown() {
   countdownTimer = window.setInterval(updateTick, 1000)
 }
 
+// 查一次订单状态并落地；失败时抛错，吞不吞由调用方决定（轮询吞、手动查询要展示）
+async function verifyOnce(outTradeNo: string) {
+  const o = await verifyOrder(outTradeNo)
+  // 弹窗已关闭或组件已卸载，丢弃本次结果
+  if (aborted) return
+  status.value = o.status
+  if (ORDER_PAID_STATUSES.includes(o.status)) {
+    stopPoll()
+    stopCountdown()
+    emit('paid')
+  } else if (o.status === 'FAILED' || o.status === 'REFUNDED') {
+    stopPoll()
+    stopCountdown()
+  }
+}
+
 async function doVerify(outTradeNo: string) {
   try {
-    const o = await verifyOrder(outTradeNo)
-    // 弹窗已关闭或组件已卸载，丢弃本次结果
-    if (aborted) return
-    status.value = o.status
-    if (o.status === 'PAID' || o.status === 'COMPLETED') {
-      stopPoll()
-      stopCountdown()
-      emit('paid')
-    } else if (o.status === 'FAILED' || o.status === 'REFUNDED') {
-      stopPoll()
-      stopCountdown()
-    }
+    await verifyOnce(outTradeNo)
   } catch {
     // 轮询失败忽略，下次再试
   }
@@ -174,7 +181,8 @@ async function handleManualVerify() {
   verifying.value = true
   errMsg.value = ''
   try {
-    await doVerify(props.order.out_trade_no)
+    // 走会抛错的 verifyOnce：手动「已支付，刷新」失败必须让用户看到错误
+    await verifyOnce(props.order.out_trade_no)
   } catch (e) {
     errMsg.value = errMessage(e, t('payment.errVerify'))
   } finally {

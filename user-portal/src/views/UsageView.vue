@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -9,7 +9,9 @@ import FilterBar from '@/components/ui/FilterBar.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import UsageLogTable from '@/components/usage/UsageLogTable.vue'
 import { useUsage } from '@/composables/useUsage'
+import { useToast } from '@/composables/useToast'
 import { downloadCsv } from '@/utils/csv'
+import { errMessage } from '@/utils/error'
 import {
   formatTokens,
   formatCost,
@@ -57,7 +59,22 @@ function handleReset() {
   load()
 }
 
+const toast = useToast()
+const exporting = ref(false)
+
 async function handleExport() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    await doExport()
+  } catch (e) {
+    toast.error(errMessage(e, t('common.requestFailed')))
+  } finally {
+    exporting.value = false
+  }
+}
+
+async function doExport() {
   const data = await fetchForExport()
   const headers = [
     t('usage.table.key'),
@@ -92,7 +109,8 @@ async function handleExport() {
 function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
   // 注：UserDashboardStats 无 cache_read/cache_creation 独立字段，
   // 该差值实为「缓存命中 + 缓存创建」之和，待接口扩展后再拆分展示。
-  const cacheTokens = s.total_tokens > 0 ? s.total_tokens - s.total_input_tokens - s.total_output_tokens : 0
+  // Math.max 兜底：上游统计口径不一致时差值可能为负，不能把负缓存量/负命中率摆给用户
+  const cacheTokens = Math.max(0, s.total_tokens > 0 ? s.total_tokens - s.total_input_tokens - s.total_output_tokens : 0)
   const rate = cacheHitRate(cacheTokens, s.total_input_tokens)
   return t('usage.kpi.tokenHint', {
     input: formatTokens(s.total_input_tokens),
@@ -125,10 +143,11 @@ function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
           {{ $t('common.reset') }}
         </button>
         <button
-          class="rounded-full bg-accent px-[22px] py-[11px] text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,.3)] transition-opacity hover:opacity-90"
+          class="rounded-full bg-accent px-[22px] py-[11px] text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,.3)] transition-opacity hover:opacity-90 disabled:opacity-60"
+          :disabled="exporting"
           @click="handleExport"
         >
-          ↓ {{ $t('usage.exportCsv') }}
+          ↓ {{ exporting ? $t('common.loading') : $t('usage.exportCsv') }}
         </button>
       </template>
     </PageHeader>
@@ -182,12 +201,16 @@ function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
       <!-- 筛选栏 -->
       <FilterBar>
         <div>
-          <div class="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+          <label
+            for="usage-filter-key"
+            class="mb-2 block text-[11px] font-medium uppercase tracking-[0.08em] text-faint"
+          >
             {{ $t('usage.filters.apiKey') }}
-          </div>
+          </label>
           <select
+            id="usage-filter-key"
             v-model="filters.api_key_id"
-            class="rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="input-base"
             @change="resetPageAndLoad"
           >
             <option value="">
@@ -204,25 +227,33 @@ function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
         </div>
 
         <div>
-          <div class="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+          <label
+            for="usage-filter-start"
+            class="mb-2 block text-[11px] font-medium uppercase tracking-[0.08em] text-faint"
+          >
             {{ $t('usage.filters.startDate') }}
-          </div>
+          </label>
           <input
+            id="usage-filter-start"
             v-model="filters.start_date"
             type="date"
-            class="rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="input-base"
             @change="resetPageAndLoad"
           >
         </div>
 
         <div>
-          <div class="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
+          <label
+            for="usage-filter-end"
+            class="mb-2 block text-[11px] font-medium uppercase tracking-[0.08em] text-faint"
+          >
             {{ $t('usage.filters.endDate') }}
-          </div>
+          </label>
           <input
+            id="usage-filter-end"
             v-model="filters.end_date"
             type="date"
-            class="rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="input-base"
             @change="resetPageAndLoad"
           >
         </div>

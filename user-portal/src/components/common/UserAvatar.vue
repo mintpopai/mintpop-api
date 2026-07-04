@@ -18,7 +18,7 @@ const char = computed(() => (props.user.username ?? props.user.email ?? '?').cha
     :style="
       user.avatar_url
         ? `background:url(${user.avatar_url}) center/cover no-repeat;font-size:0`
-        : 'background:#14C28A'
+        : 'background:var(--accent)'
     "
   >
     <span v-if="!user.avatar_url">{{ char }}</span>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import type { User } from '@/api/types'
@@ -7,13 +7,21 @@ import { compressToDataUrl } from '@/utils/avatar'
 
 const { t } = useI18n()
 const props = defineProps<{ user: User }>()
+// 元组语法，与全仓其余组件的 defineEmits 风格一致
 const emit = defineEmits<{
-  (e: 'save-username', name: string): void
-  (e: 'upload', dataUrl: string): void
-  (e: 'remove-avatar'): void
+  'save-username': [name: string]
+  upload: [dataUrl: string]
+  'remove-avatar': []
 }>()
 
 const username = ref(props.user.username)
+// 保存成功后父组件会重新拉取 user（服务端可能规范化用户名），输入框要跟随刷新
+watch(
+  () => props.user.username,
+  (v) => {
+    username.value = v
+  }
+)
 const uploadError = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -112,7 +120,7 @@ function onSaveUsername() {
         </label>
         <input
           v-model="username"
-          class="mb-[16px] w-full rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-[border-color,box-shadow] focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+          class="mb-[16px] w-full input-base"
           type="text"
           maxlength="50"
           :placeholder="$t('profile.form.usernamePlaceholder')"

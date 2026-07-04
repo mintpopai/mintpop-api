@@ -48,7 +48,7 @@ async function handleRedeem() {
     <div class="flex gap-2">
       <input
         v-model="code"
-        class="min-w-0 flex-1 rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-[border-color] placeholder:text-faint focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+        class="min-w-0 flex-1 input-base"
         :placeholder="$t('recharge.redeemPlaceholder')"
         :disabled="submitting"
         @keydown.enter="handleRedeem"

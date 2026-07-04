@@ -93,8 +93,8 @@ router.beforeEach((to) => {
 
 router.afterEach((to) => {
   const key = to.meta.title as string | undefined
-  const title = key ? i18n.global.t(key) : 'MintPop API'
-  document.title = `${title} · MintPop API`
+  // 全部路由都配了 meta.title；此兜底防新增路由漏配时渲染出「MintPop API · MintPop API」
+  document.title = key ? `${i18n.global.t(key)} · MintPop API` : 'MintPop API'
 })
 
 export default router

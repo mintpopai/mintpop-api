@@ -85,7 +85,7 @@ function copyKey() {
             v-model="name"
             type="text"
             :placeholder="$t('keys.form.namePlaceholder')"
-            class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="w-full input-base"
             @keydown.enter="submit"
           >
         </div>
@@ -95,7 +95,7 @@ function copyKey() {
           <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.group') }}</label>
           <select
             v-model="groupId"
-            class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="w-full input-base"
           >
             <option :value="null">
               {{ $t('keys.form.noGroup') }}
@@ -118,7 +118,7 @@ function copyKey() {
             type="number"
             min="1"
             :placeholder="$t('keys.form.expiryPlaceholder')"
-            class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="w-full input-base"
           >
         </div>
 
@@ -131,7 +131,7 @@ function copyKey() {
             min="0"
             step="0.01"
             :placeholder="$t('keys.form.quotaPlaceholder')"
-            class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+            class="w-full input-base"
           >
         </div>
 

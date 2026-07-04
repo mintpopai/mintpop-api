@@ -15,17 +15,25 @@ const emit = defineEmits<{
   reorder: [order: PaymentOrder]
 }>()
 
+// 判定收口成一处（历史数据的 payment_type 存在 wxpay/wechat 等多种写法，故用包含匹配兜历史值）
+function isWechat(ty: string): boolean {
+  return ty.includes('wxpay') || ty.includes('wechat') || ty.includes('wx')
+}
+function isAlipay(ty: string): boolean {
+  return ty.includes('alipay') || ty.includes('ali')
+}
+
 function paymentDot(type: string | null | undefined): string {
-  const t = (type ?? '').toLowerCase()
-  if (t.includes('wxpay') || t.includes('wechat') || t.includes('wx')) return 'bg-[#09BB07]'
-  if (t.includes('alipay') || t.includes('ali')) return 'bg-[#1677FF]'
+  const ty = (type ?? '').toLowerCase()
+  if (isWechat(ty)) return 'bg-[#09BB07]'
+  if (isAlipay(ty)) return 'bg-[#1677FF]'
   return 'bg-text'
 }
 
 function paymentLabel(type: string | null | undefined): string {
   const ty = (type ?? '').toLowerCase()
-  if (ty.includes('wxpay') || ty.includes('wechat') || ty.includes('wx')) return t('orders.payment.wechat')
-  if (ty.includes('alipay') || ty.includes('ali')) return t('orders.payment.alipay')
+  if (isWechat(ty)) return t('orders.payment.wechat')
+  if (isAlipay(ty)) return t('orders.payment.alipay')
   return type || '—'
 }
 

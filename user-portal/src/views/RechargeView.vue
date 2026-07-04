@@ -13,14 +13,16 @@ import SubscriptionPlans from '@/components/recharge/SubscriptionPlans.vue'
 import PaymentResultModal from '@/components/payment/PaymentResultModal.vue'
 import Modal from '@/components/ui/Modal.vue'
 import { useRecharge } from '@/composables/useRecharge'
+import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { getPlans, verifyOrder } from '@/api/payment'
-import { formatBalance } from '@/utils/format'
+import { formatBalance, ORDER_SETTLING_STATUSES } from '@/utils/format'
 import type { CreateOrderResult, SubscriptionPlan } from '@/api/types'
 import { errMessage } from '@/utils/error'
 
 const { t } = useI18n()
+const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -180,8 +182,8 @@ function clearPayReturnQuery() {
 }
 
 // 状态集合与轮询节奏对齐主前端 PaymentResultView：
-// 成功含 RECHARGING（已付款、到账中的瞬时态）；仅在待定类状态继续轮询，其余非成功即停。
-const RESUME_SUCCESS_STATUSES = new Set(['PAID', 'RECHARGING', 'COMPLETED'])
+// 成功口径取 utils/format 的 ORDER_SETTLING_STATUSES（含 RECHARGING 瞬时态）；仅在待定类状态继续轮询，其余非成功即停。
+const RESUME_SUCCESS_STATUSES = new Set(ORDER_SETTLING_STATUSES)
 const RESUME_PENDING_STATUSES = new Set(['PENDING', 'CREATED', 'WAITING', 'PROCESSING'])
 const RESUME_POLL_INTERVAL_MS = 2000
 const RESUME_POLL_MAX_ATTEMPTS = 15
@@ -194,6 +196,7 @@ onUnmounted(() => {
 
 async function resumeRedirectPayment(outTradeNo: string) {
   // 最多轮询约 30s（15 次 × 2s），等后端收到 Stripe webhook 确认到账
+  let confirmed = false
   for (let i = 0; i < RESUME_POLL_MAX_ATTEMPTS; i++) {
     if (resumeAborted) return
     try {
@@ -206,6 +209,7 @@ async function resumeRedirectPayment(outTradeNo: string) {
           order.order_type === 'subscription'
             ? t('recharge.subscribeSuccess')
             : t('recharge.rechargeSuccess')
+        confirmed = true
         break
       }
       // 非待定、非成功（FAILED / CANCELLED / EXPIRED / REFUNDED 等）→ 终止，不再轮询
@@ -214,6 +218,10 @@ async function resumeRedirectPayment(outTradeNo: string) {
       // 轮询失败忽略，下次再试
     }
     await new Promise((resolve) => setTimeout(resolve, RESUME_POLL_INTERVAL_MS))
+  }
+  // 超时未确认或终态非成功：用户可能已付款，不能静默结束，引导去订单页核实
+  if (!resumeAborted && !confirmed) {
+    toast.error(t('recharge.resumeUnknown'))
   }
   clearPayReturnQuery()
 }
@@ -313,7 +321,7 @@ onMounted(async () => {
       <!-- ============ 充值 tab ============ -->
       <div
         v-if="activeTab === 0"
-        class="grid grid-cols-[1fr_360px] items-start gap-[22px]"
+        class="grid grid-cols-1 items-start gap-[22px] lg:grid-cols-[1fr_360px]"
       >
         <!-- 左列 -->
         <div class="flex flex-col gap-[22px]">
@@ -433,7 +441,7 @@ onMounted(async () => {
             </span>
           </div>
           <div class="mt-2 text-[13px] text-subtle">
-            {{ $t('recharge.validityPrefix') }}{{ selectedPlan.validity_days }}{{ selectedPlan.validity_unit ?? $t('recharge.dayUnit') }}
+            {{ $t('recharge.validityLine', { days: selectedPlan.validity_days, unit: selectedPlan.validity_unit ?? $t('recharge.dayUnit') }) }}
           </div>
         </div>
 

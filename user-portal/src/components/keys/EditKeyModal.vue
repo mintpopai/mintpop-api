@@ -73,7 +73,7 @@ function submit() {
           v-model="name"
           type="text"
           :placeholder="$t('keys.form.editNamePlaceholder')"
-          class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+          class="w-full input-base"
         >
       </div>
 
@@ -82,7 +82,7 @@ function submit() {
         <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.group') }}</label>
         <select
           v-model="groupId"
-          class="w-full rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-sm text-text outline-none transition-colors focus:border-accent focus:shadow-[0_0_0_3px_rgba(20,194,138,0.13)]"
+          class="w-full input-base"
         >
           <option :value="null">
             {{ $t('keys.form.noGroup') }}
@@ -102,6 +102,9 @@ function submit() {
         <span class="text-sm font-medium text-text2">{{ $t('keys.edit.enableLabel') }}</span>
         <button
           type="button"
+          role="switch"
+          :aria-checked="status === 'active'"
+          :aria-label="$t('keys.edit.enableLabel')"
           class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors"
           :class="status === 'active' ? 'bg-accent' : 'bg-track'"
           @click="status = status === 'active' ? 'inactive' : 'active'"

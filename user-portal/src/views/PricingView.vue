@@ -1,25 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PortalLayout from '@/layouts/PortalLayout.vue'
-import { useLocaleStore } from '@/stores/locale'
+import { PRICING_CHANNELS } from '@/config/pricing'
 
-const localeStore = useLocaleStore()
-// 「行业常见倍率」一行仅中文语言下展示（面向国内用户的 1元=1美金 换算说明）
-const isZh = computed(() => localeStore.current === 'zh-CN')
+const { t } = useI18n()
 
-// 各渠道价格（单位：美元 / 百万 tokens）。origInput/origOutput 为原价（划线展示），
-// input/output 为折后现价；discount 为「立减」百分比；multiplier 为「1元=1美金体系」下的行业常见倍率。
-// 品牌名（name）与型号（model）属技术标识，中英一致，不走 i18n。
-interface Channel {
-  key: string
-  name: string
-  model: string
-  discount: number
-  origInput: number
-  input: number
-  origOutput: number
-  output: number
-  multiplier: number
+// 每渠道卡片配色（纯展示层，价格等事实数据在 config/pricing.ts 单独维护）
+interface ChannelPalette {
   bg: string
   nameColor: string
   modelColor: string
@@ -35,17 +22,8 @@ interface Channel {
   dotOpacity: number
 }
 
-const channels: Channel[] = [
-  {
-    key: 'claudeCode',
-    name: 'Claude (Claude Code / Desktop)',
-    model: 'Opus 4.8',
-    discount: 70,
-    origInput: 5,
-    input: 1.5,
-    origOutput: 25,
-    output: 7.5,
-    multiplier: 1.9,
+const palettes: Record<string, ChannelPalette> = {
+  claudeCode: {
     bg: '#F0ECE0',
     nameColor: '#1A1A1A',
     modelColor: '#6E6A60',
@@ -60,16 +38,7 @@ const channels: Channel[] = [
     dotColor: '#1A1A1A',
     dotOpacity: 0.07
   },
-  {
-    key: 'claudeApi',
-    name: 'Claude (API)',
-    model: 'Opus 4.8',
-    discount: 55,
-    origInput: 5,
-    input: 2.25,
-    origOutput: 25,
-    output: 11.25,
-    multiplier: 2.9,
+  claudeApi: {
     bg: '#C67C5B',
     nameColor: '#35190E',
     modelColor: 'rgba(53,25,14,.72)',
@@ -84,16 +53,7 @@ const channels: Channel[] = [
     dotColor: '#35190E',
     dotOpacity: 0.1
   },
-  {
-    key: 'chatgpt',
-    name: 'ChatGPT',
-    model: 'GPT-5.5',
-    discount: 80,
-    origInput: 5,
-    input: 1,
-    origOutput: 30,
-    output: 6,
-    multiplier: 0.9,
+  chatgpt: {
     bg: '#14C28A',
     nameColor: '#063A2B',
     modelColor: 'rgba(6,58,43,.72)',
@@ -108,16 +68,7 @@ const channels: Channel[] = [
     dotColor: '#0A4A38',
     dotOpacity: 0.16
   },
-  {
-    key: 'gemini',
-    name: 'Gemini',
-    model: '3.1 Pro',
-    discount: 80,
-    origInput: 2,
-    input: 0.4,
-    origOutput: 12,
-    output: 2.4,
-    multiplier: 0.9,
+  gemini: {
     bg: '#0E8F66',
     nameColor: '#ffffff',
     modelColor: 'rgba(255,255,255,.72)',
@@ -132,7 +83,14 @@ const channels: Channel[] = [
     dotColor: '#063A2B',
     dotOpacity: 0.16
   }
-]
+}
+
+const channels = PRICING_CHANNELS.map((ch) => ({ ...ch, ...palettes[ch.key] }))
+
+// 倍率说明行：文案存在才渲染（en-US 侧为空串 → 不展示），语言差异由词条驱动而非模板判断
+function multiplierNote(multiplier: number): string {
+  return t('pricing.multiplierNote', { multiplier })
+}
 </script>
 
 <template>
@@ -246,11 +204,11 @@ const channels: Channel[] = [
             {{ $t('pricing.unit') }}
           </div>
           <div
-            v-if="isZh"
+            v-if="multiplierNote(ch.multiplier)"
             class="mt-1 text-xs"
             :style="{ color: ch.multColor }"
           >
-            行业常见倍率换算 ≈ {{ ch.multiplier }}（1元=1美金体系）
+            {{ multiplierNote(ch.multiplier) }}
           </div>
         </div>
       </div>

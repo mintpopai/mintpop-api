@@ -74,8 +74,20 @@ async function confirmRemove() {
   try {
     await k.remove(removeTarget.value.id)
     removeTarget.value = null
+  } catch (e) {
+    // 失败保持弹窗、提示后可重试（与 doEdit 的失败语义一致）
+    toast.error(errMessage(e, t('common.requestFailed')))
   } finally {
     removing.value = false
+  }
+}
+
+async function doToggle(key: ApiKey) {
+  try {
+    await k.toggle(key.id, key.status === 'active' ? 'inactive' : 'active')
+  } catch (e) {
+    // 模板直调异步会静默吞错：启停失败必须给出反馈
+    toast.error(errMessage(e, t('common.requestFailed')))
   }
 }
 </script>
@@ -166,6 +178,7 @@ async function confirmRemove() {
             v-model="k.filters.search"
             type="text"
             :placeholder="$t('keys.searchPlaceholder')"
+            :aria-label="$t('keys.searchPlaceholder')"
             class="w-full rounded-[11px] border-[1.5px] border-border2 bg-card py-[11px] pl-10 pr-4 text-sm text-text outline-none focus:border-accent"
             @change="k.load()"
           >
@@ -212,7 +225,7 @@ async function confirmRemove() {
         :rows="k.rows.value"
         :usage="k.usage.value"
         @edit="editTarget = $event"
-        @toggle="k.toggle($event.id, $event.status === 'active' ? 'inactive' : 'active')"
+        @toggle="doToggle($event)"
         @remove="removeTarget = $event"
         @use="useTarget = $event"
       />
@@ -259,9 +272,17 @@ async function confirmRemove() {
       :title="$t('keys.delete.confirmTitle')"
       @close="removeTarget = null"
     >
-      <p class="text-sm text-text2">
-        {{ $t('keys.delete.confirmPrefix') }}<b class="font-semibold text-text">{{ removeTarget?.name }}</b>{{ $t('keys.delete.confirmSuffix') }}
-      </p>
+      <!-- 具名插值 + 样式化插槽（vue-i18n <i18n-t>）：语序由词条承载，不再拆前后缀 -->
+      <i18n-t
+        keypath="keys.delete.confirm"
+        tag="p"
+        scope="global"
+        class="text-sm text-text2"
+      >
+        <template #name>
+          <b class="font-semibold text-text">{{ removeTarget?.name }}</b>
+        </template>
+      </i18n-t>
       <template #footer>
         <button
           class="rounded-full border border-border px-5 py-2 text-sm font-medium text-text2 transition-colors hover:border-border2 hover:text-text"

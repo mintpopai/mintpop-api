@@ -5,13 +5,10 @@ import type { MethodLimit } from '@/api/types'
 const props = defineProps<{
   /** 后端返回的可用支付方式 key → limits */
   methods: Record<string, MethodLimit>
-  /** 当前选中（v-model） */
-  modelValue: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
+// Vue 3.4+ 官方推荐的 v-model 宏
+const model = defineModel<string>({ required: true })
 
 // 支付方式配置（只渲染 methods 中存在的项；label/desc 走 i18n key，模板内解析）
 const METHOD_CONFIG: Record<string, { labelKey: string; descKey: string; color: string; iconType: 'wechat' | 'alipay' | 'stripe' }> = {
@@ -24,7 +21,7 @@ const METHOD_CONFIG: Record<string, { labelKey: string; descKey: string; color: 
 const availableMethods = computed(() => Object.keys(METHOD_CONFIG).filter((k) => k in props.methods))
 
 function pick(key: string) {
-  emit('update:modelValue', key)
+  model.value = key
 }
 </script>
 
@@ -35,11 +32,17 @@ function pick(key: string) {
       <h3 class="font-serif text-xl font-medium text-text">
         {{ $t('recharge.paymentMethod') }}
       </h3>
-      <span class="inline-flex items-center gap-1.5 text-xs text-subtle">
-        {{ $t('recharge.poweredByPre') }}
-        <span class="text-[13px] font-semibold text-[#635BFF]">Stripe</span>
-        {{ $t('recharge.poweredBySuf') }}
-      </span>
+      <!-- 具名插值 + 样式化插槽（vue-i18n <i18n-t>）：语序由词条承载，不再拆前后缀 -->
+      <i18n-t
+        keypath="recharge.poweredBy"
+        tag="span"
+        scope="global"
+        class="text-xs text-subtle"
+      >
+        <template #provider>
+          <span class="text-[13px] font-semibold text-[#635BFF]">Stripe</span>
+        </template>
+      </i18n-t>
     </div>
 
     <!-- 方式列表；radio 语义 + Enter/Space 可选，键盘可达 -->
@@ -52,11 +55,11 @@ function pick(key: string) {
         v-for="key in availableMethods"
         :key="key"
         role="radio"
-        :aria-checked="modelValue === key"
+        :aria-checked="model === key"
         tabindex="0"
         class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-[140ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
-          modelValue === key
+          model === key
             ? 'border-accent bg-accent/[0.06]'
             : 'border-border2 bg-card hover:border-[#9FE6CD]'
         "
@@ -124,7 +127,7 @@ function pick(key: string) {
         <span
           class="h-[18px] w-[18px] flex-none rounded-full transition-[background,box-shadow] duration-[140ms]"
           :class="
-            modelValue === key
+            model === key
               ? 'bg-accent shadow-[inset_0_0_0_3px_#fff,0_0_0_1px_#14C28A]'
               : 'bg-card shadow-[inset_0_0_0_1.5px_#D8D5CC]'
           "
@@ -147,9 +150,16 @@ function pick(key: string) {
       >
         <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z" />
       </svg>
-      {{ $t('recharge.securityNotePre') }}
-      <span class="font-semibold text-[#635BFF]">Stripe</span>
-      {{ $t('recharge.securityNoteSuf') }}
+      <!-- 具名插值 + 样式化插槽（vue-i18n <i18n-t>）：语序由词条承载，不再拆前后缀 -->
+      <i18n-t
+        keypath="recharge.securityNote"
+        tag="span"
+        scope="global"
+      >
+        <template #provider>
+          <span class="font-semibold text-[#635BFF]">Stripe</span>
+        </template>
+      </i18n-t>
     </div>
   </div>
 </template>

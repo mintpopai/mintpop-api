@@ -40,8 +40,14 @@ export function useRecharge() {
   }
 
   async function submitRecharge(): Promise<CreateOrderResult> {
+    // 契约：视图层（RechargeView）在提交前必须已把自定义金额写回 amount（预设档位选中时
+    // amount 本就同步更新）。此处显式守卫替代 `amount.value!`，防止未来重构悄悄打破这个隐式
+    // 约定却仍带着 null 提交下单——宁可在这里抛错让调用方兜底展示，也不让请求带假值发出去。
+    if (amount.value == null) {
+      throw new Error('充值金额未设置，无法提交')
+    }
     return createOrder({
-      amount: amount.value!,
+      amount: amount.value,
       payment_type: method.value,
       order_type: 'balance'
     })

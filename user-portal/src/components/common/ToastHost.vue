@@ -29,10 +29,12 @@ const { toasts, dismiss } = useToast()
           {{ t.type === 'SUCCESS' ? '✓' : '!' }}
         </span>
         <span class="leading-[1.4]">{{ t.message }}</span>
-        <!-- 关闭：真 button（键盘可达），此前仅整卡片 @click，键盘用户无法触达 -->
+        <!-- 关闭：真 button（键盘可达），此前仅整卡片 @click，键盘用户无法触达。
+             默认 sr-only 视觉隐藏、不占布局（与改动前逐像素一致），仅键盘聚焦时
+             focus-visible:not-sr-only 显现（间距由父容器 gap 提供，配 accent 焦点环） -->
         <button
           type="button"
-          class="ml-1 shrink-0 text-sm leading-none text-faint transition-colors hover:text-text"
+          class="sr-only shrink-0 text-sm leading-none text-faint focus-visible:not-sr-only focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           :aria-label="$t('common.close')"
           @click.stop="dismiss(t.id)"
         >

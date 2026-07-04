@@ -9,7 +9,10 @@ export function docPlaceholderValues(settings: PublicSettings | null): Record<st
   // 与 UseKeyModal 的取值口径一致：设置缺 api_base_url 时回退当前站点 origin
   const baseUrl = settings?.api_base_url || window.location.origin
   return {
-    BASE_URL: baseUrl,
+    // 注入发生在 markdown 渲染前，且 markdown-it 开着 html:true；api_base_url 是管理员在后台
+    // 自由填写的字符串（非受控输入），直接拼进原文会被当 HTML 解析，故先 encodeURI 无害化。
+    // encodeURI 只转义 <>"{}|\^` 与空白等危险字符，保留 : / ? # 等 URL 合法字符，不破坏正常地址。
+    BASE_URL: encodeURI(baseUrl),
     // 注册页地址：中文文档用 {{注册链接}}，英文文档用 {{SIGNUP_URL}}，取值相同
     注册链接: `${window.location.origin}/register`,
     SIGNUP_URL: `${window.location.origin}/register`

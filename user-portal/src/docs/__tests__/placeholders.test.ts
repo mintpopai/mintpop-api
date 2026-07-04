@@ -36,6 +36,17 @@ describe('docPlaceholderValues', () => {
   it('注册链接指向本站 /register', () => {
     expect(docPlaceholderValues(null)['注册链接']).toBe(`${window.location.origin}/register`)
   })
+
+  it('api_base_url 含 HTML 特殊字符时先 encodeURI 再注入，防止管理员配置值被 markdown-it（html:true）当 HTML 解析', () => {
+    const malicious = 'https://api.example.com/<script>alert(1)</script>'
+    const values = docPlaceholderValues(settingsWith(malicious))
+    expect(values.BASE_URL).not.toContain('<')
+    expect(values.BASE_URL).not.toContain('>')
+    // encodeURI 会保留 URL 合法字符（如 : / .），正常地址原样透传
+    expect(docPlaceholderValues(settingsWith('https://api.example.com')).BASE_URL).toBe(
+      'https://api.example.com'
+    )
+  })
 })
 
 describe('文档占位符守护：正式文档只允许使用已知占位符', () => {

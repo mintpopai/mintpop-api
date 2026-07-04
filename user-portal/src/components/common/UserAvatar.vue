@@ -9,17 +9,20 @@ import type { User } from '@/api/types'
 const props = defineProps<{ user: User; boxClass?: string }>()
 
 const char = computed(() => (props.user.username ?? props.user.email ?? '?').charAt(0).toUpperCase())
+
+// 对象绑定 + url("...") 引号包裹：避免 avatar_url 含 `)` 或空白等字符时破坏 style 字符串拼接
+const avatarStyle = computed(() =>
+  props.user.avatar_url
+    ? { background: `url("${props.user.avatar_url}") center/cover no-repeat`, fontSize: '0' }
+    : { background: 'var(--accent)' }
+)
 </script>
 
 <template>
   <div
     class="flex flex-none items-center justify-center font-serif font-semibold text-white"
     :class="boxClass"
-    :style="
-      user.avatar_url
-        ? `background:url(${user.avatar_url}) center/cover no-repeat;font-size:0`
-        : 'background:var(--accent)'
-    "
+    :style="avatarStyle"
   >
     <span v-if="!user.avatar_url">{{ char }}</span>
   </div>

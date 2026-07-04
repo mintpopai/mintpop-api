@@ -54,4 +54,14 @@ describe('useLatestRequest：序号守卫', () => {
     next() // 后续请求不要求取消旧请求
     expect(first.signal?.aborted).toBe(false)
   })
+
+  // 契约：signal 仅当"本次"调用 next() 时传 cancelPrevious=true 才应有值；混用两种调用模式时
+  // （先 next(true) 建了 controller，后面裸 next() 不该复用它），裸调用必须拿到 undefined，
+  // 否则调用方会把上一轮的 AbortSignal 误当成"本次请求专属"，被后续 next(true) 意外 abort。
+  it('先 next(true) 再裸 next()：裸调用的 signal 必须是 undefined（不得复用旧 controller）', () => {
+    const { next } = useLatestRequest()
+    next(true)
+    const bare = next()
+    expect(bare.signal).toBeUndefined()
+  })
 })

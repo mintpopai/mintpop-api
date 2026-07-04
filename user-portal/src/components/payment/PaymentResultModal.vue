@@ -113,6 +113,7 @@ const statusLabel = computed(() => {
     PAID: t('payment.statusPaid'),
     RECHARGING: t('payment.statusRecharging'),
     COMPLETED: t('payment.statusPaid'),
+    EXPIRED: t('payment.expired'),
     FAILED: t('payment.statusFailed'),
     CANCELLED: t('payment.statusCancelled'),
     REFUNDED: t('payment.statusRefunded')

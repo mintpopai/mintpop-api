@@ -26,7 +26,7 @@ export function useLatestRequest() {
       controller?.abort()
       controller = new AbortController()
     }
-    return { seq: mySeq, signal: controller?.signal }
+    return { seq: mySeq, signal: cancelPrevious ? controller?.signal : undefined }
   }
 
   function isLatest(mySeq: number): boolean {

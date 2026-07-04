@@ -19,6 +19,7 @@ export default {
   selectAmount: 'Select an amount',
   submitting: 'Placing order…',
   errCreateOrder: 'Failed to place order. Please try again later.',
+  errAmountMissing: 'Recharge amount is not set, unable to submit.',
   // —— Subscription confirm modal ——
   confirmSubscribe: 'Confirm subscription',
   planFallback: 'Plan',

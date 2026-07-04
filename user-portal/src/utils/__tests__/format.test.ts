@@ -54,6 +54,8 @@ describe('orderStatusMeta（识别后端大写枚举取值）', () => {
       expect(meta.variant).toBe(variant)
       // 已配置状态的 label 走 i18n 翻译，不等于原样枚举字符串
       expect(meta.label).not.toBe(status)
+      // 词条真的存在：vue-i18n 缺词条时 t() 会原样返回 key 路径（如 'orders.status.PENDING'）
+      expect(meta.label).not.toContain('orders.status.')
     }
   )
 

@@ -19,6 +19,7 @@ export default {
   selectAmount: '请选择金额',
   submitting: '下单中…',
   errCreateOrder: '下单失败，请稍后重试',
+  errAmountMissing: '充值金额未设置，无法提交',
   // —— 订阅确认弹窗 ——
   confirmSubscribe: '确认订阅',
   planFallback: '套餐',

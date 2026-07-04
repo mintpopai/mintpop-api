@@ -18,7 +18,7 @@ export default {
     total: '订单总数',
     totalHint: '本页 {paid} 笔已支付 · {pending} 笔待支付',
     totalRecharge: '累计充值',
-    totalRechargeHint: '账户历史充值总额（后端权威口径）',
+    totalRechargeHint: '账户历史充值总额',
     latest: '最近订单'
   },
 

@@ -18,6 +18,11 @@ const menuOpen = ref(false)
 const toggleMenu = () => (menuOpen.value = !menuOpen.value)
 const closeMenu = () => (menuOpen.value = false)
 
+// 移动端（<md）导航抽屉：桌面 tabs 收进汉堡菜单
+const navOpen = ref(false)
+const toggleNav = () => (navOpen.value = !navOpen.value)
+const closeNav = () => (navOpen.value = false)
+
 // 「定价」tab 无条件展示（不再受分布模式 VITE_PORTAL_DISTRIBUTION_MODE 约束）
 const tabs = computed(() => [
   { name: 'Dashboard', label: t('nav.dashboard'), to: '/dashboard' },
@@ -47,7 +52,10 @@ async function handleLogout() {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') closeMenu()
+  if (e.key === 'Escape') {
+    closeMenu()
+    closeNav()
+  }
 }
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
@@ -61,9 +69,36 @@ onMounted(() => {
   <div class="flex min-h-screen flex-col bg-bg">
     <!-- ============ 顶栏 ============ -->
     <header
-      class="sticky top-0 z-30 flex h-[66px] items-center gap-7 border-b border-border px-12 backdrop-blur-md"
+      class="sticky top-0 z-30 flex h-[66px] items-center gap-4 border-b border-border px-5 backdrop-blur-md sm:px-8 md:gap-7 lg:px-12"
       style="background: var(--bar)"
     >
+      <!-- 移动端汉堡按钮 -->
+      <button
+        class="flex h-9 w-9 items-center justify-center rounded-[10px] text-text2 transition-colors hover:bg-muted md:hidden"
+        :aria-label="t('nav.menu')"
+        :aria-expanded="navOpen"
+        @click="toggleNav"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path
+            v-if="!navOpen"
+            d="M4 7h16M4 12h16M4 17h16"
+          />
+          <path
+            v-else
+            d="M6 6l12 12M18 6L6 18"
+          />
+        </svg>
+      </button>
+
       <!-- logo -->
       <div class="flex shrink-0 items-center">
         <img
@@ -73,8 +108,8 @@ onMounted(() => {
         >
       </div>
 
-      <!-- 导航 tabs -->
-      <nav class="flex items-center gap-1">
+      <!-- 导航 tabs（桌面） -->
+      <nav class="hidden items-center gap-1 md:flex">
         <router-link
           v-for="tab in tabs"
           :key="tab.name"
@@ -86,11 +121,41 @@ onMounted(() => {
         </router-link>
       </nav>
 
+      <!-- 移动端导航抽屉（汉堡展开；文档入口一并收入） -->
+      <template v-if="navOpen">
+        <div
+          class="fixed inset-0 z-40 md:hidden"
+          @click="closeNav"
+        />
+        <nav
+          class="absolute inset-x-3 top-[60px] z-50 flex flex-col gap-0.5 rounded-2xl border border-border bg-card p-2 shadow-menu md:hidden"
+        >
+          <router-link
+            v-for="tab in tabs"
+            :key="tab.name"
+            :to="tab.to"
+            class="tab"
+            active-class="tab-on"
+            @click="closeNav"
+          >
+            {{ tab.label }}
+          </router-link>
+          <router-link
+            to="/docs"
+            class="tab"
+            active-class="tab-on"
+            @click="closeNav"
+          >
+            {{ t('nav.docs') }}
+          </router-link>
+        </nav>
+      </template>
+
       <!-- 右侧：使用文档入口 + 用户菜单（二者平级） -->
       <div class="ml-auto flex items-center gap-3">
         <router-link
           to="/docs"
-          class="doc-link"
+          class="doc-link hidden md:inline-block"
           active-class="doc-link-on"
         >
           {{ t('nav.docs') }}
@@ -182,7 +247,7 @@ onMounted(() => {
     </header>
 
     <!-- ============ 主体 ============ -->
-    <main class="min-w-0 flex-1 px-12 py-11">
+    <main class="min-w-0 flex-1 px-5 py-8 sm:px-8 lg:px-12 lg:py-11">
       <div class="mx-auto max-w-[1240px]">
         <slot />
       </div>
@@ -230,7 +295,7 @@ onMounted(() => {
   background: var(--muted);
 }
 .mi span:last-child {
-  color: #c0bcb2;
+  color: var(--faint);
   font-size: 13px;
 }
 .doc-link {

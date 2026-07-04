@@ -420,7 +420,7 @@ onMounted(async () => {
       :title="$t('recharge.confirmSubscribe')"
       @close="handleConfirmClose"
     >
-      <template v-if="selectedPlan">
+      <template v-if="selectedPlan && checkout">
         <!-- 套餐摘要 -->
         <div class="mb-5 rounded-xl2 bg-muted px-5 py-4">
           <div class="mb-1 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
@@ -449,7 +449,7 @@ onMounted(async () => {
         <div class="mb-4">
           <PayMethodPicker
             v-model="method"
-            :methods="checkout!.methods"
+            :methods="checkout.methods"
           />
         </div>
 

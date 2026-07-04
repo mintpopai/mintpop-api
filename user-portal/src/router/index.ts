@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { TOKEN_KEY } from '@/api/client'
-import i18n from '@/i18n'
+import { setDocumentTitle } from '@/utils/title'
 
 export const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/dashboard' },
@@ -92,9 +92,8 @@ router.beforeEach((to) => {
 })
 
 router.afterEach((to) => {
-  const key = to.meta.title as string | undefined
-  // 全部路由都配了 meta.title；此兜底防新增路由漏配时渲染出「MintPop API · MintPop API」
-  document.title = key ? `${i18n.global.t(key)} · MintPop API` : 'MintPop API'
+  // 全部路由都配了 meta.title；setDocumentTitle 的空 key 分支防新增路由漏配时渲染出「MintPop API · MintPop API」
+  setDocumentTitle(to.meta.title as string | undefined)
 })
 
 export default router

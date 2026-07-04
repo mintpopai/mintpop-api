@@ -15,6 +15,7 @@ import payment from './payment'
 import pricing from './pricing'
 import ui from './ui'
 import legal from './legal'
+import contact from './contact'
 
 const enUS: MessageSchema = {
   common,
@@ -29,7 +30,8 @@ const enUS: MessageSchema = {
   payment,
   pricing,
   ui,
-  legal
+  legal,
+  contact
 }
 
 export default enUS

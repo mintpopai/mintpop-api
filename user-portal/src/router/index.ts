@@ -70,6 +70,12 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/DocsView.vue'),
     meta: { requiresAuth: true, title: 'nav.docs' }
   },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: () => import('@/views/ContactView.vue'),
+    meta: { requiresAuth: true, title: 'nav.contact' }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' }
 ]
 

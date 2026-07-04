@@ -5,3 +5,7 @@
  */
 export const IS_APPLICATION_MODE =
   (import.meta.env.VITE_PORTAL_DISTRIBUTION_MODE ?? 'MODEL').trim().toUpperCase() === 'APPLICATION'
+
+/** 联系渠道（ContactView 使用；集中在此，换邮箱/群链接只改这一处） */
+export const CONTACT_EMAIL = 'support@mintpop.ai'
+export const TELEGRAM_GROUP_URL = 'https://t.me/+NpAwBIWXs8FkMzVh'

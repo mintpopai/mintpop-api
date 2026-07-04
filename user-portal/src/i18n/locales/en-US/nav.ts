@@ -11,6 +11,7 @@ export default {
   profile: 'Profile',
   menu: 'Menu',
   docs: 'Docs',
+  contact: 'Contact',
   lightMode: 'Light mode',
   darkMode: 'Dark mode',
   language: 'Language',

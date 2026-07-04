@@ -11,6 +11,7 @@ export default {
   profile: '个人资料',
   menu: '菜单',
   docs: '使用文档',
+  contact: '联系方式',
   lightMode: '浅色模式',
   darkMode: '深色模式',
   language: '语言',

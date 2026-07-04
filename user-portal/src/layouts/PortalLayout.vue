@@ -121,7 +121,7 @@ onMounted(() => {
         </router-link>
       </nav>
 
-      <!-- 移动端导航抽屉（汉堡展开；文档入口一并收入） -->
+      <!-- 移动端导航抽屉（汉堡展开；文档 / 联系方式入口一并收入） -->
       <template v-if="navOpen">
         <div
           class="fixed inset-0 z-40 md:hidden"
@@ -148,10 +148,18 @@ onMounted(() => {
           >
             {{ t('nav.docs') }}
           </router-link>
+          <router-link
+            to="/contact"
+            class="tab"
+            active-class="tab-on"
+            @click="closeNav"
+          >
+            {{ t('nav.contact') }}
+          </router-link>
         </nav>
       </template>
 
-      <!-- 右侧：使用文档入口 + 用户菜单（二者平级） -->
+      <!-- 右侧：使用文档 / 联系方式入口 + 用户菜单（三者平级） -->
       <div class="ml-auto flex items-center gap-3">
         <router-link
           to="/docs"
@@ -159,6 +167,13 @@ onMounted(() => {
           active-class="doc-link-on"
         >
           {{ t('nav.docs') }}
+        </router-link>
+        <router-link
+          to="/contact"
+          class="doc-link hidden md:inline-block"
+          active-class="doc-link-on"
+        >
+          {{ t('nav.contact') }}
         </router-link>
 
         <!-- 用户菜单 -->

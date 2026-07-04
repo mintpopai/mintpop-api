@@ -51,10 +51,11 @@ const filteredRows = computed(() => {
 const paidCount = computed(() => rows.value.filter(r => ORDER_PAID_STATUSES.includes(r.status)).length)
 const pendingCount = computed(() => rows.value.filter(r => r.status === 'PENDING').length)
 
-const totalRecharge = computed(() => {
-  return rows.value
-    .filter(r => r.status === 'COMPLETED')
-    .reduce((sum, r) => sum + r.amount, 0)
+// 「累计充值」口径改用 auth store 的 total_recharged（后端累加的权威值），不再用当前页订单
+// reduce 近似——分页/筛选下前者会随之漂移，与「累计」语义不符。缺失时（尚未拉取/拉取失败）兜底 —。
+const totalRechargeValue = computed(() => {
+  const v = authStore.user?.total_recharged
+  return v == null ? '—' : `$${formatBalance(v)}`
 })
 
 const latestOrder = computed(() => rows.value[0] ?? null)
@@ -127,7 +128,12 @@ function handleReorder() {
   router.push('/recharge')
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  // 刷新用户资料以拿最新 total_recharged；fetchUser 失败已在 store 内吞掉（返回 false、不抛），
+  // 不会让本页崩溃，StatCard 兜底展示 —。
+  authStore.fetchUser()
+})
 </script>
 
 <template>
@@ -188,7 +194,7 @@ onMounted(load)
         />
         <StatCard
           :label="$t('orders.stats.totalRecharge')"
-          :value="`$${formatBalance(totalRecharge)}`"
+          :value="totalRechargeValue"
           :hint="$t('orders.stats.totalRechargeHint')"
         />
         <StatCard

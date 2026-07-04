@@ -22,6 +22,11 @@ export interface User {
   email: string
   /** 账户余额（USD） */
   balance: number
+  /**
+   * 累计充值总额（USD）。来源：后端 GET /user/profile、/auth/me 返回，充值成功后端累加，
+   * 是「累计充值」的权威口径（前端不应再用当前页订单 reduce 出近似值）。
+   */
+  total_recharged?: number
   /** 并发限制 */
   concurrency?: number
   avatar_url?: string | null

@@ -17,8 +17,8 @@ export default {
   stats: {
     total: 'Total Orders',
     totalHint: 'This page: {paid} paid · {pending} pending',
-    totalRecharge: 'Recharge (This Page)',
-    totalRechargeHint: 'Completed orders on this page',
+    totalRecharge: 'Total Recharge',
+    totalRechargeHint: 'All-time recharge total for your account',
     latest: 'Latest Order'
   },
 

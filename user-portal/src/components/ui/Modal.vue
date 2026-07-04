@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -11,6 +14,9 @@ const props = withDefaults(
   { title: undefined, size: 'md' }
 )
 const emit = defineEmits<{ close: [] }>()
+
+// 无 title 时用通用词条兜底，保证屏幕阅读器始终能播报对话框名称
+const ariaLabel = computed(() => props.title ?? t('ui.dialog'))
 
 const panel = ref<HTMLElement | null>(null)
 // 打开前的焦点元素，关闭时还焦
@@ -88,7 +94,7 @@ onBeforeUnmount(() => {
         ref="panel"
         role="dialog"
         aria-modal="true"
-        :aria-label="title"
+        :aria-label="ariaLabel"
         tabindex="-1"
         class="relative z-10 w-full rounded-xl4 bg-card p-7 shadow-menu outline-hidden"
         :class="size === 'xl' ? 'max-w-[720px]' : size === 'lg' ? 'max-w-[640px]' : 'max-w-[460px]'"

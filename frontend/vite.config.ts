@@ -62,6 +62,8 @@ export default defineConfig(({ mode }) => {
   },
   build: {
     outDir: '../backend/internal/web/dist',
+    // emptyOutDir 会连 dist/.keep 占位文件（go:embed 兜底所需，见根 .gitignore）一起清掉；
+    // 靠 public/.keep 在每次构建时被原样拷回 dist/ 自愈，勿删 public/.keep
     emptyOutDir: true,
     rollupOptions: {
       output: {

@@ -33,18 +33,37 @@ function platformDot(platform: string | undefined): string {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-xl3 bg-card shadow-card">
+  <div
+    role="table"
+    class="overflow-hidden rounded-xl3 bg-card shadow-card"
+  >
     <!-- 表头 -->
     <div
+      role="row"
       class="grid grid-cols-[1fr_1.4fr_1.3fr_0.8fr_1.2fr_0.8fr_1.6fr] gap-4 border-b border-track px-[26px] py-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint"
     >
-      <div>{{ $t('keys.table.name') }}</div>
-      <div>{{ $t('keys.table.key') }}</div>
-      <div>{{ $t('keys.table.group') }}</div>
-      <div>{{ $t('keys.table.status') }}</div>
-      <div>{{ $t('keys.table.usage') }}</div>
-      <div>{{ $t('keys.table.rate') }}</div>
-      <div class="text-right">
+      <div role="columnheader">
+        {{ $t('keys.table.name') }}
+      </div>
+      <div role="columnheader">
+        {{ $t('keys.table.key') }}
+      </div>
+      <div role="columnheader">
+        {{ $t('keys.table.group') }}
+      </div>
+      <div role="columnheader">
+        {{ $t('keys.table.status') }}
+      </div>
+      <div role="columnheader">
+        {{ $t('keys.table.usage') }}
+      </div>
+      <div role="columnheader">
+        {{ $t('keys.table.rate') }}
+      </div>
+      <div
+        role="columnheader"
+        class="text-right"
+      >
         {{ $t('keys.table.actions') }}
       </div>
     </div>
@@ -53,16 +72,20 @@ function platformDot(platform: string | undefined): string {
     <div
       v-for="row in rows"
       :key="row.id"
+      role="row"
       class="grid grid-cols-[1fr_1.4fr_1.3fr_0.8fr_1.2fr_0.8fr_1.6fr] items-center gap-4 border-b border-rowline px-[26px] py-5 transition-colors hover:bg-hover"
       :class="row.status === 'inactive' ? 'opacity-[0.72]' : ''"
     >
       <!-- 名称 -->
-      <div class="text-sm font-semibold text-text">
+      <div
+        role="cell"
+        class="text-sm font-semibold text-text"
+      >
         {{ row.name }}
       </div>
 
       <!-- 密钥（独占一列，可复制） -->
-      <div>
+      <div role="cell">
         <button
           type="button"
           class="inline-flex max-w-full cursor-pointer items-center gap-[7px] rounded-[7px] px-[9px] py-1 text-xs font-medium transition-colors"
@@ -93,7 +116,7 @@ function platformDot(platform: string | undefined): string {
       </div>
 
       <!-- 分组 -->
-      <div>
+      <div role="cell">
         <span
           v-if="row.group"
           class="inline-flex items-center gap-1.5 text-[13px] font-medium text-text"
@@ -114,7 +137,7 @@ function platformDot(platform: string | undefined): string {
       </div>
 
       <!-- 状态 -->
-      <div>
+      <div role="cell">
         <StatusBadge
           :variant="row.status === 'active' ? 'active' : 'inactive'"
           :label="row.status === 'active' ? $t('keys.status.active') : $t('keys.status.inactive')"
@@ -122,18 +145,27 @@ function platformDot(platform: string | undefined): string {
       </div>
 
       <!-- 用量 -->
-      <div class="text-[13px] leading-relaxed text-text3">
+      <div
+        role="cell"
+        class="text-[13px] leading-relaxed text-text3"
+      >
         {{ $t('keys.table.today') }} <b class="font-semibold text-text">${{ formatCost(usage[String(row.id)]?.today_actual_cost ?? 0) }}</b><br>
         {{ $t('keys.table.last30d') }} <b class="font-semibold text-text">${{ formatCost(usage[String(row.id)]?.total_actual_cost ?? 0) }}</b>
       </div>
 
       <!-- 速率 -->
-      <div class="text-[13px] font-medium text-text2">
+      <div
+        role="cell"
+        class="text-[13px] font-medium text-text2"
+      >
         {{ row.rate_limit_1d ? $t('keys.table.ratePerDay', { n: row.rate_limit_1d }) : '—' }}
       </div>
 
       <!-- 操作 -->
-      <div class="flex flex-wrap justify-end gap-0.5">
+      <div
+        role="cell"
+        class="flex flex-wrap justify-end gap-0.5"
+      >
         <button
           class="inline-flex cursor-pointer items-center gap-[5px] rounded-lg px-[9px] py-[6px] text-xs font-medium text-text3 transition-colors hover:bg-muted hover:text-text"
           @click="emit('use', row)"

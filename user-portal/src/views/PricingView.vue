@@ -95,14 +95,22 @@ function multiplierNote(multiplier: number): string {
 
 <template>
   <PortalLayout>
-    <!-- 页头 -->
-    <div class="mb-[34px]">
-      <h1 class="mb-2 font-serif text-4xl font-medium tracking-tight text-text">
-        {{ $t('pricing.title') }}
-      </h1>
-      <p class="text-sm text-subtle">
-        {{ $t('pricing.subtitle') }}
-      </p>
+    <!-- 页头（左：标题/副标题，右：跳充值 CTA；窄屏时按钮自动换行到标题下方） -->
+    <div class="mb-[34px] flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="mb-2 font-serif text-4xl font-medium tracking-tight text-text">
+          {{ $t('pricing.title') }}
+        </h1>
+        <p class="text-sm text-subtle">
+          {{ $t('pricing.subtitle') }}
+        </p>
+      </div>
+      <RouterLink
+        to="/recharge"
+        class="inline-block cursor-pointer rounded-full border-[1.5px] border-text bg-card px-7 py-3 text-sm font-semibold text-text"
+      >
+        {{ $t('pricing.recharge') }} →
+      </RouterLink>
     </div>
 
     <!-- 渠道价格卡片（2×2） -->

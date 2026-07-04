@@ -7,6 +7,14 @@ import { toLocalDate } from '@/utils/format'
 import { errMessage } from '@/utils/error'
 import { useLatestRequest } from '@/composables/useLatestRequest'
 
+/** 默认使用记录查询区间：近 7 天（含今天）。供初始 filters 与「重置筛选」共用同一定义，避免手抄副本漂移 */
+export function defaultUsageRange(): { start_date: string; end_date: string } {
+  return {
+    start_date: toLocalDate(new Date(Date.now() - 6 * 86_400_000)),
+    end_date: toLocalDate(new Date())
+  }
+}
+
 export function useUsage() {
   const rows = ref<UsageLog[]>([])
   const total = ref(0)
@@ -16,8 +24,7 @@ export function useUsage() {
   const keys = ref<ApiKey[]>([])
   const filters = reactive({
     api_key_id: '' as number | '',
-    start_date: toLocalDate(new Date(Date.now() - 6 * 86_400_000)),
-    end_date: toLocalDate(new Date()),
+    ...defaultUsageRange(),
   })
   const loading = ref(false)
   const error = ref<string | null>(null)

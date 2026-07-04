@@ -8,7 +8,7 @@ import StatCard from '@/components/ui/StatCard.vue'
 import FilterBar from '@/components/ui/FilterBar.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import UsageLogTable from '@/components/usage/UsageLogTable.vue'
-import { useUsage } from '@/composables/useUsage'
+import { useUsage, defaultUsageRange } from '@/composables/useUsage'
 import { useToast } from '@/composables/useToast'
 import { downloadCsv } from '@/utils/csv'
 import { errMessage } from '@/utils/error'
@@ -20,7 +20,6 @@ import {
   formatReasoningEffort,
   formatBillingType,
   cacheHitRate,
-  toLocalDate,
 } from '@/utils/format'
 
 const { t } = useI18n()
@@ -53,8 +52,7 @@ function resetPageAndLoad() {
 
 function handleReset() {
   filters.api_key_id = ''
-  filters.start_date = toLocalDate(new Date(Date.now() - 6 * 86_400_000))
-  filters.end_date = toLocalDate(new Date())
+  Object.assign(filters, defaultUsageRange())
   page.value = 1
   load()
 }

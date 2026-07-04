@@ -5,6 +5,7 @@ import { listKeys } from '@/api/keys'
 import type { UsageLog, UserDashboardStats, ApiKey } from '@/api/types'
 import { toLocalDate } from '@/utils/format'
 import { errMessage } from '@/utils/error'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 
 export function useUsage() {
   const rows = ref<UsageLog[]>([])
@@ -35,30 +36,27 @@ export function useUsage() {
   }
 
   // 竞态守卫：翻页/改筛选连发请求时只让最后一次的响应落地；旧列表请求直接取消
-  let loadSeq = 0
-  let loadAbort: AbortController | null = null
+  const { next, isLatest } = useLatestRequest()
 
   async function load() {
-    const seq = ++loadSeq
-    loadAbort?.abort()
-    loadAbort = new AbortController()
+    const { seq, signal } = next(true)
     loading.value = true
     error.value = null
     try {
       const [res, s] = await Promise.all([
-        queryUsage(params(), { signal: loadAbort.signal }),
+        queryUsage(params(), { signal }),
         getDashboardStats()
       ])
-      if (seq !== loadSeq) return
+      if (!isLatest(seq)) return
       rows.value = res.items
       total.value = res.total
       stats.value = s
       loaded.value = true
     } catch (e) {
-      if (seq !== loadSeq) return // 已被更新的请求取代（含主动取消），过期失败不展示
+      if (!isLatest(seq)) return // 已被更新的请求取代（含主动取消），过期失败不展示
       error.value = errMessage(e, i18n.global.t('common.loadFailed'))
     } finally {
-      if (seq === loadSeq) loading.value = false
+      if (isLatest(seq)) loading.value = false
     }
   }
 

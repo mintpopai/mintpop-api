@@ -4,6 +4,7 @@ import * as keysApi from '@/api/keys'
 import * as groupsApi from '@/api/groups'
 import type { ApiKey, Group, ApiKeyUsageStat, CreateApiKeyRequest, UpdateApiKeyRequest } from '@/api/types'
 import { errMessage } from '@/utils/error'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 
 export function useKeys() {
   const rows = ref<ApiKey[]>([])
@@ -22,10 +23,10 @@ export function useKeys() {
   const loaded = ref(false)
 
   // 竞态守卫：翻页/改筛选连发请求时只让最后一次的响应落地
-  let loadSeq = 0
+  const { next, isLatest } = useLatestRequest()
 
   async function load() {
-    const seq = ++loadSeq
+    const { seq } = next()
     loading.value = true
     error.value = null
     try {
@@ -34,22 +35,22 @@ export function useKeys() {
         status: filters.status || undefined,
         group_id: filters.group_id || undefined
       })
-      if (seq !== loadSeq) return
+      if (!isLatest(seq)) return
       rows.value = res.items
       total.value = res.total
       loaded.value = true
       // 批量用量（非关键，失败不阻断）
       try {
         const u = await keysApi.getKeysUsage(res.items.map((k) => k.id))
-        if (seq === loadSeq) usage.value = u
+        if (isLatest(seq)) usage.value = u
       } catch {
-        if (seq === loadSeq) usage.value = {}
+        if (isLatest(seq)) usage.value = {}
       }
     } catch (e) {
-      if (seq !== loadSeq) return // 已被更新的请求取代，过期失败不展示
+      if (!isLatest(seq)) return // 已被更新的请求取代，过期失败不展示
       error.value = errMessage(e, i18n.global.t('common.loadFailed'))
     } finally {
-      if (seq === loadSeq) loading.value = false
+      if (isLatest(seq)) loading.value = false
     }
   }
 

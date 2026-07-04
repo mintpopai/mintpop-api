@@ -3,6 +3,7 @@ import i18n from '@/i18n'
 import { getMyOrders, cancelOrder } from '@/api/payment'
 import type { PaymentOrder } from '@/api/types'
 import { errMessage } from '@/utils/error'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 
 export function useOrders() {
   const rows = ref<PaymentOrder[]>([])
@@ -16,10 +17,10 @@ export function useOrders() {
   const loaded = ref(false)
 
   // 竞态守卫：翻页/改筛选连发请求时只让最后一次的响应落地
-  let loadSeq = 0
+  const { next, isLatest } = useLatestRequest()
 
   async function load() {
-    const seq = ++loadSeq
+    const { seq } = next()
     loading.value = true
     error.value = null
     try {
@@ -28,15 +29,15 @@ export function useOrders() {
         page_size: pageSize.value,
         status: statusFilter.value || undefined
       })
-      if (seq !== loadSeq) return
+      if (!isLatest(seq)) return
       rows.value = res.items
       total.value = res.total
       loaded.value = true
     } catch (e) {
-      if (seq !== loadSeq) return // 已被更新的请求取代，过期失败不展示
+      if (!isLatest(seq)) return // 已被更新的请求取代，过期失败不展示
       error.value = errMessage(e, i18n.global.t('common.loadFailed'))
     } finally {
-      if (seq === loadSeq) loading.value = false
+      if (isLatest(seq)) loading.value = false
     }
   }
 

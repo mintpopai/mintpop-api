@@ -81,6 +81,21 @@ const operator = (value: string) => wrapToken('text-slate-400', value)
 const string = (value: string) => wrapToken('text-amber-200', value)
 const comment = (value: string) => wrapToken('text-slate-500', value)
 
+// content（复制用纯文本）与 highlighted（展示用高亮 HTML）曾各自手写，改一漏一会漂移
+// （例如曾出现 cmd 分支的注释行只加进了 highlighted、content 里漏掉）。现在 highlighted
+// 是唯一手写源，content 一律由本函数「剥 span 标签 + 反转义 HTML 实体」派生，两者天然一致。
+// 与 escapeHtml 的转义顺序（& < > " '）互为逆操作：必须最后才还原 &amp;，否则会把
+// 原本合法的 "&amp;lt;" 误还原成 "<"（两次反转义）。
+export function stripHighlightMarkup(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, '\'')
+    .replace(/&amp;/g, '&')
+}
+
 // ==================== 各客户端配置生成 ====================
 
 function generateAnthropicFiles(shell: string, baseUrl: string, apiKey: string): FileConfig[] {
@@ -135,24 +150,17 @@ function generateGeminiCliContent(shell: string, baseUrl: string, apiKey: string
   const model = 'gemini-2.0-flash'
   const modelComment = t('keys.useKeyModal.gemini.modelComment')
   let path: string
-  let content: string
   let highlighted: string
 
   switch (shell) {
     case 'unix':
       path = 'Terminal'
-      content = `export GOOGLE_GEMINI_BASE_URL="${baseUrl}"
-export GEMINI_API_KEY="${apiKey}"
-export GEMINI_MODEL="${model}"  # ${modelComment}`
       highlighted = `${keyword('export')} ${variable('GOOGLE_GEMINI_BASE_URL')}${operator('=')}${string(`"${baseUrl}"`)}
 ${keyword('export')} ${variable('GEMINI_API_KEY')}${operator('=')}${string(`"${apiKey}"`)}
 ${keyword('export')} ${variable('GEMINI_MODEL')}${operator('=')}${string(`"${model}"`)}  ${comment(`# ${modelComment}`)}`
       break
     case 'cmd':
       path = 'Command Prompt'
-      content = `set GOOGLE_GEMINI_BASE_URL=${baseUrl}
-set GEMINI_API_KEY=${apiKey}
-set GEMINI_MODEL=${model}`
       highlighted = `${keyword('set')} ${variable('GOOGLE_GEMINI_BASE_URL')}${operator('=')}${string(baseUrl)}
 ${keyword('set')} ${variable('GEMINI_API_KEY')}${operator('=')}${string(apiKey)}
 ${keyword('set')} ${variable('GEMINI_MODEL')}${operator('=')}${string(model)}
@@ -160,20 +168,16 @@ ${comment(`REM ${modelComment}`)}`
       break
     case 'powershell':
       path = 'PowerShell'
-      content = `$env:GOOGLE_GEMINI_BASE_URL="${baseUrl}"
-$env:GEMINI_API_KEY="${apiKey}"
-$env:GEMINI_MODEL="${model}"  # ${modelComment}`
       highlighted = `${keyword('$env:')}${variable('GOOGLE_GEMINI_BASE_URL')}${operator('=')}${string(`"${baseUrl}"`)}
 ${keyword('$env:')}${variable('GEMINI_API_KEY')}${operator('=')}${string(`"${apiKey}"`)}
 ${keyword('$env:')}${variable('GEMINI_MODEL')}${operator('=')}${string(`"${model}"`)}  ${comment(`# ${modelComment}`)}`
       break
     default:
       path = 'Terminal'
-      content = ''
       highlighted = ''
   }
 
-  return { path, content, highlighted }
+  return { path, content: stripHighlightMarkup(highlighted), highlighted }
 }
 
 function generateCodexFiles(shell: string, baseUrl: string, apiKey: string, websocket: boolean): FileConfig[] {

@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/components/ui/Modal.vue'
 import type { Group, CreateApiKeyRequest, ApiKey } from '@/api/types'
 import { useCopy } from '@/composables/useCopy'
 
 const { t } = useI18n()
+
+// label for/id 关联；useId() 保证弹窗多实例（如未来同页多开）不撞 id
+const nameFieldId = useId()
+const groupFieldId = useId()
+const expiryFieldId = useId()
+const quotaFieldId = useId()
 
 const props = defineProps<{ open: boolean; groups: Group[] }>()
 const emit = defineEmits<{
@@ -80,8 +86,12 @@ function copyKey() {
       <div class="flex flex-col gap-4">
         <!-- 名称 -->
         <div>
-          <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.name') }} <span class="text-neg">*</span></label>
+          <label
+            :for="nameFieldId"
+            class="mb-1.5 block text-xs font-medium text-text2"
+          >{{ $t('keys.form.name') }} <span class="text-neg">*</span></label>
           <input
+            :id="nameFieldId"
             v-model="name"
             type="text"
             :placeholder="$t('keys.form.namePlaceholder')"
@@ -92,8 +102,12 @@ function copyKey() {
 
         <!-- 分组 -->
         <div>
-          <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.group') }}</label>
+          <label
+            :for="groupFieldId"
+            class="mb-1.5 block text-xs font-medium text-text2"
+          >{{ $t('keys.form.group') }}</label>
           <select
+            :id="groupFieldId"
             v-model="groupId"
             class="w-full input-base"
           >
@@ -112,8 +126,12 @@ function copyKey() {
 
         <!-- 有效期 -->
         <div>
-          <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.expiryLabel') }}</label>
+          <label
+            :for="expiryFieldId"
+            class="mb-1.5 block text-xs font-medium text-text2"
+          >{{ $t('keys.form.expiryLabel') }}</label>
           <input
+            :id="expiryFieldId"
             v-model.number="expiresInDays"
             type="number"
             min="1"
@@ -124,8 +142,12 @@ function copyKey() {
 
         <!-- 配额 -->
         <div>
-          <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.quotaLabel') }}</label>
+          <label
+            :for="quotaFieldId"
+            class="mb-1.5 block text-xs font-medium text-text2"
+          >{{ $t('keys.form.quotaLabel') }}</label>
           <input
+            :id="quotaFieldId"
             v-model.number="quota"
             type="number"
             min="0"

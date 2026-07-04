@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, useId, watch } from 'vue'
 import Modal from '@/components/ui/Modal.vue'
 import type { ApiKey, Group, UpdateApiKeyRequest } from '@/api/types'
+
+// label for/id 关联；useId() 保证弹窗多实例不撞 id
+const nameFieldId = useId()
+const groupFieldId = useId()
 
 const props = defineProps<{
   open: boolean
@@ -68,8 +72,12 @@ function submit() {
     <div class="flex flex-col gap-4">
       <!-- 名称 -->
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.name') }} <span class="text-neg">*</span></label>
+        <label
+          :for="nameFieldId"
+          class="mb-1.5 block text-xs font-medium text-text2"
+        >{{ $t('keys.form.name') }} <span class="text-neg">*</span></label>
         <input
+          :id="nameFieldId"
           v-model="name"
           type="text"
           :placeholder="$t('keys.form.editNamePlaceholder')"
@@ -79,8 +87,12 @@ function submit() {
 
       <!-- 分组 -->
       <div>
-        <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.form.group') }}</label>
+        <label
+          :for="groupFieldId"
+          class="mb-1.5 block text-xs font-medium text-text2"
+        >{{ $t('keys.form.group') }}</label>
         <select
+          :id="groupFieldId"
           v-model="groupId"
           class="w-full input-base"
         >

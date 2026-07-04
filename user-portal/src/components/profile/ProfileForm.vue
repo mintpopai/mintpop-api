@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import type { User } from '@/api/types'
 import { compressToDataUrl } from '@/utils/avatar'
 
 const { t } = useI18n()
+// label for/id 关联；useId() 生成 SSR 安全唯一 id
+const usernameFieldId = useId()
 const props = defineProps<{ user: User }>()
 // 元组语法，与全仓其余组件的 defineEmits 风格一致
 const emit = defineEmits<{
@@ -115,10 +117,14 @@ function onSaveUsername() {
 
       <!-- 用户名编辑 -->
       <div>
-        <label class="mb-[9px] block text-[12px] font-semibold uppercase tracking-[0.06em] text-text2">
+        <label
+          :for="usernameFieldId"
+          class="mb-[9px] block text-[12px] font-semibold uppercase tracking-[0.06em] text-text2"
+        >
           {{ $t('profile.form.username') }}
         </label>
         <input
+          :id="usernameFieldId"
           v-model="username"
           class="mb-[16px] w-full input-base"
           type="text"

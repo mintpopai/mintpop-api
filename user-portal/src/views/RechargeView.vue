@@ -500,7 +500,7 @@ onMounted(async () => {
     >
       <div class="flex flex-col items-center text-center">
         <!-- 成功图标 -->
-        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-pos/[0.12] text-pos">
+        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-pos/12 text-pos">
           <svg
             width="30"
             height="30"

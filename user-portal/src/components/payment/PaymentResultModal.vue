@@ -345,7 +345,7 @@ onBeforeUnmount(() => {
         <!-- 加载失败 -->
         <p
           v-if="stripeInitError"
-          class="rounded-xl2 bg-neg/[0.08] px-4 py-3 text-center text-sm font-medium text-neg"
+          class="rounded-xl2 bg-neg/8 px-4 py-3 text-center text-sm font-medium text-neg"
         >
           {{ stripeInitError }}
         </p>
@@ -455,8 +455,8 @@ onBeforeUnmount(() => {
         v-if="!isStripe || stripeProcessing"
         class="w-full rounded-xl2 px-4 py-3 text-center text-sm font-medium"
         :class="{
-          'bg-pos/[0.08] text-pos': status === 'PAID' || status === 'COMPLETED',
-          'bg-neg/[0.08] text-neg': status === 'FAILED',
+          'bg-pos/8 text-pos': status === 'PAID' || status === 'COMPLETED',
+          'bg-neg/8 text-neg': status === 'FAILED',
           'bg-muted text-text3': status === 'PENDING' || !status
         }"
       >

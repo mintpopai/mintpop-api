@@ -260,7 +260,7 @@ function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
       </FilterBar>
 
       <!-- 表格卡片 -->
-      <div class="overflow-hidden rounded-[18px] bg-card shadow-[0_2px_12px_rgba(0,0,0,.04)]">
+      <div class="overflow-hidden rounded-xl3 bg-card shadow-[0_2px_12px_rgba(0,0,0,.04)]">
         <!-- 加载中遮罩 -->
         <div
           v-if="loading && loaded"

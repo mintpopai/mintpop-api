@@ -30,7 +30,7 @@ const hasAmount = computed(() => props.amount !== null && props.amount > 0)
 <template>
   <div class="rounded-[20px] bg-card p-[24px_26px] shadow-card">
     <!-- 小标签 -->
-    <div class="mb-[18px] text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+    <div class="mb-[18px] text-[11px] font-medium uppercase tracking-widest text-faint">
       {{ $t('recharge.orderDetails') }}
     </div>
 

@@ -13,7 +13,7 @@ defineProps<{
   >
     <!-- 网点装饰 -->
     <div
-      class="pointer-events-none absolute -bottom-[50px] -right-10 h-[260px] w-[260px] opacity-60"
+      class="pointer-events-none absolute bottom-[-50px] -right-10 h-[260px] w-[260px] opacity-60"
       style="
         background: linear-gradient(150deg, #0e9e72 0%, #14c28a 45%, rgba(20, 194, 138, 0) 92%);
         -webkit-mask-image: radial-gradient(#000 2px, transparent 2.2px);
@@ -30,7 +30,7 @@ defineProps<{
       <div class="num text-[64px] font-medium leading-[0.95] tracking-tight text-text">
         ${{ formatBalance(balance) }}
       </div>
-      <div class="mt-[18px] inline-block h-1 w-[60px] rounded-sm bg-accent" />
+      <div class="mt-[18px] inline-block h-1 w-[60px] rounded-xs bg-accent" />
       <div class="mt-[13px] text-sm text-subtle">
         {{ $t('dashboard.hero.todayCost', { cost: formatCost(todayCost) }) }}
       </div>

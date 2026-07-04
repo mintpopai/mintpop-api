@@ -6,7 +6,7 @@
 
 ## 技术栈
 
-Vite + Vue3(`<script setup>`) + TypeScript + Pinia + Vue Router + vue-i18n + Tailwind + Chart.js。工具链经 **mise** 锁定（node 20.18.1 / pnpm 9.15.9）。
+Vite 8 + Vue3(`<script setup>`) + TypeScript + Pinia 3 + Vue Router + vue-i18n + Tailwind 4（CSS-first 配置，见 `src/styles/theme.css`）+ Chart.js。工具链经 **mise** 锁定（node 22.23.1 / pnpm 9.15.9；node 22 仅经根 mise.toml 各 user-portal task 的 `tools` 覆盖生效，全仓默认仍是 20.18.1，不影响 frontend/backend）。
 
 ## 本地开发
 

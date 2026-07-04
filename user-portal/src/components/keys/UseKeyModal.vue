@@ -223,7 +223,7 @@ function copyContent(content: string, index: number) {
         class="flex items-start gap-3 rounded-xl2 border border-[#F59E0B]/40 bg-[#F59E0B]/[0.07] p-4"
       >
         <svg
-          class="mt-0.5 h-5 w-5 flex-shrink-0 text-[#F59E0B]"
+          class="mt-0.5 h-5 w-5 shrink-0 text-[#F59E0B]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -320,7 +320,7 @@ function copyContent(content: string, index: number) {
               class="mb-1.5 flex items-center gap-1 text-xs text-[#C77800]"
             >
               <svg
-                class="h-3.5 w-3.5 flex-shrink-0"
+                class="h-3.5 w-3.5 shrink-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -395,10 +395,10 @@ function copyContent(content: string, index: number) {
         <!-- 使用提示 -->
         <div
           v-if="showPlatformNote"
-          class="flex items-start gap-3 rounded-xl2 border border-accent/30 bg-accent/[0.08] p-3"
+          class="flex items-start gap-3 rounded-xl2 border border-accent/30 bg-accent/8 p-3"
         >
           <svg
-            class="mt-0.5 h-5 w-5 flex-shrink-0 text-accent"
+            class="mt-0.5 h-5 w-5 shrink-0 text-accent"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

@@ -179,7 +179,7 @@ async function doToggle(key: ApiKey) {
             type="text"
             :placeholder="$t('keys.searchPlaceholder')"
             :aria-label="$t('keys.searchPlaceholder')"
-            class="w-full rounded-[11px] border-[1.5px] border-border2 bg-card py-[11px] pl-10 pr-4 text-sm text-text outline-none focus:border-accent"
+            class="w-full rounded-[11px] border-[1.5px] border-border2 bg-card py-[11px] pl-10 pr-4 text-sm text-text outline-hidden focus:border-accent"
             @change="k.load()"
           >
         </div>
@@ -187,7 +187,7 @@ async function doToggle(key: ApiKey) {
         <!-- 分组筛选 -->
         <select
           v-model="k.filters.group_id"
-          class="rounded-[11px] border-[1.5px] border-border2 bg-card px-4 py-[11px] text-[13px] font-medium text-text2 outline-none focus:border-accent"
+          class="rounded-[11px] border-[1.5px] border-border2 bg-card px-4 py-[11px] text-[13px] font-medium text-text2 outline-hidden focus:border-accent"
           @change="k.load()"
         >
           <option value="">
@@ -205,7 +205,7 @@ async function doToggle(key: ApiKey) {
         <!-- 状态筛选 -->
         <select
           v-model="k.filters.status"
-          class="rounded-[11px] border-[1.5px] border-border2 bg-card px-4 py-[11px] text-[13px] font-medium text-text2 outline-none focus:border-accent"
+          class="rounded-[11px] border-[1.5px] border-border2 bg-card px-4 py-[11px] text-[13px] font-medium text-text2 outline-hidden focus:border-accent"
           @change="k.load()"
         >
           <option value="">

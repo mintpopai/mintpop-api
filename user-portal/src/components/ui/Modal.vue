@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
         aria-modal="true"
         :aria-label="title"
         tabindex="-1"
-        class="relative z-10 w-full rounded-xl4 bg-card p-7 shadow-menu outline-none"
+        class="relative z-10 w-full rounded-xl4 bg-card p-7 shadow-menu outline-hidden"
         :class="size === 'xl' ? 'max-w-[720px]' : size === 'lg' ? 'max-w-[640px]' : 'max-w-[460px]'"
       >
         <h3

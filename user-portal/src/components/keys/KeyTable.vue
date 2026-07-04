@@ -73,7 +73,7 @@ function platformDot(platform: string | undefined): string {
           <span class="truncate font-mono">{{ maskApiKey(row.key) }}</span>
           <svg
             v-if="copiedId === row.id"
-            class="h-3.5 w-3.5 flex-shrink-0"
+            class="h-3.5 w-3.5 shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -87,7 +87,7 @@ function platformDot(platform: string | undefined): string {
           </svg>
           <span
             v-else
-            class="flex-shrink-0 text-accent"
+            class="shrink-0 text-accent"
           >⧉</span>
         </button>
       </div>

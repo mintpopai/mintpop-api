@@ -37,7 +37,7 @@ defineProps<{ rows: UsageLog[] }>()
       <div
         v-for="row in rows"
         :key="row.id"
-        class="grid items-center gap-[14px] border-b border-rowline px-[26px] py-[18px] transition-colors duration-[120ms] hover:bg-hover"
+        class="grid items-center gap-[14px] border-b border-rowline px-[26px] py-[18px] transition-colors duration-120 hover:bg-hover"
         style="grid-template-columns: 0.7fr 1.3fr 0.8fr 1fr 0.7fr 0.8fr 1fr 0.9fr 0.7fr 0.7fr 1.1fr"
       >
         <!-- 密钥 -->
@@ -54,7 +54,7 @@ defineProps<{ rows: UsageLog[] }>()
         <div>
           <span
             v-if="row.reasoning_effort"
-            class="rounded-[6px] bg-[#9B7BE0]/[0.12] px-2.5 py-[3px] text-[11px] font-semibold text-[#9B7BE0]"
+            class="rounded-[6px] bg-[#9B7BE0]/12 px-2.5 py-[3px] text-[11px] font-semibold text-[#9B7BE0]"
           >
             {{ formatReasoningEffort(row.reasoning_effort) }}
           </span>
@@ -71,7 +71,7 @@ defineProps<{ rows: UsageLog[] }>()
 
         <!-- 类型（流式/同步） -->
         <div>
-          <span class="rounded-[6px] bg-[#2A6FDB]/[0.10] px-2.5 py-[3px] text-[11px] font-semibold text-[#2A6FDB]">
+          <span class="rounded-[6px] bg-[#2A6FDB]/10 px-2.5 py-[3px] text-[11px] font-semibold text-[#2A6FDB]">
             {{ row.stream ? $t('usage.table.stream') : $t('usage.table.sync') }}
           </span>
         </div>
@@ -108,7 +108,7 @@ defineProps<{ rows: UsageLog[] }>()
         </div>
 
         <!-- 时间 · UA -->
-        <div class="text-[11px] leading-[1.5] text-text3">
+        <div class="text-[11px] leading-normal text-text3">
           {{ formatDateTime(row.created_at) }}
           <br>
           <span class="text-faint">{{ row.user_agent ?? '' }}</span>

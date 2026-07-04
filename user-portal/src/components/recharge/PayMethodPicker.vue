@@ -57,10 +57,10 @@ function pick(key: string) {
         role="radio"
         :aria-checked="model === key"
         tabindex="0"
-        class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-[140ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-140 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
           model === key
-            ? 'border-accent bg-accent/[0.06]'
+            ? 'border-accent bg-accent/6'
             : 'border-border2 bg-card hover:border-[#9FE6CD]'
         "
         @click="pick(key)"
@@ -125,7 +125,7 @@ function pick(key: string) {
 
         <!-- 选中标记 -->
         <span
-          class="h-[18px] w-[18px] flex-none rounded-full transition-[background,box-shadow] duration-[140ms]"
+          class="h-[18px] w-[18px] flex-none rounded-full transition-[background,box-shadow] duration-140"
           :class="
             model === key
               ? 'bg-accent shadow-[inset_0_0_0_3px_#fff,0_0_0_1px_#14C28A]'

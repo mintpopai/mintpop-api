@@ -56,7 +56,7 @@ function onSaveUsername() {
 </script>
 
 <template>
-  <div class="mb-[22px] rounded-[18px] bg-card px-[30px] py-[28px] shadow-soft">
+  <div class="mb-[22px] rounded-xl3 bg-card px-[30px] py-[28px] shadow-soft">
     <h3 class="mb-[4px] font-serif text-[20px] font-medium text-text">
       {{ $t('profile.form.title') }}
     </h3>
@@ -70,14 +70,14 @@ function onSaveUsername() {
         <!-- 头像预览 -->
         <UserAvatar
           :user="props.user"
-          box-class="h-[72px] w-[72px] rounded-[18px] text-[28px]"
+          box-class="h-[72px] w-[72px] rounded-xl3 text-[28px]"
         />
 
         <div>
           <div class="mb-[5px] text-[14px] font-semibold text-text">
             {{ $t('profile.form.avatarLabel') }}
           </div>
-          <div class="mb-[12px] text-[12px] leading-[1.5] text-[#A8A49A]">
+          <div class="mb-[12px] text-[12px] leading-normal text-[#A8A49A]">
             {{ $t('profile.form.avatarHint') }}
           </div>
           <div class="flex gap-[8px]">

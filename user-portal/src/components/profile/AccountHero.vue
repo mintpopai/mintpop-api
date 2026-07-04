@@ -69,7 +69,7 @@ function roleLabel(role: string | undefined): string {
     <div class="relative grid grid-cols-3 gap-[16px]">
       <!-- 账户余额 -->
       <div class="rounded-[14px] bg-bg px-[20px] py-[18px]">
-        <div class="mb-[12px] text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+        <div class="mb-[12px] text-[11px] font-medium uppercase tracking-widest text-faint">
           {{ $t('profile.stats.balance') }}
         </div>
         <div class="font-serif text-[28px] font-medium leading-none text-text">
@@ -79,7 +79,7 @@ function roleLabel(role: string | undefined): string {
 
       <!-- 并发限制 -->
       <div class="rounded-[14px] bg-bg px-[20px] py-[18px]">
-        <div class="mb-[12px] text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+        <div class="mb-[12px] text-[11px] font-medium uppercase tracking-widest text-faint">
           {{ $t('profile.stats.concurrency') }}
         </div>
         <div class="font-serif text-[28px] font-medium leading-none text-text">
@@ -89,7 +89,7 @@ function roleLabel(role: string | undefined): string {
 
       <!-- 注册时间 -->
       <div class="rounded-[14px] bg-bg px-[20px] py-[18px]">
-        <div class="mb-[12px] text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+        <div class="mb-[12px] text-[11px] font-medium uppercase tracking-widest text-faint">
           {{ $t('profile.stats.registeredAt') }}
         </div>
         <div class="font-serif text-[28px] font-medium leading-none text-text">

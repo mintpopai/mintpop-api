@@ -5,7 +5,7 @@ const styles: Record<string, string> = {
   paid: 'text-pos bg-accent/10',
   inactive: 'text-subtle bg-track',
   muted: 'text-subtle bg-track',
-  pending: 'text-[#C77800] bg-[#F59E0B]/[0.13]',
+  pending: 'text-[#C77800] bg-[#F59E0B]/13',
   neg: 'text-neg bg-neg/10'
 }
 const cls = () => styles[props.variant] ?? styles.muted

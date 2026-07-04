@@ -108,7 +108,7 @@ const validationMsg = computed(() => {
         role="radio"
         :aria-checked="!isCustom && selectedPreset === v"
         tabindex="0"
-        class="relative cursor-pointer rounded-xl2 border-[1.5px] p-[18px_16px_16px] transition-[border-color,background,box-shadow] duration-[140ms] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        class="relative cursor-pointer rounded-xl2 border-[1.5px] p-[18px_16px_16px] transition-[border-color,background,box-shadow] duration-140 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
           !isCustom && selectedPreset === v
             ? 'border-accent bg-accent/[0.07] shadow-[0_2px_10px_rgba(20,194,138,0.14)]'
@@ -138,7 +138,7 @@ const validationMsg = computed(() => {
     </div>
 
     <!-- 自定义金额 -->
-    <div class="mb-[10px] mt-6 text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+    <div class="mb-[10px] mt-6 text-[11px] font-medium uppercase tracking-widest text-faint">
       {{ $t('recharge.customAmount') }}
     </div>
     <div class="relative">
@@ -146,7 +146,7 @@ const validationMsg = computed(() => {
         class="absolute left-4 top-1/2 -translate-y-1/2 text-base font-medium text-subtle"
       >$</span>
       <input
-        class="w-full input-base py-[15px] pl-[38px] pr-4 text-base font-medium placeholder:font-normal duration-[140ms]"
+        class="w-full input-base py-[15px] pl-[38px] pr-4 text-base font-medium placeholder:font-normal duration-140"
         :placeholder="min > 0 ? $t('recharge.amountPlaceholder', { min }) : $t('recharge.amountPlaceholderNoMin')"
         :value="customInput"
         inputmode="decimal"

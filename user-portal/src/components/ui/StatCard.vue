@@ -4,7 +4,7 @@ defineProps<{ label: string; value: string; hint?: string; accent?: boolean }>()
 
 <template>
   <div class="rounded-xl2 bg-card p-[22px] shadow-soft">
-    <div class="mb-3.5 text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+    <div class="mb-3.5 text-[11px] font-medium uppercase tracking-widest text-faint">
       {{ label }}
     </div>
     <div

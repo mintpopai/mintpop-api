@@ -49,7 +49,7 @@ const providers = computed<ProviderRow[]>(() => {
 </script>
 
 <template>
-  <div class="rounded-[18px] bg-card px-[30px] py-[28px] shadow-soft">
+  <div class="rounded-xl3 bg-card px-[30px] py-[28px] shadow-soft">
     <h3 class="mb-[4px] font-serif text-[20px] font-medium text-text">
       {{ $t('profile.binding.title') }}
     </h3>

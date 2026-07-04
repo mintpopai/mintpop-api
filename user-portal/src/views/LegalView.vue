@@ -99,7 +99,7 @@ onBeforeUnmount(() => observer?.disconnect())
 <template>
   <div class="min-h-screen bg-bg text-text">
     <!-- 顶栏：返回 / wordmark / 语言切换 -->
-    <header class="sticky top-0 z-20 border-b border-border bg-bg/85 backdrop-blur">
+    <header class="sticky top-0 z-20 border-b border-border bg-bg/85 backdrop-blur-sm">
       <div class="mx-auto flex max-w-[1080px] items-center justify-between px-6 py-4">
         <button
           class="inline-flex items-center gap-1.5 rounded-xl2 border-[1.5px] border-border2 px-3.5 py-2 text-[13px] font-medium text-text2 transition hover:bg-hover"
@@ -178,13 +178,13 @@ onBeforeUnmount(() => observer?.disconnect())
             v-for="s in sections"
             :id="s.slug"
             :key="s.slug"
-            class="scroll-mt-24 border-border2 pb-12 [&:not(:last-child)]:mb-12 [&:not(:last-child)]:border-b"
+            class="scroll-mt-24 border-border2 pb-12 not-last:mb-12 not-last:border-b"
           >
             <h2 class="mb-6 font-serif text-[26px] font-medium tracking-tight text-text sm:text-[28px]">
               {{ s.title }}
             </h2>
             <div
-              class="prose prose-neutral max-w-none dark:prose-invert prose-headings:font-serif prose-headings:font-medium prose-a:text-accent prose-a:no-underline hover:prose-a:underline"
+              class="prose prose-neutral max-w-none dark:prose-invert prose-headings:font-serif prose-headings:font-medium prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
               v-html="s.html"
             />
           </section>

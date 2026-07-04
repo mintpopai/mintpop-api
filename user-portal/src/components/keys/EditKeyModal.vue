@@ -110,7 +110,7 @@ function submit() {
           @click="status = status === 'active' ? 'inactive' : 'active'"
         >
           <span
-            class="inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform"
+            class="inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow-sm transition-transform"
             :class="status === 'active' ? 'translate-x-6' : 'translate-x-1'"
           />
         </button>

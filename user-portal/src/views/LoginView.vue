@@ -51,11 +51,11 @@ async function onSubmit() {
     >
       <!-- warhol 点阵晕染 -->
       <div
-        class="pointer-events-none absolute -right-[90px] -top-[70px] h-[340px] w-[340px] opacity-50"
+        class="pointer-events-none absolute right-[-90px] top-[-70px] h-[340px] w-[340px] opacity-50"
         style="background: linear-gradient(150deg, #0e9e72 0%, #14c28a 45%, rgba(20, 194, 138, 0) 92%); -webkit-mask-image: radial-gradient(#000 2px, transparent 2.2px); mask-image: radial-gradient(#000 2px, transparent 2.2px); -webkit-mask-size: 18px 18px; mask-size: 18px 18px;"
       />
       <div
-        class="pointer-events-none absolute -bottom-20 -left-[70px] h-[260px] w-[260px] opacity-[0.06]"
+        class="pointer-events-none absolute -bottom-20 left-[-70px] h-[260px] w-[260px] opacity-[0.06]"
         style="background: radial-gradient(#1a1a1a 1.7px, transparent 1.9px); background-size: 15px 15px;"
       />
 
@@ -80,7 +80,7 @@ async function onSubmit() {
         </div>
         <h2 class="font-serif text-[42px] font-medium leading-[1.12] tracking-tight text-text">
           {{ t('auth.loginHeadlinePre') }}<span class="relative whitespace-nowrap">{{ t('auth.loginHeadlineMark') }}<span
-            class="absolute inset-x-0 bottom-0.5 -z-10 h-[9px] rounded-sm bg-accent opacity-[0.28]"
+            class="absolute inset-x-0 bottom-0.5 -z-10 h-[9px] rounded-xs bg-accent opacity-[0.28]"
           /></span>{{ t('auth.loginHeadlineEnd') }}
         </h2>
         <p class="mt-5 text-[15px] leading-relaxed text-text3">

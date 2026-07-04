@@ -40,7 +40,7 @@ async function handleRedeem() {
 <template>
   <div class="rounded-[20px] bg-card p-[24px_26px] shadow-card">
     <!-- 标题 -->
-    <div class="mb-[18px] text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+    <div class="mb-[18px] text-[11px] font-medium uppercase tracking-widest text-faint">
       {{ $t('recharge.redeemCode') }}
     </div>
 
@@ -65,7 +65,7 @@ async function handleRedeem() {
     <!-- 成功结果 -->
     <div
       v-if="result"
-      class="mt-3 rounded-xl2 border border-pos/30 bg-pos/[0.06] px-4 py-3 text-sm"
+      class="mt-3 rounded-xl2 border border-pos/30 bg-pos/6 px-4 py-3 text-sm"
     >
       <p class="font-semibold text-pos">
         {{ $t('recharge.redeemSuccess') }}
@@ -90,7 +90,7 @@ async function handleRedeem() {
     <!-- 错误结果 -->
     <div
       v-if="errorMsg"
-      class="mt-3 rounded-xl2 border border-neg/30 bg-neg/[0.06] px-4 py-3 text-sm text-neg"
+      class="mt-3 rounded-xl2 border border-neg/30 bg-neg/6 px-4 py-3 text-sm text-neg"
     >
       {{ errorMsg }}
     </div>

@@ -45,7 +45,7 @@ const cards = computed(() => {
       :key="card.label"
       class="rounded-xl2 bg-card p-[22px] shadow-soft"
     >
-      <div class="mb-4 text-[11px] font-medium uppercase tracking-[0.1em] text-faint">
+      <div class="mb-4 text-[11px] font-medium uppercase tracking-widest text-faint">
         {{ card.label }}
       </div>
       <div class="num text-[34px] font-medium leading-none text-text">

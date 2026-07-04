@@ -98,9 +98,9 @@ build/
 release/
 
 # 后端嵌入的前端构建产物
-# Keep a placeholder file so `//go:embed all:dist` always has a match in CI/lint,
-# while still ignoring generated frontend build outputs.
-backend/internal/web/dist/
+# 保留占位文件，使 `//go:embed all:dist` 在 CI/lint 下始终有匹配，同时忽略生成的前端构建产物
+# 注：上面「构建产物」分组的 `dist/` 规则会连目录一起忽略，须先取消忽略该目录本身，
+# 否则目录内 .keep 的取消忽略规则不会被 git 读取（父目录被忽略时，子路径的否定规则不生效）
 !backend/internal/web/dist/
 backend/internal/web/dist/*
 !backend/internal/web/dist/.keep
@@ -126,7 +126,6 @@ CLAUDE.md
 code-reviews/
 AGENTS.md
 backend/cmd/server/server
-docker-compose.override.yml
 .gocache/
 vite.config.js
 docs/*
@@ -135,7 +134,6 @@ docs/*
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
 !docs/legal/
 !docs/legal/*.md
-.serena/
 .codex/
 frontend/coverage/
 aicodex

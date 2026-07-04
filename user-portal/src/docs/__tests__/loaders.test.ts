@@ -18,7 +18,7 @@ describe('docs manifest 完整性', () => {
 describe('loadDoc', () => {
   it('命中语言返回对应原文', async () => {
     const en = await loadDoc('quick-start', 'en-US')
-    expect(en).toContain('Quick Start')
+    expect(en).toContain('Getting Started')
   })
 
   it('缺失语言回退 zh-CN', async () => {

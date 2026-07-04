@@ -10,7 +10,9 @@ export function docPlaceholderValues(settings: PublicSettings | null): Record<st
   const baseUrl = settings?.api_base_url || window.location.origin
   return {
     BASE_URL: baseUrl,
-    注册链接: `${window.location.origin}/register`
+    // 注册页地址：中文文档用 {{注册链接}}，英文文档用 {{SIGNUP_URL}}，取值相同
+    注册链接: `${window.location.origin}/register`,
+    SIGNUP_URL: `${window.location.origin}/register`
   }
 }
 

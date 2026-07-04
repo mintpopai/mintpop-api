@@ -5,7 +5,7 @@
  * - locale 持久化键 `locale`，与 api/client.ts 的 Accept-Language 复用同一键
  * - 开启 globalInjection，模板内可直接用 $t；<script setup> 用 useI18n() 的 t
  *
- * 语言模式由构建时变量 VITE_PORTAL_LOCALE 决定（Vite 编译期烧入，见 .env.example）：
+ * 语言模式由构建时变量 VITE_PORTAL_LOCALE 决定（Vite 编译期烧入，见 .env.prod）：
  * - AUTO（默认）：显示语言切换入口，按 localStorage > 浏览器语言 > 中文 检测
  * - zh-CN / en-US：锁定该语言、隐藏切换入口，忽略 localStorage 与浏览器语言
  */

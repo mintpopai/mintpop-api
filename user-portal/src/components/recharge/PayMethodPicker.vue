@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, type ComponentPublicInstance } from 'vue'
 import type { MethodLimit } from '@/api/types'
+import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
 
 const props = defineProps<{
   /** 后端返回的可用支付方式 key → limits */
@@ -22,6 +23,27 @@ const availableMethods = computed(() => Object.keys(METHOD_CONFIG).filter((k) =>
 
 function pick(key: string) {
   model.value = key
+}
+
+// roving tabindex：选中项（未选中时首项兜底）tabindex=0，其余 -1
+const rovingIndex = computed(() => {
+  const idx = availableMethods.value.findIndex((k) => k === model.value)
+  return idx === -1 ? 0 : idx
+})
+
+// 各 radio 项的元素引用，供方向键移动焦点
+const itemRefs = ref<(HTMLElement | null)[]>([])
+function setItemRef(el: Element | ComponentPublicInstance | null, i: number) {
+  itemRefs.value[i] = el as HTMLElement | null
+}
+
+// 方向键组内循环移动并选中（WAI-ARIA radio group 模式），与既有 Enter/Space 选中互不干扰
+function onArrowKeydown(e: KeyboardEvent, i: number) {
+  const next = nextRadioIndex(i, availableMethods.value.length, e.key)
+  if (next === null) return
+  e.preventDefault()
+  pick(availableMethods.value[next])
+  itemRefs.value[next]?.focus()
 }
 </script>
 
@@ -52,11 +74,12 @@ function pick(key: string) {
       class="grid grid-cols-1 gap-3 sm:grid-cols-3"
     >
       <div
-        v-for="key in availableMethods"
+        v-for="(key, i) in availableMethods"
         :key="key"
+        :ref="(el) => setItemRef(el, i)"
         role="radio"
         :aria-checked="model === key"
-        tabindex="0"
+        :tabindex="i === rovingIndex ? 0 : -1"
         class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-140 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
           model === key
@@ -66,6 +89,7 @@ function pick(key: string) {
         @click="pick(key)"
         @keydown.enter.prevent="pick(key)"
         @keydown.space.prevent="pick(key)"
+        @keydown="onArrowKeydown($event, i)"
       >
         <!-- 品牌图标 -->
         <span

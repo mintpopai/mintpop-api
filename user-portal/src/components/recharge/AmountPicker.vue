@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
 
 const { t } = useI18n()
 
@@ -46,6 +47,27 @@ function pickPreset(v: number) {
   selectedPreset.value = v
   customInput.value = ''
   model.value = v
+}
+
+// roving tabindex：选中项（或自定义模式下的首项兜底）tabindex=0，其余 -1
+const rovingIndex = computed(() => {
+  const idx = props.presets.findIndex((v) => v === selectedPreset.value)
+  return idx === -1 ? 0 : idx
+})
+
+// 各 radio 项的元素引用，供方向键移动焦点
+const itemRefs = ref<(HTMLElement | null)[]>([])
+function setItemRef(el: Element | ComponentPublicInstance | null, i: number) {
+  itemRefs.value[i] = el as HTMLElement | null
+}
+
+// 方向键组内循环移动并选中（WAI-ARIA radio group 模式），与既有 Enter/Space 选中互不干扰
+function onArrowKeydown(e: KeyboardEvent, i: number) {
+  const next = nextRadioIndex(i, props.presets.length, e.key)
+  if (next === null) return
+  e.preventDefault()
+  pickPreset(props.presets[next])
+  itemRefs.value[next]?.focus()
 }
 
 // 自定义输入变化时
@@ -103,11 +125,12 @@ const validationMsg = computed(() => {
       class="grid grid-cols-2 gap-3 sm:grid-cols-4"
     >
       <div
-        v-for="v in presets"
+        v-for="(v, i) in presets"
         :key="v"
+        :ref="(el) => setItemRef(el, i)"
         role="radio"
         :aria-checked="!isCustom && selectedPreset === v"
-        tabindex="0"
+        :tabindex="i === rovingIndex ? 0 : -1"
         class="relative cursor-pointer rounded-xl2 border-[1.5px] p-[18px_16px_16px] transition-[border-color,background,box-shadow] duration-140 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
           !isCustom && selectedPreset === v
@@ -117,6 +140,7 @@ const validationMsg = computed(() => {
         @click="pickPreset(v)"
         @keydown.enter.prevent="pickPreset(v)"
         @keydown.space.prevent="pickPreset(v)"
+        @keydown="onArrowKeydown($event, i)"
       >
         <!-- 热门徽标 -->
         <span

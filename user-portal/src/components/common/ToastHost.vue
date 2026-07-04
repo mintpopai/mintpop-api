@@ -29,6 +29,15 @@ const { toasts, dismiss } = useToast()
           {{ t.type === 'SUCCESS' ? '✓' : '!' }}
         </span>
         <span class="leading-[1.4]">{{ t.message }}</span>
+        <!-- 关闭：真 button（键盘可达），此前仅整卡片 @click，键盘用户无法触达 -->
+        <button
+          type="button"
+          class="ml-1 shrink-0 text-sm leading-none text-faint transition-colors hover:text-text"
+          :aria-label="$t('common.close')"
+          @click.stop="dismiss(t.id)"
+        >
+          ×
+        </button>
       </div>
     </transition-group>
   </div>

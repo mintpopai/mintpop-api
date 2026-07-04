@@ -6,7 +6,7 @@ import QRCode from 'qrcode'
 import { verifyOrder, getCheckoutInfo } from '@/api/payment'
 import type { Stripe, StripeElements, StripePaymentElement, StripeElementLocale } from '@stripe/stripe-js'
 import { errMessage } from '@/utils/error'
-import { ORDER_PAID_STATUSES } from '@/utils/format'
+import { resolvePaymentPollAction } from '@/utils/format'
 
 const { t, locale } = useI18n()
 
@@ -111,6 +111,7 @@ const statusLabel = computed(() => {
   const map: Record<string, string> = {
     PENDING: t('payment.statusPending'),
     PAID: t('payment.statusPaid'),
+    RECHARGING: t('payment.statusRecharging'),
     COMPLETED: t('payment.statusPaid'),
     FAILED: t('payment.statusFailed'),
     CANCELLED: t('payment.statusCancelled'),
@@ -140,9 +141,18 @@ function startCountdown() {
   const updateTick = () => {
     const diff = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
     countdown.value = diff
+    if (diff <= 0) {
+      // 倒计时归零：订单本地已过期，同时停轮询——避免在后端状态还没翻到 EXPIRED 前，
+      // 客户端仍按 2s 间隔无意义地继续查询一个注定失败的订单
+      stopPoll()
+      stopCountdown()
+    }
   }
   updateTick()
-  countdownTimer = window.setInterval(updateTick, 1000)
+  // 若首次 tick 已到 0（打开弹窗时订单已过期），上面已停表，不再起新的 interval
+  if (countdown.value > 0) {
+    countdownTimer = window.setInterval(updateTick, 1000)
+  }
 }
 
 // 查一次订单状态并落地；失败时抛错，吞不吞由调用方决定（轮询吞、手动查询要展示）
@@ -151,14 +161,18 @@ async function verifyOnce(outTradeNo: string) {
   // 弹窗已关闭或组件已卸载，丢弃本次结果
   if (aborted) return
   status.value = o.status
-  if (ORDER_PAID_STATUSES.includes(o.status)) {
+  const action = resolvePaymentPollAction(o.status)
+  if (action === 'SETTLED') {
+    // RECHARGING 也算成功（已付款、到账中），与 frontend SUCCESS_STATUSES 对齐
     stopPoll()
     stopCountdown()
     emit('paid')
-  } else if (o.status === 'FAILED' || o.status === 'REFUNDED') {
+  } else if (action === 'TERMINAL') {
+    // FAILED/CANCELLED/EXPIRED/退款系列/未知状态：一律停表，但不当作成功通知调用方
     stopPoll()
     stopCountdown()
   }
+  // CONTINUE（PENDING）：什么都不做，继续轮询
 }
 
 async function doVerify(outTradeNo: string) {
@@ -455,7 +469,7 @@ onBeforeUnmount(() => {
         v-if="!isStripe || stripeProcessing"
         class="w-full rounded-xl2 px-4 py-3 text-center text-sm font-medium"
         :class="{
-          'bg-pos/8 text-pos': status === 'PAID' || status === 'COMPLETED',
+          'bg-pos/8 text-pos': status === 'PAID' || status === 'COMPLETED' || status === 'RECHARGING',
           'bg-neg/8 text-neg': status === 'FAILED',
           'bg-muted text-text3': status === 'PENDING' || !status
         }"

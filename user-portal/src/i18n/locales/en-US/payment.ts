@@ -12,6 +12,7 @@ export default {
   // Order status labels
   statusPending: 'Awaiting payment',
   statusPaid: 'Payment successful',
+  statusRecharging: 'Recharging',
   statusFailed: 'Payment failed',
   statusCancelled: 'Cancelled',
   statusRefunded: 'Refunded',

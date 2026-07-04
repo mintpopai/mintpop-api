@@ -96,6 +96,20 @@ export function formatReasoningEffort(e: string | null | undefined): string {
 export const ORDER_PAID_STATUSES: readonly string[] = ['PAID', 'COMPLETED']
 export const ORDER_SETTLING_STATUSES: readonly string[] = [...ORDER_PAID_STATUSES, 'RECHARGING']
 
+/**
+ * 支付轮询「下一步动作」（PaymentResultModal.verifyOnce 消费）：
+ * - SETTLED：命中 ORDER_SETTLING_STATUSES（PAID/COMPLETED/RECHARGING）→ 已成功，停表并 emit('paid')
+ * - CONTINUE：PENDING → 继续轮询
+ * - TERMINAL：其余一切状态（FAILED/CANCELLED/EXPIRED/退款系列/未知字符串）→ 停表但不 emit
+ */
+export type PaymentPollAction = 'CONTINUE' | 'SETTLED' | 'TERMINAL'
+
+export function resolvePaymentPollAction(status: string): PaymentPollAction {
+  if (ORDER_SETTLING_STATUSES.includes(status)) return 'SETTLED'
+  if (status === 'PENDING') return 'CONTINUE'
+  return 'TERMINAL'
+}
+
 /** 订单状态 → 展示文案 + StatusBadge variant（文案随语言切换） */
 export function orderStatusMeta(s: string): { label: string; variant: string } {
   // key 为后端订单状态枚举取值（SCREAMING_SNAKE_CASE），value 为展示变体

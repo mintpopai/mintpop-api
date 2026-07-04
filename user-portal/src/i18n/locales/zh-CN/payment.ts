@@ -12,6 +12,7 @@ export default {
   // 订单状态文案
   statusPending: '等待支付',
   statusPaid: '支付成功',
+  statusRecharging: '充值中',
   statusFailed: '支付失败',
   statusCancelled: '已取消',
   statusRefunded: '已退款',

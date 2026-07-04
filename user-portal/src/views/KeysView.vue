@@ -6,6 +6,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
 import FilterBar from '@/components/ui/FilterBar.vue'
 import Pagination from '@/components/ui/Pagination.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
 import Modal from '@/components/ui/Modal.vue'
 import KeyTable from '@/components/keys/KeyTable.vue'
 import CreateKeyModal from '@/components/keys/CreateKeyModal.vue'
@@ -157,32 +158,13 @@ async function doToggle(key: ApiKey) {
       <!-- 筛选栏 -->
       <FilterBar>
         <!-- 搜索 -->
-        <div class="relative max-w-[340px] flex-1">
-          <svg
-            class="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle
-              cx="11"
-              cy="11"
-              r="7"
-            />
-            <path d="M21 21l-4-4" />
-          </svg>
-          <input
-            v-model="k.filters.search"
-            type="text"
-            :placeholder="$t('keys.searchPlaceholder')"
-            :aria-label="$t('keys.searchPlaceholder')"
-            class="w-full rounded-[11px] border-[1.5px] border-border2 bg-card py-[11px] pl-10 pr-4 text-sm text-text outline-hidden focus:border-accent"
-            @change="k.load()"
-          >
-        </div>
+        <SearchInput
+          v-model="k.filters.search"
+          class="max-w-[340px] flex-1"
+          input-class="w-full rounded-[11px] border-[1.5px] border-border2 bg-card py-[11px] pl-10 pr-4 text-sm text-text outline-hidden focus:border-accent"
+          :placeholder="$t('keys.searchPlaceholder')"
+          @change="k.load()"
+        />
 
         <!-- 分组筛选 -->
         <select

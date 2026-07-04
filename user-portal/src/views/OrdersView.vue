@@ -9,6 +9,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import Modal from '@/components/ui/Modal.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
 import OrderTable from '@/components/orders/OrderTable.vue'
 import OrderDetailModal from '@/components/orders/OrderDetailModal.vue'
 import PaymentResultModal from '@/components/payment/PaymentResultModal.vue'
@@ -220,36 +221,19 @@ onMounted(() => {
         </div>
 
         <!-- 搜索框 -->
-        <div class="relative ml-1 max-w-[300px] flex-1">
-          <svg
-            class="absolute left-3.5 top-1/2 -translate-y-1/2 text-faint"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle
-              cx="11"
-              cy="11"
-              r="7"
-            />
-            <path d="M21 21l-4-4" />
-          </svg>
-          <input
-            v-model="search"
-            class="w-full input-base py-[11px] pl-10 pr-4"
-            :placeholder="$t('orders.searchPlaceholder')"
-            :aria-label="$t('orders.searchPlaceholder')"
-          >
+        <SearchInput
+          v-model="search"
+          class="ml-1 max-w-[300px] flex-1"
+          input-class="w-full input-base py-[11px] pl-10 pr-4"
+          :placeholder="$t('orders.searchPlaceholder')"
+        >
           <p
             v-if="search.trim()"
             class="absolute mt-1.5 text-[11px] text-subtle"
           >
             {{ $t('orders.searchHint') }}
           </p>
-        </div>
+        </SearchInput>
       </div>
 
       <!-- 表格卡片 -->

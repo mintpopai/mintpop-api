@@ -15,9 +15,7 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY mise.toml ./
-# node 显式装 22.23.1：根 [tools] 的 node 是 frontend/backend 用的 20.18.1，
-# user-portal 工具链（Vite 8 等）需 Node 22，与根 mise.toml 各 user-portal task 的 tools 覆盖同步
-RUN mise trust && mise install node@22.23.1 pnpm
+RUN mise trust && mise install node pnpm
 
 COPY user-portal/package.json user-portal/pnpm-lock.yaml ./user-portal/
 RUN mise run install-user-portal --frozen

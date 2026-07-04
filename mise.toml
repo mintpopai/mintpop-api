@@ -1,7 +1,7 @@
 # 工具链与命令单一来源（统一通过 mise 管理）
 [tools]
 go = "1.26.4"               # 与 backend/go.mod 对齐
-node = "20.18.1"            # 固定具体版本（frontend/backend 用；user-portal 工具链需 Node 22，经各 user-portal task 的 tools 覆盖，勿动此默认值）
+node = "24.18.0"            # 固定具体版本（活跃 LTS；Vite 8 要求 >=22.12，frontend 工具链在 24 下已实测全绿）
 pnpm = "9.15.9"
 golangci-lint = "2.9.0"
 
@@ -25,7 +25,6 @@ dir = "frontend"
 run = "pnpm install ${usage_frozen:+--frozen-lockfile}"
 
 [tasks.install-user-portal]
-tools = { node = "22.23.1" }   # user-portal 专用 Node（与 user-portal/Dockerfile 的 mise install node@22.23.1 同步）
 description = "安装 user-portal 依赖（默认可更新 lockfile；传 --frozen 按 lockfile 精确安装，供 CI/Docker 复现）"
 usage = '''
 flag "--frozen" help="按 lockfile 精确安装、不更新 lockfile（CI/Docker 用；与 package.json 不一致则报错）"
@@ -44,7 +43,6 @@ run = [
 ]
 
 [tasks.build-user-portal]
-tools = { node = "22.23.1" }   # user-portal 专用 Node（与 user-portal/Dockerfile 的 mise install node@22.23.1 同步）
 description = "user-portal 类型检查 + 构建到 dist/（--env 默认 local：裸 vite build 读 .env.local；prod：vite build --mode prod 读 .env.prod）"
 usage = '''
 flag "-e --env <env>" help="构建环境：local（默认，读 .env.local）/ prod（读 .env.prod）" default="local"
@@ -80,7 +78,6 @@ dir = "frontend"
 run = "pnpm exec vite"
 
 [tasks.run-user-portal]
-tools = { node = "22.23.1" }   # user-portal 专用 Node（与 user-portal/Dockerfile 的 mise install node@22.23.1 同步）
 description = "启动 user-portal 开发服务器（端口 5174，/api 代理到后端）"
 dir = "user-portal"
 run = "pnpm exec vite"
@@ -91,7 +88,6 @@ dir = "frontend"
 run = "pnpm exec vite preview"
 
 [tasks.preview-user-portal]
-tools = { node = "22.23.1" }   # user-portal 专用 Node（与 user-portal/Dockerfile 的 mise install node@22.23.1 同步）
 description = "本地预览 user-portal 构建产物（vite preview，需先有 dist/）"
 dir = "user-portal"
 run = "pnpm exec vite preview"
@@ -117,7 +113,6 @@ dir = "frontend"
 run = "pnpm exec eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts"
 
 [tasks.lint-user-portal]
-tools = { node = "22.23.1" }   # user-portal 专用 Node（与 user-portal/Dockerfile 的 mise install node@22.23.1 同步）
 description = "user-portal ESLint 检查（--max-warnings 0：warn 级规则也拦截，否则降档规则在 CI 零约束力）"
 dir = "user-portal"
 # ESLint 9 flat config：待检文件由 eslint.config.js 的 files 声明，不再用 --ext
@@ -141,7 +136,6 @@ run = [
 ]
 
 [tasks.test-user-portal]
-tools = { node = "22.23.1" }   # user-portal 专用 Node（与 user-portal/Dockerfile 的 mise install node@22.23.1 同步）
 description = "user-portal 类型检查 + 单元测试（vitest）"
 dir = "user-portal"
 # 必须用 -b：根 tsconfig 是 solution 式（files:[] + references），裸 --noEmit 一个文件都不检查（静默 no-op）
@@ -180,7 +174,6 @@ python3 tools/check_pnpm_audit_exceptions.py \
 '''
 
 [tasks.audit-user-portal]
-tools = { node = "22.23.1" }   # user-portal 专用 Node（与 user-portal/Dockerfile 的 mise install node@22.23.1 同步）
 description = "user-portal 依赖漏洞审计（pnpm audit + 按 .github/audit-exceptions.yml 过滤例外）"
 # 与 audit-frontend 同一套例外过滤脚本与例外清单
 run = '''

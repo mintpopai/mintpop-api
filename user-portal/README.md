@@ -6,7 +6,7 @@
 
 ## 技术栈
 
-Vite 8 + Vue3(`<script setup>`) + TypeScript + Pinia 3 + Vue Router + vue-i18n + Tailwind 4（CSS-first 配置，见 `src/styles/theme.css`）+ Chart.js。工具链经 **mise** 锁定（node 22.23.1 / pnpm 9.15.9；node 22 仅经根 mise.toml 各 user-portal task 的 `tools` 覆盖生效，全仓默认仍是 20.18.1，不影响 frontend/backend）。
+Vite 8 + Vue3(`<script setup>`) + TypeScript + Pinia 3 + Vue Router + vue-i18n + Tailwind 4（CSS-first 配置，见 `src/styles/theme.css`）+ Chart.js。工具链经 **mise** 锁定（node 24.18.0 / pnpm 9.15.9）。
 
 ## 本地开发
 
@@ -38,7 +38,7 @@ mise run run-user-portal       # 启动 dev server（http://localhost:5174，/ap
 ## 设计说明
 
 - 设计稿来源：`Mint Dashboard C`（薄荷主调 / 标准强度 / 衬线数字）。
-- 字体经 `@fontsource` 自托管打进构建产物（Fredoka / Newsreader / Space Grotesk），不外链 Google Fonts（保证中国大陆可达）。
+- 字体经 `@fontsource` 自托管打进构建产物（Newsreader / Space Grotesk），不外链 Google Fonts（保证中国大陆可达）。
 - 主题色值 token 化在 `src/styles/theme.css`，深浅色用 `<html>.dark` 切换并持久化到 `localStorage.theme`。
 - 鉴权与统一返回体（`{code,data,message}`）契约复刻自 `frontend/`：token 存 `localStorage.auth_token`，401 自动用 `refresh_token` 续期（有单测守护，见 `src/api/__tests__/client.test.ts`）。
 - 语言模式与仪表盘分布卡片文案由构建期变量控制（`VITE_PORTAL_LOCALE` / `VITE_PORTAL_DISTRIBUTION_MODE`，见 `.env.prod` 注释）。

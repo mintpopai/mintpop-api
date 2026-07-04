@@ -1,5 +1,6 @@
 // 数值/金额/Token/时长格式化（与主前端展示口径一致）
 import i18n from '@/i18n'
+import type { OrderStatus } from '@/api/types'
 
 const usd2 = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
@@ -115,7 +116,9 @@ export function orderStatusMeta(s: string): { label: string; variant: string } {
   // key 为后端订单状态枚举取值（SCREAMING_SNAKE_CASE），value 为展示变体
   // 全集与 admin 前端对齐（frontend/src/components/payment/orderUtils.ts）；受本门户配色所限，
   // frontend 的 info(蓝)/purple 统一并入既有语义变体：进行中→pending、已收款/已完成→paid、失败→neg、终态灰→muted
-  const variants: Record<string, string> = {
+  // variants 以 OrderStatus 全集为键类型：后端/类型新增状态而此处漏配会直接编译报错，
+  // 不再等到运行时才发现某状态悄悄回退成 muted。
+  const variants: Record<OrderStatus, string> = {
     PENDING: 'pending',
     PAID: 'paid',
     RECHARGING: 'paid',
@@ -130,7 +133,9 @@ export function orderStatusMeta(s: string): { label: string; variant: string } {
     REFUNDED: 'muted',
     REFUND_FAILED: 'neg'
   }
-  const variant = variants[s]
+  // 入参 s 仍是 string（调用方可能传入未知/脏数据），故索引时收窄为「值可能缺失」，
+  // 未知状态回退 muted 的既有行为保持不变。
+  const variant = (variants as Record<string, string | undefined>)[s]
   if (!variant) return { label: s, variant: 'muted' }
   return { label: i18n.global.t(`orders.status.${s}`), variant }
 }
@@ -140,12 +145,17 @@ export function orderKind(orderType: string): string {
   return i18n.global.t(orderType === 'balance' ? 'orders.orderType.balance' : 'orders.orderType.subscription')
 }
 
-/** 注册月份 Jun 2026 */
+/**
+ * 注册月份，如 Jun 2026 / 2026年6月。
+ * locale 跟随门户当前语言（而非钉死 'en-US'）：常规做法是跟随浏览器 locale，
+ * 但本门户提供了显式的语言切换入口，用户选的语言应立即体现在此处格式化上，
+ * 否则中文界面里会混入未本地化的英文月份缩写（如「Jun 2026」）。
+ */
 export function formatRegMonth(s: string | null | undefined): string {
   if (!s) return '—'
   const d = new Date(s)
   if (Number.isNaN(d.getTime())) return '—'
-  return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(d)
+  return new Intl.DateTimeFormat(i18n.global.locale.value, { month: 'short', year: 'numeric' }).format(d)
 }
 
 const cny2 = new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

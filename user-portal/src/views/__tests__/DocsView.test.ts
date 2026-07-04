@@ -73,4 +73,15 @@ describe('DocsView', () => {
     await flushPromises()
     expect(wrapper.html()).toContain('<h1>')
   })
+
+  it('非法 slug 时 replace 到首篇文档路由，URL 与渲染内容一致', async () => {
+    const router = makeRouter()
+    router.push('/docs/not-a-real-doc')
+    await router.isReady()
+    const wrapper = mountDocs(router)
+    await flushPromises()
+    // URL 被纠正为首篇 slug，而非停留在非法 slug 上
+    expect(router.currentRoute.value.fullPath).toBe(`/docs/${DOCS[0].slug}`)
+    expect(wrapper.html()).toContain('<h1>')
+  })
 })

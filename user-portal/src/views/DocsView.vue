@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import { DOCS } from '@/docs/_manifest'
 import { loadDoc } from '@/docs/loaders'
@@ -10,15 +10,30 @@ import { useLocaleStore } from '@/stores/locale'
 import { useSettingsStore } from '@/stores/settings'
 
 const route = useRoute()
+const router = useRouter()
 const localeStore = useLocaleStore()
 const settingsStore = useSettingsStore()
 
-// 当前篇 slug：路由无 / 非法 → 回退首篇
+// 当前篇 slug：路由无 / 非法 → 回退首篇（无 slug 是合法的「未指定」，非法 slug 见下方 replace）
 const activeSlug = computed(() => {
   const raw = route.params.slug
   const slug = Array.isArray(raw) ? raw[0] : raw
   return slug && DOCS.some((d) => d.slug === slug) ? slug : DOCS[0].slug
 })
+
+// 非法 slug（指定了但查无此篇）：replace 到首篇文档路由，让 URL 与实际渲染内容一致。
+// 只在「有 slug 但非法」时触发；无 slug（/docs）本就合法，不重定向。
+// 不会成环：replace 后的目标 slug 恒为 DOCS[0].slug（合法），不会再次落入本分支。
+watch(
+  () => route.params.slug,
+  (raw) => {
+    const slug = Array.isArray(raw) ? raw[0] : raw
+    if (slug && !DOCS.some((d) => d.slug === slug)) {
+      router.replace(`/docs/${DOCS[0].slug}`)
+    }
+  },
+  { immediate: true }
+)
 
 // 目录标题随当前语言
 function navTitle(slug: string): string {

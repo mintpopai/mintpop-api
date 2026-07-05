@@ -99,6 +99,11 @@ describe('DocsView 图片点击放大', () => {
     const wrapper = mountDocs(router)
     await flushPromises()
 
+    // 还焦断言需要真实可聚焦元素：打开前把焦点放在 body 下的按钮上
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+
     // 点击正文图片 → Teleport 到 body 的 dialog 出现，大图 src 与被点图片一致
     await wrapper.get('.prose img').trigger('click')
     const dialog = document.body.querySelector('[role="dialog"]')
@@ -109,6 +114,9 @@ describe('DocsView 图片点击放大', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flushPromises()
     expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+    // 关闭后焦点还原到打开前的元素（ImageLightbox 的 lastFocused 还焦逻辑）
+    expect(document.activeElement).toBe(trigger)
+    trigger.remove()
     // Teleport 内容挂在 document.body，显式卸载避免污染后续用例
     wrapper.unmount()
   })

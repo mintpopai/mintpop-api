@@ -1,4 +1,7 @@
 import type { PublicSettings } from '@/api/types'
+// md 以 ?raw 原文加载，Vite 不会处理其中的相对图片路径（构建后不产出、线上裂图），
+// 故图片在此 import 成带 hash 的资源 URL，经占位符注入文档。
+import useApiKeyImg from './use-api-key.png'
 
 /**
  * 文档模板占位符：md 原文里用 {{名字}} 引用，DocsView 渲染前注入运行时值。
@@ -13,9 +16,12 @@ export function docPlaceholderValues(settings: PublicSettings | null): Record<st
     // 自由填写的字符串（非受控输入），直接拼进原文会被当 HTML 解析，故先 encodeURI 无害化。
     // encodeURI 只转义 <>"{}|\^` 与空白等危险字符，保留 : / ? # 等 URL 合法字符，不破坏正常地址。
     BASE_URL: encodeURI(baseUrl),
-    // 注册页地址：中文文档用 {{注册链接}}，英文文档用 {{SIGNUP_URL}}，取值相同
-    注册链接: `${window.location.origin}/register`,
-    SIGNUP_URL: `${window.location.origin}/register`
+    // 本站内页地址：注册 / 创建密钥（带引导参数）/ 联系我们
+    SIGNUP_URL: `${window.location.origin}/register`,
+    APIKEY_CREATE_URL: `${window.location.origin}/keys?guide=create`,
+    CONTACT_URL: `${window.location.origin}/contact`,
+    // 文档内嵌图片（构建期 hash 资源 URL）
+    USE_API_KEY_IMG: useApiKeyImg
   }
 }
 

@@ -111,7 +111,7 @@ watch(
         <!-- eslint-disable vue/no-v-html -->
         <div
           v-else
-          class="prose prose-neutral max-w-none dark:prose-invert"
+          class="prose prose-neutral max-w-none dark:prose-invert prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
           v-html="html"
         />
         <!-- eslint-enable vue/no-v-html -->
@@ -159,5 +159,20 @@ watch(
 .doc-nav-on:hover {
   background: rgba(20, 194, 138, 0.1);
   color: var(--accent);
+}
+
+/* 正文行内代码（不含 pre 里的代码块）：芯片样式，盖掉 typography 默认的反引号伪元素 */
+.prose :deep(:not(pre) > code) {
+  padding: 2px 6px;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  background: var(--muted);
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--text);
+}
+.prose :deep(:not(pre) > code::before),
+.prose :deep(:not(pre) > code::after) {
+  content: none;
 }
 </style>

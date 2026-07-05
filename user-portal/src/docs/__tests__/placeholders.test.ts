@@ -34,7 +34,13 @@ describe('docPlaceholderValues', () => {
   })
 
   it('注册链接指向本站 /register', () => {
-    expect(docPlaceholderValues(null)['注册链接']).toBe(`${window.location.origin}/register`)
+    expect(docPlaceholderValues(null).SIGNUP_URL).toBe(`${window.location.origin}/register`)
+  })
+
+  it('创建密钥 / 联系我们链接指向本站对应页面', () => {
+    const values = docPlaceholderValues(null)
+    expect(values.APIKEY_CREATE_URL).toBe(`${window.location.origin}/keys?guide=create`)
+    expect(values.CONTACT_URL).toBe(`${window.location.origin}/contact`)
   })
 
   it('api_base_url 含 HTML 特殊字符时先 encodeURI 再注入，防止管理员配置值被 markdown-it（html:true）当 HTML 解析', () => {

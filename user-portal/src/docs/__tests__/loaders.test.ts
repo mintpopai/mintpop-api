@@ -26,7 +26,7 @@ describe('docs manifest 完整性', () => {
 describe('loadDoc', () => {
   it('命中语言返回对应原文', async () => {
     const en = await loadDoc('claude-code', 'en-US')
-    expect(en).toContain('Getting Started')
+    expect(en).toContain('Claude Code Setup')
   })
 
   it('缺失语言回退 zh-CN', async () => {

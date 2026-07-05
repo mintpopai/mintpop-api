@@ -22,7 +22,7 @@ After installing, **close the terminal and open a new one**. Run `claude --versi
 1. Open the [Create API Key]({{APIKEY_CREATE_URL}}) page, pick the **Claude (Claude Code / Desktop)** group, and click Create.
 2. Click the **Use** button on the newly created key:
 
-   ![How to use the API Key]({{USE_API_KEY_IMG}})
+   ![How to use the API Key]({{USE_CLAUDE_CODE_API_KEY_IMG}})
 
 3. Follow the instructions and paste the commands into your terminal.
 

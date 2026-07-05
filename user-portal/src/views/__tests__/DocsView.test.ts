@@ -92,7 +92,7 @@ describe('DocsView', () => {
 describe('DocsView 图片点击放大', () => {
   it('点击正文图片打开全屏预览，Esc 关闭', async () => {
     // 本用例需要正文里有图片：覆盖一次 loadDoc 的返回
-    vi.mocked(loadDoc).mockResolvedValueOnce('# 快速开始\n\n![示例图](/img/use-api-key.png)')
+    vi.mocked(loadDoc).mockResolvedValueOnce('# 快速开始\n\n![示例图](/img/use-claude-code-api-key.png)')
     const router = makeRouter()
     router.push(`/docs/${DOCS[0].slug}`)
     await router.isReady()
@@ -108,7 +108,7 @@ describe('DocsView 图片点击放大', () => {
       await wrapper.get('.prose img').trigger('click')
       const dialog = document.body.querySelector('[role="dialog"]')
       expect(dialog).not.toBeNull()
-      expect(dialog!.querySelector('img')?.getAttribute('src')).toContain('use-api-key.png')
+      expect(dialog!.querySelector('img')?.getAttribute('src')).toContain('use-claude-code-api-key.png')
 
       // jsdom 点击不移焦，手动把焦点移走，使关闭时的还焦是真实动作而非 no-op
       trigger.blur()
@@ -127,7 +127,7 @@ describe('DocsView 图片点击放大', () => {
   })
 
   it('点击遮罩任意处关闭预览', async () => {
-    vi.mocked(loadDoc).mockResolvedValueOnce('# 快速开始\n\n![示例图](/img/use-api-key.png)')
+    vi.mocked(loadDoc).mockResolvedValueOnce('# 快速开始\n\n![示例图](/img/use-claude-code-api-key.png)')
     const router = makeRouter()
     router.push(`/docs/${DOCS[0].slug}`)
     await router.isReady()

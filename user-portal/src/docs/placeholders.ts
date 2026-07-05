@@ -1,7 +1,8 @@
 import type { PublicSettings } from '@/api/types'
 // md 以 ?raw 原文加载，Vite 不会处理其中的相对图片路径（构建后不产出、线上裂图），
 // 故图片在此 import 成带 hash 的资源 URL，经占位符注入文档。
-import useApiKeyImg from './use-api-key.png'
+import useClaudeCodeApiKeyImg from './use-claude-code-api-key.png'
+import useCodexCliApiKeyImg from './use-codex-cli-api-key.png'
 
 /**
  * 文档模板占位符：md 原文里用 {{名字}} 引用，DocsView 渲染前注入运行时值。
@@ -21,7 +22,8 @@ export function docPlaceholderValues(settings: PublicSettings | null): Record<st
     APIKEY_CREATE_URL: `${window.location.origin}/keys?guide=create`,
     CONTACT_URL: `${window.location.origin}/contact`,
     // 文档内嵌图片（构建期 hash 资源 URL）
-    USE_API_KEY_IMG: useApiKeyImg
+    USE_CLAUDE_CODE_API_KEY_IMG: useClaudeCodeApiKeyImg,
+    USE_CODEX_CLI_API_KEY_IMG: useCodexCliApiKeyImg
   }
 }
 

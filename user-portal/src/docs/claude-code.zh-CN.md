@@ -22,7 +22,7 @@
 1. 打开 [创建 API Key]({{APIKEY_CREATE_URL}}) 页面，分组选择 **Claude（Claude Code / Desktop）**，点击创建。
 2. 在刚创建的 Key 条目里点击「**使用**」按钮：
 
-   ![如何使用 API Key]({{USE_API_KEY_IMG}})
+   ![如何使用 API Key]({{USE_CLAUDE_CODE_API_KEY_IMG}})
 
 3. 按照弹窗指引，把命令复制到终端中执行。
 

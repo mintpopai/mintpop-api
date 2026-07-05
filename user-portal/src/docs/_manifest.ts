@@ -22,6 +22,7 @@ export const DOC_GROUPS: DocGroup[] = [
     title: { 'zh-CN': '快速开始', 'en-US': 'Quick Start' },
     items: [
       { slug: 'claude-code', title: { 'zh-CN': 'Claude Code', 'en-US': 'Claude Code' } },
+      { slug: 'claude-desktop', title: { 'zh-CN': 'Claude Desktop', 'en-US': 'Claude Desktop' } },
       { slug: 'chatgpt', title: { 'zh-CN': 'ChatGPT', 'en-US': 'ChatGPT' } }
     ]
   }

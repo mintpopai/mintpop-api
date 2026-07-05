@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
-import { DOCS } from '@/docs/_manifest'
+import { DOCS, DOC_GROUPS } from '@/docs/_manifest'
 import { loadDoc } from '@/docs/loaders'
 import { docPlaceholderValues, resolveDocPlaceholders } from '@/docs/placeholders'
 import { renderMarkdown } from '@/utils/markdown'
@@ -74,16 +74,27 @@ watch(
     <div class="flex gap-10">
       <!-- 左侧目录（移动端隐藏，与 LegalView 目录同策略） -->
       <aside class="hidden w-56 shrink-0 lg:block">
-        <nav class="sticky top-[90px] flex flex-col gap-1">
-          <router-link
-            v-for="doc in DOCS"
-            :key="doc.slug"
-            :to="`/docs/${doc.slug}`"
-            class="doc-nav"
-            :class="{ 'doc-nav-on': doc.slug === activeSlug }"
+        <nav class="sticky top-[90px] flex flex-col gap-7">
+          <!-- 一级分组标题（衬线大字号，不可点击），组内二级条目才是文档链接 -->
+          <div
+            v-for="group in DOC_GROUPS"
+            :key="group.title['zh-CN']"
           >
-            {{ navTitle(doc.slug) }}
-          </router-link>
+            <div class="doc-nav-group">
+              {{ group.title[localeStore.current] }}
+            </div>
+            <div class="doc-nav-items">
+              <router-link
+                v-for="doc in group.items"
+                :key="doc.slug"
+                :to="`/docs/${doc.slug}`"
+                class="doc-nav"
+                :class="{ 'doc-nav-on': doc.slug === activeSlug }"
+              >
+                {{ navTitle(doc.slug) }}
+              </router-link>
+            </div>
+          </div>
         </nav>
       </aside>
 
@@ -109,8 +120,24 @@ watch(
 </template>
 
 <style scoped>
+/* 一级目录：与全站标题同款 Newsreader 衬线（见 LegalView h1/h2），靠字号与字体对比压住二级 */
+.doc-nav-group {
+  padding: 0 12px;
+  font: 500 18px/1.3 'Newsreader', serif;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+/* 二级条目挂在一条细导引线下，形成树状层级 */
+.doc-nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 0 12px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border2);
+}
 .doc-nav {
-  padding: 8px 12px;
+  padding: 7px 12px;
   border-radius: 9px;
   font: 500 13px 'Space Grotesk', sans-serif;
   color: var(--text2);
@@ -119,11 +146,17 @@ watch(
   transition: background 0.12s, color 0.12s;
 }
 .doc-nav:hover {
-  background: var(--muted);
-}
-.doc-nav-on {
-  background: var(--card);
+  background: var(--hover);
   color: var(--text);
+}
+/* 激活态与 LegalView 侧栏同语言：薄荷 accent 淡底 + accent 文字 */
+.doc-nav-on {
+  background: rgba(20, 194, 138, 0.1);
+  color: var(--accent);
   font-weight: 600;
+}
+.doc-nav-on:hover {
+  background: rgba(20, 194, 138, 0.1);
+  color: var(--accent);
 }
 </style>

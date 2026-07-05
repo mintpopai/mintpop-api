@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DOCS } from '@/docs/_manifest'
+import { DOCS, DOC_GROUPS } from '@/docs/_manifest'
 import { hasDoc, loadDoc } from '@/docs/loaders'
 
 describe('docs manifest 完整性', () => {
@@ -10,14 +10,22 @@ describe('docs manifest 完整性', () => {
     }
   })
 
-  it('至少有一篇文档', () => {
-    expect(DOCS.length).toBeGreaterThan(0)
+  it('至少有一个分组且每组至少一篇文档', () => {
+    expect(DOC_GROUPS.length).toBeGreaterThan(0)
+    for (const group of DOC_GROUPS) {
+      expect(group.items.length, `分组「${group.title['zh-CN']}」为空`).toBeGreaterThan(0)
+    }
+  })
+
+  it('全部文档 slug 不重复', () => {
+    const slugs = DOCS.map((d) => d.slug)
+    expect(new Set(slugs).size).toBe(slugs.length)
   })
 })
 
 describe('loadDoc', () => {
   it('命中语言返回对应原文', async () => {
-    const en = await loadDoc('quick-start', 'en-US')
+    const en = await loadDoc('claude-code', 'en-US')
     expect(en).toContain('Getting Started')
   })
 

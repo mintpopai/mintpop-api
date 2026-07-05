@@ -20,7 +20,7 @@ import { createRouter, createMemoryHistory, type Router } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import DocsView from '@/views/DocsView.vue'
-import { DOCS } from '@/docs/_manifest'
+import { DOCS, DOC_GROUPS } from '@/docs/_manifest'
 
 function makeRouter(): Router {
   return createRouter({
@@ -53,13 +53,14 @@ beforeEach(() => {
 })
 
 describe('DocsView', () => {
-  it('渲染目录项与正文 HTML', async () => {
+  it('渲染分组标题、目录项与正文 HTML', async () => {
     const router = makeRouter()
-    router.push('/docs/quick-start')
+    router.push(`/docs/${DOCS[0].slug}`)
     await router.isReady()
     const wrapper = mountDocs(router)
     await flushPromises()
-    // 目录含首篇标题（localeStore 默认 zh-CN）
+    // 目录含一级分组标题与首篇二级标题（localeStore 默认 zh-CN）
+    expect(wrapper.text()).toContain(DOC_GROUPS[0].title['zh-CN'])
     expect(wrapper.text()).toContain(DOCS[0].title['zh-CN'])
     // 正文渲染出 markdown 的 h1
     expect(wrapper.html()).toContain('<h1>')

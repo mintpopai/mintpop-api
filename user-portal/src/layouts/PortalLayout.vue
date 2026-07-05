@@ -8,6 +8,9 @@ import { useLocaleStore } from '@/stores/locale'
 import { LOCALE_LABELS, type AppLocale } from '@/i18n'
 import { formatBalance } from '@/utils/format'
 
+// fluid：内容区占满全宽（供文档中心这类「侧栏贴左 + 正文自行限宽」的页面用），默认仍居中限宽
+defineProps<{ fluid?: boolean }>()
+
 const router = useRouter()
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -289,7 +292,7 @@ onMounted(() => {
 
     <!-- ============ 主体 ============ -->
     <main class="min-w-0 flex-1 overflow-y-auto px-5 py-8 [scrollbar-gutter:stable] sm:px-8 lg:px-12 lg:py-11">
-      <div class="mx-auto max-w-[1240px]">
+      <div :class="fluid ? '' : 'mx-auto max-w-[1240px]'">
         <slot />
       </div>
     </main>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import { DOCS, DOC_GROUPS } from '@/docs/_manifest'
@@ -44,6 +44,66 @@ function navTitle(slug: string): string {
 const html = ref('')
 const loadError = ref(false)
 
+/** 本页目录条目（取正文的 h2/h3） */
+interface TocItem {
+  id: string
+  text: string
+  level: number
+}
+const toc = ref<TocItem[]>([])
+const activeId = ref('')
+
+// 给渲染后 HTML 的 h2/h3 注入锚点 id，并提取本页目录。
+// markdown-it 不产 id，这里统一后处理；DOMParser 在 jsdom（测试环境）同样可用。
+function extractToc(rawHtml: string): { html: string; toc: TocItem[] } {
+  const doc = new DOMParser().parseFromString(rawHtml, 'text/html')
+  const items: TocItem[] = []
+  const seen = new Map<string, number>()
+  doc.body.querySelectorAll('h2, h3').forEach((el) => {
+    const text = (el.textContent || '').trim()
+    // 标题文本 → 锚点 id（保留中英文与数字）；重复标题追加序号防撞
+    let id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\p{L}\p{N}-]/gu, '')
+    const dup = seen.get(id) ?? 0
+    seen.set(id, dup + 1)
+    if (dup) id = `${id}-${dup}`
+    el.id = id
+    items.push({ id, text, level: el.tagName === 'H3' ? 3 : 2 })
+  })
+  return { html: doc.body.innerHTML, toc: items }
+}
+
+// 滚动高亮：标题进入视口顶部 25% 判定带时点亮对应目录项
+let spy: IntersectionObserver | null = null
+async function setupScrollSpy() {
+  await nextTick()
+  spy?.disconnect()
+  spy = null
+  activeId.value = toc.value[0]?.id ?? ''
+  // jsdom 无 IntersectionObserver；无目录也不必观察
+  if (!toc.value.length || typeof IntersectionObserver === 'undefined') return
+  spy = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          activeId.value = e.target.id
+          return
+        }
+      }
+    },
+    { rootMargin: '0px 0px -75% 0px' }
+  )
+  for (const item of toc.value) {
+    const el = document.getElementById(item.id)
+    if (el) spy.observe(el)
+  }
+}
+onBeforeUnmount(() => spy?.disconnect())
+
+function scrollToHeading(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  activeId.value = id
+}
+
 // slug 或语言变化 → 重新加载并渲染
 // 竞态守卫：快速切换 slug/语言连发加载时只让最后一次的结果落地（与 useKeys/useUsage 的 loadSeq 模式一致）
 let loadSeq = 0
@@ -57,11 +117,16 @@ watch(
       await settingsStore.ensureLoaded()
       const src = await loadDoc(slug, locale)
       if (seq !== loadSeq) return
-      html.value = renderMarkdown(resolveDocPlaceholders(src, docPlaceholderValues(settingsStore.settings)))
+      const rendered = renderMarkdown(resolveDocPlaceholders(src, docPlaceholderValues(settingsStore.settings)))
+      const extracted = extractToc(rendered)
+      html.value = extracted.html
+      toc.value = extracted.toc
+      setupScrollSpy()
     } catch {
       if (seq !== loadSeq) return
       // 加载失败（如网络异常拉不到 chunk）：展示可见的失败态而非静默空白
       html.value = ''
+      toc.value = []
       loadError.value = true
     }
   },
@@ -70,7 +135,8 @@ watch(
 </script>
 
 <template>
-  <PortalLayout>
+  <!-- fluid：文档页占满全宽，左侧目录贴页面左缘，正文在剩余空间内自行限宽居中 -->
+  <PortalLayout fluid>
     <div class="flex gap-10">
       <!-- 左侧目录（移动端隐藏，与 LegalView 目录同策略） -->
       <aside class="hidden w-56 shrink-0 lg:block">
@@ -99,23 +165,49 @@ watch(
         </nav>
       </aside>
 
-      <!-- 右侧正文 -->
+      <!-- 中间正文：限宽保证阅读行长，居中于两侧栏之间 -->
       <article class="min-w-0 flex-1">
-        <div
-          v-if="loadError"
-          class="rounded-xl2 bg-card p-6 text-sm text-text3"
-        >
-          {{ $t('common.loadFailed') }}
+        <div class="mx-auto max-w-[800px]">
+          <div
+            v-if="loadError"
+            class="rounded-xl2 bg-card p-6 text-sm text-text3"
+          >
+            {{ $t('common.loadFailed') }}
+          </div>
+          <!-- v-html 注入的是本项目自有的可信文档 markdown 渲染结果（非用户输入），故禁用该规则 -->
+          <!-- eslint-disable vue/no-v-html -->
+          <div
+            v-else
+            class="prose prose-neutral max-w-none dark:prose-invert prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
+            v-html="html"
+          />
+          <!-- eslint-enable vue/no-v-html -->
         </div>
-        <!-- v-html 注入的是本项目自有的可信文档 markdown 渲染结果（非用户输入），故禁用该规则 -->
-        <!-- eslint-disable vue/no-v-html -->
-        <div
-          v-else
-          class="prose prose-neutral max-w-none dark:prose-invert prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
-          v-html="html"
-        />
-        <!-- eslint-enable vue/no-v-html -->
       </article>
+
+      <!-- 右侧本页目录（窄屏隐藏）：h2/h3 锚点导航 + 滚动高亮 -->
+      <aside class="hidden w-48 shrink-0 xl:block">
+        <nav
+          v-if="toc.length"
+          class="sticky top-6"
+        >
+          <div class="toc-title">
+            {{ $t('docs.toc') }}
+          </div>
+          <div class="toc-items">
+            <button
+              v-for="item in toc"
+              :key="item.id"
+              type="button"
+              class="toc-link"
+              :class="{ 'toc-on': item.id === activeId, 'toc-sub': item.level === 3 }"
+              @click="scrollToHeading(item.id)"
+            >
+              {{ item.text }}
+            </button>
+          </div>
+        </nav>
+      </aside>
     </div>
   </PortalLayout>
 </template>
@@ -159,6 +251,50 @@ watch(
 .doc-nav-on:hover {
   background: rgba(20, 194, 138, 0.1);
   color: var(--accent);
+}
+
+/* 本页目录：与左侧二级条目同语言（细导引线 + accent 激活态），字号再小一档以示层级 */
+.toc-title {
+  padding: 0 10px;
+  font: 600 12px 'Space Grotesk', sans-serif;
+  letter-spacing: 0.02em;
+  color: var(--text3);
+}
+.toc-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-left: 0;
+  border-left: 1px solid var(--border2);
+}
+.toc-link {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: 500 12.5px 'Space Grotesk', sans-serif;
+  text-align: left;
+  color: var(--text3);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+.toc-link:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.toc-sub {
+  padding-left: 22px;
+}
+.toc-on {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* 锚点跳转时给标题留一点顶部呼吸空间（滚动容器是 PortalLayout 的 main） */
+.prose :deep(h2),
+.prose :deep(h3) {
+  scroll-margin-top: 16px;
 }
 
 /* 正文行内代码（不含 pre 里的代码块）：芯片样式，盖掉 typography 默认的反引号伪元素 */

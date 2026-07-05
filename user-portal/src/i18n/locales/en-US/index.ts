@@ -17,6 +17,7 @@ import ui from './ui'
 import legal from './legal'
 import contact from './contact'
 import invite from './invite'
+import docs from './docs'
 
 const enUS: MessageSchema = {
   common,
@@ -33,7 +34,8 @@ const enUS: MessageSchema = {
   ui,
   legal,
   contact,
-  invite
+  invite,
+  docs
 }
 
 export default enUS

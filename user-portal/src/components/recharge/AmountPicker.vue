@@ -70,13 +70,13 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
   itemRefs.value[next]?.focus()
 }
 
-// 自定义输入变化时
+// 自定义输入变化时。注意不清空 selectedPreset：它承担「清空自定义后回退到上次预设」的记忆，
+// 自定义模式下的预设高亮取消由 isCustom 屏蔽（模板判 !isCustom），不依赖 selectedPreset 置空
 function onCustomInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
   customInput.value = val
   const n = parseFloat(val)
   if (!isNaN(n) && n > 0) {
-    selectedPreset.value = null
     model.value = n
   } else if (val === '') {
     // 清空自定义时，回到上次选中的预设
@@ -98,12 +98,14 @@ watch(model, (v) => {
   }
 })
 
-// 校验提示
+// 校验提示：范围校验作用于最终生效金额 model（预设或自定义）——预设档位也可能低于
+// 管理端下限（此时提交按钮置灰），必须解释原因，不能只对自定义输入生效
 const validationMsg = computed(() => {
-  const n = customNum.value
-  if (n === null && customInput.value !== '') return t('recharge.errInvalidAmount')
-  if (n !== null && n < props.min) return t('recharge.minAmount', { min: props.min })
-  if (n !== null && props.max && n > props.max) return t('recharge.maxAmount', { max: props.max })
+  if (customNum.value === null && customInput.value !== '') return t('recharge.errInvalidAmount')
+  const n = model.value
+  if (n == null) return ''
+  if (n < props.min) return t('recharge.minAmount', { min: props.min })
+  if (props.max && n > props.max) return t('recharge.maxAmount', { max: props.max })
   return ''
 })
 </script>

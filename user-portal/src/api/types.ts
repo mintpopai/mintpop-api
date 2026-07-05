@@ -46,6 +46,8 @@ export interface User {
 export interface LoginRequest {
   email: string
   password: string
+  /** Cloudflare Turnstile token（站点开启人机验证时后端强制校验，缺失即拒绝登录） */
+  turnstile_token?: string
 }
 
 export interface LoginResponse {
@@ -54,6 +56,10 @@ export interface LoginResponse {
   refresh_token?: string
   expires_in?: number
   user?: User
+  /** 开启 TOTP 2FA 的用户：登录第一步不发 token，只回 temp_token，须再调 /auth/login/2fa */
+  requires_2fa?: boolean
+  temp_token?: string
+  user_email_masked?: string
 }
 
 /** 注册请求（用户名仅前端用于注册后补充资料，后端由邮箱派生） */
@@ -64,6 +70,8 @@ export interface RegisterRequest {
   invitation_code?: string
   /** 优惠码（选填），有效时注册后赠送对应余额 */
   promo_code?: string
+  /** Cloudflare Turnstile token（站点开启人机验证时后端强制校验，缺失即拒绝注册） */
+  turnstile_token?: string
 }
 
 /** 优惠码校验结果（对齐后端 ValidatePromoCodeResponse） */
@@ -94,6 +102,9 @@ export interface PublicSettings {
   purchase_subscription_enabled?: boolean
   /** 网关 API 基础地址，用于「使用密钥」配置示例 */
   api_base_url?: string
+  /** Cloudflare Turnstile 人机验证（开启时登录/注册/发码都必须携带 turnstile_token） */
+  turnstile_enabled?: boolean
+  turnstile_site_key?: string
 }
 
 // ==================== API 密钥 ====================
@@ -108,8 +119,6 @@ export interface Group {
   /** 是否允许 messages 透传（OpenAI 分组下决定是否展示 Claude Code 配置） */
   allow_messages_dispatch?: boolean
 }
-
-export type GroupRates = Record<string, number>
 
 export interface ApiKey {
   id: number

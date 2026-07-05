@@ -4,6 +4,7 @@ import { getCheckoutInfo, createOrder, verifyOrder } from '@/api/payment'
 import { redeem as redeemApi } from '@/api/redeem'
 import type { CheckoutInfoResponse, CreateOrderResult, RedeemResult, SubscriptionPlan } from '@/api/types'
 import { errMessage } from '@/utils/error'
+import { pickDefaultPaymentMethod } from '@/config/payMethods'
 
 // 预设充值档位（精简为业界主流的少量档位，大额靠自定义输入兜底）
 const PRESETS = [10, 50, 100, 200]
@@ -27,9 +28,10 @@ export function useRecharge() {
     error.value = null
     try {
       checkout.value = await getCheckoutInfo()
-      const keys = Object.keys(checkout.value.methods)
-      if (keys.length && !method.value) {
-        method.value = keys[0]
+      // 默认选中按白名单优先级挑：methods 是 Go map（键序不稳定）且可能含本门户不渲染的通道，
+      // 直接取首键会选中一个界面上看不见的方式
+      if (!method.value) {
+        method.value = pickDefaultPaymentMethod(Object.keys(checkout.value.methods))
       }
       loaded.value = true
     } catch (e) {
@@ -37,6 +39,13 @@ export function useRecharge() {
     } finally {
       loading.value = false
     }
+  }
+
+  // 跳转型支付（支付宝 H5 等）付完的浏览器回跳地址。后端 CanonicalizeReturnURL 要求
+  // 绝对 URL、同源、且路径必须是规范的 /payment/result（本门户已注册该路由），
+  // 回跳时后端会自动附加 order_id / out_trade_no 供回流页轮询确认。
+  function paymentReturnURL(): string {
+    return `${window.location.origin}/payment/result`
   }
 
   async function submitRecharge(): Promise<CreateOrderResult> {
@@ -49,7 +58,8 @@ export function useRecharge() {
     return createOrder({
       amount: amount.value,
       payment_type: method.value,
-      order_type: 'balance'
+      order_type: 'balance',
+      return_url: paymentReturnURL()
     })
   }
 
@@ -58,7 +68,8 @@ export function useRecharge() {
       amount: plan.price,
       payment_type: method.value,
       order_type: 'subscription',
-      plan_id: plan.id
+      plan_id: plan.id,
+      return_url: paymentReturnURL()
     })
   }
 

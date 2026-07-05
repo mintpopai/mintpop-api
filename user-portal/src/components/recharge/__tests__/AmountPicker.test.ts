@@ -89,3 +89,62 @@ describe('AmountPicker：radio group 方向键 + roving tabindex', () => {
     wrapper.unmount()
   })
 })
+
+describe('AmountPicker：预设 / 自定义 / 外部 v-model 三态同步', () => {
+  it('输入合法自定义金额：v-model 更新为该值，预设高亮取消', async () => {
+    const wrapper = mountPicker(10)
+    await wrapper.find('input').setValue('42.5')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([42.5])
+    // 自定义模式下所有预设都不再 aria-checked
+    for (const r of wrapper.findAll('[role="radio"]')) {
+      expect(r.attributes('aria-checked')).toBe('false')
+    }
+    wrapper.unmount()
+  })
+
+  it('清空自定义输入：回退到上次选中的预设', async () => {
+    const wrapper = mountPicker(10)
+    const input = wrapper.find('input')
+    await input.setValue('42.5')
+    await input.setValue('')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([10])
+    wrapper.unmount()
+  })
+
+  it('外部改 v-model 为非预设值：视为自定义，输入框回显该值', async () => {
+    const wrapper = mountPicker(10)
+    await wrapper.setProps({ modelValue: 77 })
+    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('77')
+    wrapper.unmount()
+  })
+
+  it('外部改 v-model 为预设值：高亮同步到该预设', async () => {
+    const wrapper = mountPicker(10)
+    await wrapper.setProps({ modelValue: 30 })
+    expect(wrapper.findAll('[role="radio"]')[2].attributes('aria-checked')).toBe('true')
+    wrapper.unmount()
+  })
+})
+
+describe('AmountPicker：金额范围校验提示', () => {
+  function mountWithMin(modelValue: number | null, min: number) {
+    return mount(AmountPicker, {
+      props: { presets: [10, 20, 30], multiplier: 1, min, modelValue },
+      global: { plugins: [i18n] }
+    })
+  }
+
+  it('自定义金额低于下限时展示下限提示', async () => {
+    const wrapper = mountWithMin(10, 15)
+    await wrapper.find('input').setValue('3')
+    expect(wrapper.text()).toContain('recharge.minAmount')
+    wrapper.unmount()
+  })
+
+  it('选中的预设低于管理端下限时同样展示下限提示（不能只对自定义输入生效，否则按钮置灰无解释）', () => {
+    // min=15 > 预设 10：选中 $10 档时用户必须被告知为什么不能提交
+    const wrapper = mountWithMin(10, 15)
+    expect(wrapper.text()).toContain('recharge.minAmount')
+    wrapper.unmount()
+  })
+})

@@ -51,7 +51,7 @@ export async function deleteKey(id: number): Promise<{ message: string }> {
   return data
 }
 
-/** 批量获取密钥的今日 / 累计实际消费 */
+/** 批量获取密钥的今日 / 近 30 天实际消费（后端未传时间范围时默认统计近 30 天，并非累计） */
 export async function getKeysUsage(apiKeyIds: number[]): Promise<Record<string, ApiKeyUsageStat>> {
   if (apiKeyIds.length === 0) return {}
   const { data } = await apiClient.post<{ stats: Record<string, ApiKeyUsageStat> }>(

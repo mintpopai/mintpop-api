@@ -11,7 +11,6 @@ export function useOrders() {
   const page = ref(1)
   const pageSize = ref(20)
   const statusFilter = ref('')
-  const search = ref('')
   const loading = ref(false)
   const error = ref<string | null>(null)
   const loaded = ref(false)
@@ -51,5 +50,5 @@ export function useOrders() {
     await load()
   }
 
-  return { rows, total, page, pageSize, statusFilter, search, loading, error, loaded, load, setPage, cancel }
+  return { rows, total, page, pageSize, statusFilter, loading, error, loaded, load, setPage, cancel }
 }

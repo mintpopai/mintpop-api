@@ -64,6 +64,18 @@ describe('统一返回体解包', () => {
   })
 })
 
+describe('网络层错误归一化', () => {
+  it('断网（无 response 的 AxiosError）时给出本地化提示，不把 axios 英文 "Network Error" 透出到界面', async () => {
+    apiClient.defaults.adapter = async (config) => {
+      throw new AxiosError('Network Error', 'ERR_NETWORK', config)
+    }
+    const i18n = (await import('@/i18n')).default
+    await expect(apiClient.get('/whatever')).rejects.toMatchObject({
+      message: i18n.global.t('common.networkError')
+    })
+  })
+})
+
 describe('401 自动续期', () => {
   it('401 → 刷新 token → 用新 token 重放原请求', async () => {
     localStorage.setItem(TOKEN_KEY, 'old-token')

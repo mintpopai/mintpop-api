@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Modal from '@/components/ui/Modal.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { orderStatusMeta, orderKind, formatCNY, formatBalance, formatDateMinute } from '@/utils/format'
+import { orderStatusMeta, orderKind, formatPayAmount, formatBalance, formatDateMinute } from '@/utils/format'
 import type { PaymentOrder } from '@/api/types'
 
 defineProps<{ open: boolean; order: PaymentOrder | null }>()
@@ -31,7 +31,8 @@ const emit = defineEmits<{ close: [] }>()
         </div>
         <div class="flex items-center justify-between gap-4">
           <span class="text-[13px] text-text3">{{ $t('orders.fields.payAmount') }}</span>
-          <span class="font-serif text-[15px] font-semibold text-text">¥{{ formatCNY(order.pay_amount) }}</span>
+          <!-- 实付按订单币种展示（币种由支付实例决定，不能硬编码 ¥） -->
+          <span class="font-serif text-[15px] font-semibold text-text">{{ formatPayAmount(order.pay_amount, order.currency) }}</span>
         </div>
         <div class="flex items-center justify-between gap-4">
           <span class="text-[13px] text-text3">{{ $t('orders.fields.paymentMethod') }}</span>
@@ -65,7 +66,7 @@ const emit = defineEmits<{ close: [] }>()
           class="flex items-center justify-between gap-4"
         >
           <span class="text-[13px] text-text3">{{ $t('orders.fields.refundAmount') }}</span>
-          <span class="text-[13px] font-medium text-neg">¥{{ formatCNY(order.refund_amount) }}</span>
+          <span class="text-[13px] font-medium text-neg">{{ formatPayAmount(order.refund_amount, order.currency) }}</span>
         </div>
         <div
           v-if="order.refund_reason"

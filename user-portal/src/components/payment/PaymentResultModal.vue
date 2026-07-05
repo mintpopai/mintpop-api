@@ -6,7 +6,8 @@ import QRCode from 'qrcode'
 import { verifyOrder, getCheckoutInfo } from '@/api/payment'
 import type { Stripe, StripeElements, StripePaymentElement, StripeElementLocale } from '@stripe/stripe-js'
 import { errMessage } from '@/utils/error'
-import { resolvePaymentPollAction } from '@/utils/format'
+import { resolvePaymentPollAction, orderStatusMeta } from '@/utils/format'
+import { pollOrderUntilSettled } from '@/utils/orderPolling'
 
 const { t, locale } = useI18n()
 
@@ -17,12 +18,14 @@ const stripeLocale = computed<StripeElementLocale>(() => (locale.value === 'en-U
  * 弹窗接受两类订单，统一用此类型描述：
  * - CreateOrderResult：刚下单返回（含 pay_url / qr_code / client_secret）
  * - PaymentOrder：订单列表里的待支付订单（仅 out_trade_no + expires_at，无 pay_url / qr_code）
- * 弹窗只读 out_trade_no、expires_at、status、pay_url?、qr_code?、client_secret?，其它字段忽略。
+ * 弹窗只读 out_trade_no、expires_at、status、payment_type?、pay_url?、qr_code?、client_secret?，其它字段忽略。
  */
 export interface PaymentModalOrder {
   out_trade_no: string
   expires_at: string
   status: string
+  /** 支付方式（wxpay/alipay/stripe…）；用于确认 client_secret 确属 Stripe，缺省按 Stripe 处理 */
+  payment_type?: string
   pay_url?: string
   qr_code?: string
   /** Stripe PaymentIntent 的 client_secret，存在时走 Stripe.js 卡支付 */
@@ -48,8 +51,8 @@ const errMsg = ref('')
 const countdown = ref(0)
 let countdownTimer: number | null = null
 
-// 轮询定时器
-let pollTimer: number | null = null
+// 轮询停止信号（倒计时归零/命中终态时置真；轮询实现在 utils/orderPolling，此处只管信号）
+let pollStopped = false
 
 // 防止弹窗关闭后飞行中的 verify 回调仍触发 emit('paid') 或状态变更
 let aborted = false
@@ -70,8 +73,11 @@ let paymentElement: StripePaymentElement | null = null
 // 发布密钥缓存（结算信息里带，懒加载一次）
 let publishableKey = ''
 
-// 当前订单是否为 Stripe（存在 client_secret 即走卡支付）
-const isStripe = computed(() => !!props.order?.client_secret)
+// 当前订单是否为 Stripe 卡支付：除 client_secret 外还核对 payment_type——
+// 其它通道（如 airwallex）也可能返回 client_secret，误挂 Stripe Elements 必然失败
+const isStripe = computed(
+  () => !!props.order?.client_secret && (props.order.payment_type ?? 'stripe') === 'stripe'
+)
 
 // 二维码本地生成为 data URL（qrcode 库，与主前端 PaymentQRDialog 一致）：
 // 不走第三方渲染服务——支付链接不出站，也不受境外服务在大陆可达性影响
@@ -107,7 +113,9 @@ const countdownLabel = computed(() => {
 // 状态文案
 const statusLabel = computed(() => {
   const s = status.value || props.order?.status || ''
-  // key 为后端订单状态枚举取值（SCREAMING_SNAKE_CASE）
+  if (!s) return t('payment.statusPending')
+  // key 为后端订单状态枚举取值（SCREAMING_SNAKE_CASE）；支付场景高频状态用本地化短文案，
+  // 其余（REFUND_* 系列等）回退订单页的全集词条（orderStatusMeta），不再一律误显示成「等待支付」
   const map: Record<string, string> = {
     PENDING: t('payment.statusPending'),
     PAID: t('payment.statusPaid'),
@@ -118,14 +126,11 @@ const statusLabel = computed(() => {
     CANCELLED: t('payment.statusCancelled'),
     REFUNDED: t('payment.statusRefunded')
   }
-  return map[s] ?? t('payment.statusPending')
+  return map[s] ?? orderStatusMeta(s).label
 })
 
 function stopPoll() {
-  if (pollTimer !== null) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
+  pollStopped = true
 }
 
 function stopCountdown() {
@@ -176,19 +181,26 @@ async function verifyOnce(outTradeNo: string) {
   // CONTINUE（PENDING）：什么都不做，继续轮询
 }
 
-async function doVerify(outTradeNo: string) {
-  try {
-    await verifyOnce(outTradeNo)
-  } catch {
-    // 轮询失败忽略，下次再试
-  }
-}
-
 function startPoll(outTradeNo: string) {
-  stopPoll()
-  // 立即查一次
-  doVerify(outTradeNo)
-  pollTimer = window.setInterval(() => doVerify(outTradeNo), 2000)
+  pollStopped = false
+  // 轮询实现与状态口径统一走 utils/orderPolling（与充值页回流共用同一原语）；
+  // 不设 maxAttempts——由倒计时归零 / 弹窗关闭经 isAborted 终止
+  void pollOrderUntilSettled(outTradeNo, {
+    isAborted: () => aborted || pollStopped,
+    onStatus: (o) => {
+      status.value = o.status
+    }
+  }).then((outcome) => {
+    if (outcome.kind === 'SETTLED') {
+      // RECHARGING 也算成功（已付款、到账中），与 frontend SUCCESS_STATUSES 对齐
+      stopCountdown()
+      emit('paid')
+    } else if (outcome.kind === 'TERMINAL') {
+      // FAILED/CANCELLED/EXPIRED/退款系列/未知状态：停表但不当作成功通知调用方
+      stopCountdown()
+    }
+    // ABORTED：关闭/过期时已各自清理，无副作用
+  })
 }
 
 async function handleManualVerify() {

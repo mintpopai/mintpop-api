@@ -21,6 +21,16 @@ export default {
   signUpFree: 'Sign up free',
   errEmptyCredentials: 'Please enter your email and password',
   errLoginFailed: 'Sign in failed. Please check your email and password.',
+  // —— TOTP two-factor authentication (second login step when 2FA is enabled) ——
+  totpTitle: 'Two-factor authentication',
+  totpHint: 'Enter the 6-digit code from your authenticator app.',
+  totpCodeLabel: 'Verification code',
+  totpPlaceholder: '6-digit code',
+  totpVerify: 'Verify & sign in',
+  totpBack: 'Back to sign in',
+  errTotpRequired: 'Please enter the 6-digit verification code',
+  // —— Cloudflare Turnstile (required for sign-in/sign-up/code sending when enabled) ——
+  errTurnstileRequired: 'Please complete the human verification first',
   // —— Register left brand panel ——
   registerKicker: '3 minutes · Instant access',
   registerHeadlinePre: 'Sign up and get',

@@ -16,8 +16,9 @@ import { useRecharge } from '@/composables/useRecharge'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
-import { getPlans, verifyOrder } from '@/api/payment'
-import { formatBalance, ORDER_SETTLING_STATUSES } from '@/utils/format'
+import { getPlans } from '@/api/payment'
+import { formatBalance } from '@/utils/format'
+import { pollOrderUntilSettled } from '@/utils/orderPolling'
 import type { CreateOrderResult, SubscriptionPlan } from '@/api/types'
 import { errMessage } from '@/utils/error'
 
@@ -181,11 +182,8 @@ function clearPayReturnQuery() {
   router.replace({ query, hash: route.hash })
 }
 
-// 状态集合与轮询节奏对齐主前端 PaymentResultView：
-// 成功口径取 utils/format 的 ORDER_SETTLING_STATUSES（含 RECHARGING 瞬时态）；仅在待定类状态继续轮询，其余非成功即停。
-const RESUME_SUCCESS_STATUSES = new Set(ORDER_SETTLING_STATUSES)
-const RESUME_PENDING_STATUSES = new Set(['PENDING', 'CREATED', 'WAITING', 'PROCESSING'])
-const RESUME_POLL_INTERVAL_MS = 2000
+// 轮询实现与状态口径统一走 utils/orderPolling（与 PaymentResultModal 共用同一原语）。
+// 最多轮询约 30s（15 次 × 2s），等后端收到 Stripe webhook 确认到账。
 const RESUME_POLL_MAX_ATTEMPTS = 15
 
 // 组件卸载后中断回流轮询（用户切走路由时不再空转最多 30s、也不再写已卸载组件的状态）
@@ -195,32 +193,19 @@ onUnmounted(() => {
 })
 
 async function resumeRedirectPayment(outTradeNo: string) {
-  // 最多轮询约 30s（15 次 × 2s），等后端收到 Stripe webhook 确认到账
-  let confirmed = false
-  for (let i = 0; i < RESUME_POLL_MAX_ATTEMPTS; i++) {
-    if (resumeAborted) return
-    try {
-      const order = await verifyOrder(outTradeNo)
-      if (resumeAborted) return
-      const status = String(order.status || '').trim().toUpperCase()
-      if (RESUME_SUCCESS_STATUSES.has(status)) {
-        await authStore.fetchUser()
-        successNote.value =
-          order.order_type === 'subscription'
-            ? t('recharge.subscribeSuccess')
-            : t('recharge.rechargeSuccess')
-        confirmed = true
-        break
-      }
-      // 非待定、非成功（FAILED / CANCELLED / EXPIRED / REFUNDED 等）→ 终止，不再轮询
-      if (!RESUME_PENDING_STATUSES.has(status)) break
-    } catch {
-      // 轮询失败忽略，下次再试
-    }
-    await new Promise((resolve) => setTimeout(resolve, RESUME_POLL_INTERVAL_MS))
-  }
-  // 超时未确认或终态非成功：用户可能已付款，不能静默结束，引导去订单页核实
-  if (!resumeAborted && !confirmed) {
+  const outcome = await pollOrderUntilSettled(outTradeNo, {
+    maxAttempts: RESUME_POLL_MAX_ATTEMPTS,
+    isAborted: () => resumeAborted
+  })
+  if (outcome.kind === 'ABORTED') return
+  if (outcome.kind === 'SETTLED') {
+    await authStore.fetchUser()
+    successNote.value =
+      outcome.order.order_type === 'subscription'
+        ? t('recharge.subscribeSuccess')
+        : t('recharge.rechargeSuccess')
+  } else {
+    // TIMEOUT / TERMINAL：用户可能已付款，不能静默结束，引导去订单页核实
     toast.error(t('recharge.resumeUnknown'))
   }
   clearPayReturnQuery()

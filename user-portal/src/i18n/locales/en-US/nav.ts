@@ -18,5 +18,6 @@ export default {
   logout: 'Sign out',
   // Route / browser tab titles
   login: 'Sign in',
-  register: 'Sign up'
+  register: 'Sign up',
+  paymentResult: 'Payment Result'
 }

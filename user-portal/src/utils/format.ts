@@ -158,10 +158,47 @@ export function formatRegMonth(s: string | null | undefined): string {
   return new Intl.DateTimeFormat(i18n.global.locale.value, { month: 'short', year: 'numeric' }).format(d)
 }
 
-const cny2 = new Intl.NumberFormat('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-/** 人民币金额（2 位小数，无符号，调用方自行加 ¥） */
-export function formatCNY(n: number): string {
-  return cny2.format(Number.isFinite(n) ? n : 0)
+/**
+ * 预估应付金额（充值额 + 手续费），口径对齐后端 payment.CalculatePayAmountForCurrency：
+ * - feeRatePercent 是「百分数」（5 = 5%），不是小数——后端按 amount × rate / 100 计费；
+ * - 手续费向上取整到分（后端 RoundUp 到币种最小单位，此处按 2 位小数币种预估）。
+ * 仅作下单前展示预估，实际以后端下单结果为准。
+ */
+export function estimatePayAmount(amount: number, feeRatePercent: number): number {
+  if (!Number.isFinite(amount)) return 0
+  if (!Number.isFinite(feeRatePercent) || feeRatePercent <= 0) return amount
+  // amount × rate / 100（美元）恰为 amount × rate（美分）；toFixed(6) 先抹掉浮点噪声
+  // （如 10 × 1 = 10.000000000000002），否则 ceil 会凭空多收一分
+  const feeCents = Math.ceil(Number((amount * feeRatePercent).toFixed(6)))
+  return Math.round(amount * 100 + feeCents) / 100
+}
+
+// 后端 payment.DefaultPaymentCurrency —— 订单未带币种时的回退值（两端须一致）
+const DEFAULT_PAYMENT_CURRENCY = 'CNY'
+
+/** 归一化币种代码：3 位字母才合法，否则回退默认币种 */
+function normalizePaymentCurrency(currency?: string | null): string {
+  const c = String(currency ?? '').trim().toUpperCase()
+  return /^[A-Z]{3}$/.test(c) ? c : DEFAULT_PAYMENT_CURRENCY
+}
+
+/**
+ * 按订单币种格式化实付金额（含货币符号与该币种的小数位，如 $10.50 / ¥10.50 / ¥1,235）。
+ * 订单币种由支付实例决定（Stripe 单常为 USD），不能硬编码 ¥；locale 跟随门户当前语言。
+ */
+export function formatPayAmount(amount: number, currency?: string | null): string {
+  const c = normalizePaymentCurrency(currency)
+  const v = Number.isFinite(amount) ? amount : 0
+  try {
+    return new Intl.NumberFormat(i18n.global.locale.value, {
+      style: 'currency',
+      currency: c,
+      currencyDisplay: 'narrowSymbol'
+    }).format(v)
+  } catch {
+    // Intl 不认识的合法形状币种（如私有代码）：退化为「代码 + 两位小数」
+    return `${c} ${v.toFixed(2)}`
+  }
 }
 
 /** 缓存命中率 0-100 整数（入参可能来自 API 缺失字段，故容忍 null/undefined） */

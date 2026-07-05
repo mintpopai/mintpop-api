@@ -14,7 +14,7 @@ const route = useRoute()
 const localeStore = useLocaleStore()
 watch(
   () => localeStore.current,
-  () => setDocumentTitle(route.meta.title as string | undefined)
+  () => setDocumentTitle(route.meta.title)
 )
 </script>
 

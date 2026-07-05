@@ -7,9 +7,3 @@ export async function redeem(code: string): Promise<RedeemResult> {
   const { data } = await apiClient.post<RedeemResult>('/redeem', { code })
   return data
 }
-
-/** 获取当前用户的兑换历史 */
-export async function getRedeemHistory(): Promise<RedeemResult[]> {
-  const { data } = await apiClient.get<RedeemResult[]>('/redeem/history')
-  return data
-}

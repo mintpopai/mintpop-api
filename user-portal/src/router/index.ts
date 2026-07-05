@@ -59,6 +59,13 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'nav.orders' }
   },
   {
+    // 跳转型支付的规范回流路径：后端 CanonicalizeReturnURL 只放行 /payment/result，勿改路径
+    path: '/payment/result',
+    name: 'PaymentReturn',
+    component: () => import('@/views/PaymentReturnView.vue'),
+    meta: { requiresAuth: true, title: 'nav.paymentResult' }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/ProfileView.vue'),
@@ -99,7 +106,7 @@ router.beforeEach((to) => {
 
 router.afterEach((to) => {
   // 全部路由都配了 meta.title；setDocumentTitle 的空 key 分支防新增路由漏配时渲染出「MintPop API · MintPop API」
-  setDocumentTitle(to.meta.title as string | undefined)
+  setDocumentTitle(to.meta.title)
 })
 
 export default router

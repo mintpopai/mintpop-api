@@ -4,8 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { updateProfile } from '@/api/user'
-import { startBind, unbind as unbindApi } from '@/api/binding'
+import { prepareBindToken, startBind, unbind as unbindApi } from '@/api/binding'
 import { errMessage } from '@/utils/error'
+import { navigateTo } from '@/utils/navigation'
 
 export function useProfile() {
   const authStore = useAuthStore()
@@ -61,8 +62,11 @@ export function useProfile() {
 
   async function bind(provider: string) {
     try {
-      const { authorize_url } = await startBind({ provider, redirect_to: window.location.origin + '/profile' })
-      window.location.href = authorize_url
+      // bind/start 是浏览器导航（无 Authorization 头），身份靠短时 cookie——必须先预置
+      await prepareBindToken()
+      // redirect_to 必须是 / 开头的相对路径：后端 normalizeUserIdentityRedirect 拒绝绝对 URL
+      const { authorize_url } = await startBind({ provider, redirect_to: '/profile' })
+      navigateTo(authorize_url)
     } catch (e) {
       toast.error(errMessage(e, t('profile.toast.bindFailed')))
     }

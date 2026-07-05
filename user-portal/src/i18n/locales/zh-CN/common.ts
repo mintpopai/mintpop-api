@@ -26,6 +26,7 @@ export default {
   other: '其他',
   loadFailed: '加载失败',
   requestFailed: '请求失败',
+  networkError: '网络连接失败，请检查网络后重试',
   optional: '可选',
   required: '必填',
   yes: '是',

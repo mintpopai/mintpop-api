@@ -24,5 +24,13 @@ export default {
   redirecting: '正在跳转至支付页面，请稍候…',
   // 底部操作
   verifying: '查询中…',
-  paidRefresh: '我已支付 / 刷新'
+  paidRefresh: '我已支付 / 刷新',
+  // 跳转支付回流页（PaymentReturnView）
+  returnChecking: '正在确认支付结果，请稍候…',
+  returnSuccess: '余额已更新，可前往订单页查看明细',
+  returnSubscribed: '订阅已生效，可前往订单页查看明细',
+  returnUnknown: '暂未确认到支付结果。如已完成支付，到账可能有延迟，请稍后在订单页核实。',
+  returnMissing: '缺少订单参数，无法查询支付结果。请从订单页核实支付状态。',
+  goOrders: '查看订单',
+  backRecharge: '返回充值'
 }

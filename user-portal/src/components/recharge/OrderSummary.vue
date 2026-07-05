@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatBalance } from '@/utils/format'
+import { formatBalance, estimatePayAmount } from '@/utils/format'
 
 const props = defineProps<{
   /** 选中的充值金额（USD） */
   amount: number | null
   /** 充值倍率（1 = 无赠送） */
   multiplier: number
-  /** 手续费率（如 0.05 = 5%） */
+  /** 手续费率，百分数（后端 checkout-info 的 recharge_fee_rate：5 = 5%，非小数） */
   feeRate: number
 }>()
 
@@ -17,10 +17,10 @@ const bonus = computed(() => {
   return Math.round(props.amount * (props.multiplier - 1) * 100) / 100
 })
 
-// 应付（USD，含手续费）
+// 应付（USD，含手续费）：口径对齐后端 fee = amount × rate / 100、向上取整到分
 const payUsd = computed(() => {
   if (!props.amount) return 0
-  return props.amount * (1 + props.feeRate)
+  return estimatePayAmount(props.amount, props.feeRate)
 })
 
 // 是否有有效金额

@@ -29,11 +29,11 @@ export function useDashboard() {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // 默认近 7 天
+  // 统计区间固定近 7 天（仪表盘无日期选择 UI；将来加区间切换时再把这两个值提为响应式导出）
   const endDate = ref(toLocalDate(new Date()))
   const startDate = ref(toLocalDate(new Date(Date.now() - 6 * 86_400_000)))
 
-  // 竞态守卫：切换日期区间连发请求时只让最后一次的响应落地
+  // 竞态守卫：手动刷新连点连发请求时只让最后一次的响应落地
   const { next, isLatest } = useLatestRequest()
 
   async function loadAll(): Promise<void> {
@@ -77,8 +77,6 @@ export function useDashboard() {
     recent,
     loading,
     error,
-    startDate,
-    endDate,
     loadAll
   }
 }

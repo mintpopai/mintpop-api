@@ -166,9 +166,14 @@ apiClient.interceptors.response.use(
 
 function normalize(error: AxiosError<ApiResponse<unknown>>) {
   const data = error.response?.data as ApiResponse<unknown> | undefined
+  // 无 response = 请求根本没到达服务端（断网/DNS/超时）：axios 的 message 是英文
+  // "Network Error"/"timeout of ..."，会原样透出到界面，这里换成本地化提示
+  const fallback = error.response
+    ? i18n.global.t('common.requestFailed')
+    : i18n.global.t('common.networkError')
   return {
     status: error.response?.status,
     code: data?.code ?? error.code,
-    message: data?.message || error.message || i18n.global.t('common.requestFailed')
+    message: data?.message || (error.response ? error.message : '') || fallback
   }
 }

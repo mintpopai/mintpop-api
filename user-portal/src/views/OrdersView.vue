@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from '@/composables/useToast'
 import { useRouter } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -12,7 +11,6 @@ import Modal from '@/components/ui/Modal.vue'
 import SearchInput from '@/components/ui/SearchInput.vue'
 import OrderTable from '@/components/orders/OrderTable.vue'
 import OrderDetailModal from '@/components/orders/OrderDetailModal.vue'
-import PaymentResultModal from '@/components/payment/PaymentResultModal.vue'
 import { useOrders } from '@/composables/useOrders'
 import { useAuthStore } from '@/stores/auth'
 import { formatBalance, formatDateMinute, orderStatusMeta, ORDER_PAID_STATUSES } from '@/utils/format'
@@ -20,10 +18,12 @@ import type { PaymentOrder } from '@/api/types'
 import { errMessage } from '@/utils/error'
 
 const { t } = useI18n()
-const toast = useToast()
 const router = useRouter()
 const authStore = useAuthStore()
-const { rows, total, page, pageSize, statusFilter, search, loading, error, loaded, load, setPage, cancel } = useOrders()
+const { rows, total, page, pageSize, statusFilter, loading, error, loaded, load, setPage, cancel } = useOrders()
+
+// 前端搜索关键字（纯视图层过滤，不参与请求，故不放进 useOrders）
+const search = ref('')
 
 // 状态 chip 标签（value 为后端枚举值，保持不变）
 const tabs = computed(() => [
@@ -107,22 +107,6 @@ async function confirmCancel() {
   } finally {
     cancelLoading.value = false
   }
-}
-
-// === 立即支付弹窗 ===
-const payOpen = ref(false)
-const payOrder = ref<PaymentOrder | null>(null)
-
-function handlePay(order: PaymentOrder) {
-  payOrder.value = order
-  payOpen.value = true
-}
-
-async function handlePaid() {
-  payOpen.value = false
-  // 刷新订单列表 + 余额
-  await Promise.all([load(), authStore.fetchUser()])
-  toast.success(t('orders.paySuccess'))
 }
 
 function handleReorder() {
@@ -241,7 +225,6 @@ onMounted(() => {
         <OrderTable
           :rows="filteredRows"
           @view="openDetail"
-          @pay="handlePay"
           @cancel="promptCancel"
           @reorder="handleReorder"
         />
@@ -254,14 +237,6 @@ onMounted(() => {
         />
       </div>
     </template>
-
-    <!-- 立即支付弹窗 -->
-    <PaymentResultModal
-      :open="payOpen"
-      :order="payOrder"
-      @close="payOpen = false"
-      @paid="handlePaid"
-    />
 
     <!-- 订单详情弹窗 -->
     <OrderDetailModal

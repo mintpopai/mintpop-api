@@ -7,9 +7,21 @@ import type {
   ValidatePromoCodeResult
 } from './types'
 
-/** 登录：成功后落地 token 到 localStorage */
+/** 登录：成功后落地 token 到 localStorage（2FA 用户第一步不含 token，只回 temp_token） */
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
   const { data } = await apiClient.post<LoginResponse>('/auth/login', payload)
+  const token = data.access_token || data.token
+  if (token) localStorage.setItem(TOKEN_KEY, token)
+  if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
+  return data
+}
+
+/** 2FA 第二步：用 temp_token + TOTP 验证码换正式 token（POST /auth/login/2fa） */
+export async function login2FA(tempToken: string, totpCode: string): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>('/auth/login/2fa', {
+    temp_token: tempToken,
+    totp_code: totpCode
+  })
   const token = data.access_token || data.token
   if (token) localStorage.setItem(TOKEN_KEY, token)
   if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
@@ -25,9 +37,12 @@ export async function register(payload: RegisterRequest): Promise<LoginResponse>
   return data
 }
 
-/** 发送邮箱验证码（注册场景） */
-export async function sendVerifyCode(email: string): Promise<void> {
-  await apiClient.post('/auth/send-verify-code', { email })
+/** 发送邮箱验证码（注册场景）；站点开启 Turnstile 时必须携带 token */
+export async function sendVerifyCode(email: string, turnstileToken?: string): Promise<void> {
+  await apiClient.post('/auth/send-verify-code', {
+    email,
+    turnstile_token: turnstileToken || undefined
+  })
 }
 
 /** 校验优惠码（公开接口，注册前调用），返回是否有效及赠送金额 */

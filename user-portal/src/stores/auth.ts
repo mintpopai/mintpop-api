@@ -3,17 +3,21 @@ import { defineStore } from 'pinia'
 import type { User } from '@/api/types'
 import { getProfile } from '@/api/user'
 import * as authApi from '@/api/auth'
-import { TOKEN_KEY } from '@/api/client'
+
+/** 登录第一步的结果：requires2FA 为真时视图须进入 TOTP 验证码步骤（此时尚无 token） */
+export interface LoginOutcome {
+  requires2FA: boolean
+  tempToken?: string
+  emailMasked?: string
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(false)
 
-  // 故意用普通函数而非 computed：localStorage 不是响应式源，computed 会在首次求值后
-  // 永久缓存，login/logout 后不更新（潜伏 bug）。需要响应式登录态请以 user ref 为源。
-  function isAuthenticated(): boolean {
-    return !!localStorage.getItem(TOKEN_KEY)
-  }
+  // 登录态判定：路由守卫直接读 localStorage（TOKEN_KEY，见 router/index.ts）——localStorage
+  // 不是响应式源，不在 store 里包 computed（首次求值后永久缓存，login/logout 后不更新）。
+  // 需要响应式登录态请以 user ref 为源。
   const balance = computed(() => user.value?.balance ?? 0)
 
   /**
@@ -34,8 +38,27 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(email: string, password: string): Promise<void> {
-    const resp = await authApi.login({ email, password })
+  async function login(email: string, password: string, turnstileToken?: string): Promise<LoginOutcome> {
+    const resp = await authApi.login({
+      email,
+      password,
+      turnstile_token: turnstileToken || undefined
+    })
+    // 开启 TOTP 2FA 的用户：后端只回 temp_token 不发 token，不能当登录成功处理
+    if (resp.requires_2fa) {
+      return { requires2FA: true, tempToken: resp.temp_token, emailMasked: resp.user_email_masked }
+    }
+    if (resp.user) {
+      user.value = resp.user
+    } else {
+      await fetchUser()
+    }
+    return { requires2FA: false }
+  }
+
+  /** 2FA 第二步：验证码通过后正式登录 */
+  async function loginWith2FA(tempToken: string, totpCode: string): Promise<void> {
+    const resp = await authApi.login2FA(tempToken, totpCode)
     if (resp.user) {
       user.value = resp.user
     } else {
@@ -48,5 +71,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, loading, isAuthenticated, balance, fetchUser, login, logout }
+  return { user, loading, balance, fetchUser, login, loginWith2FA, logout }
 })

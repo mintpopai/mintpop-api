@@ -28,7 +28,6 @@ export default {
 
   // List
   empty: 'No order records yet',
-  paySuccess: 'Payment successful, balance updated ✓',
 
   // Cancel confirmation modal
   cancelTitle: 'Cancel Order',
@@ -97,7 +96,6 @@ export default {
   // Row actions
   actions: {
     view: 'View',
-    payNow: 'Pay Now',
     reorder: 'Reorder'
   }
 }

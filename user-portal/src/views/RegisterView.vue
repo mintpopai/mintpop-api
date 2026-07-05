@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import * as authApi from '@/api/auth'
@@ -8,6 +8,7 @@ import { updateProfile } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import type { PublicSettings } from '@/api/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import TurnstileWidget from '@/components/common/TurnstileWidget.vue'
 import { errMessage } from '@/utils/error'
 
 const router = useRouter()
@@ -27,6 +28,20 @@ const agreed = ref(false)
 const settings = ref<PublicSettings | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
+
+// ===== Cloudflare Turnstile（站点开启时后端对注册与发验证码都强制校验）=====
+const turnstileEnabled = computed(
+  () => !!settings.value?.turnstile_enabled && !!settings.value?.turnstile_site_key
+)
+const turnstileSiteKey = computed(() => settings.value?.turnstile_site_key ?? '')
+const turnstileToken = ref('')
+const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
+
+// token 是一次性的：发验证码 / 注册每发一次请求（无论成败）都会消费掉，之后须 reset 重新挑战
+function consumeTurnstile() {
+  turnstileToken.value = ''
+  turnstileRef.value?.reset()
+}
 
 const sending = ref(false)
 const countdown = ref(0)
@@ -113,10 +128,14 @@ async function sendCode() {
     error.value = t('auth.errEmailRequired')
     return
   }
+  if (turnstileEnabled.value && !turnstileToken.value) {
+    error.value = t('auth.errTurnstileRequired')
+    return
+  }
   sending.value = true
   error.value = null
   try {
-    await authApi.sendVerifyCode(email.value)
+    await authApi.sendVerifyCode(email.value, turnstileToken.value)
     countdown.value = 60
     countdownTimer = setInterval(() => {
       countdown.value -= 1
@@ -128,6 +147,8 @@ async function sendCode() {
   } catch (e) {
     error.value = errMessage(e, t('auth.errSendCodeFailed'))
   } finally {
+    // token 单次有效，发码请求（无论成败）已消费，重新挑战供后续注册提交使用
+    consumeTurnstile()
     sending.value = false
   }
 }
@@ -164,6 +185,10 @@ async function onSubmit() {
       return
     }
   }
+  if (turnstileEnabled.value && !turnstileToken.value) {
+    error.value = t('auth.errTurnstileRequired')
+    return
+  }
   loading.value = true
   error.value = null
   try {
@@ -172,7 +197,8 @@ async function onSubmit() {
       password: password.value,
       verify_code: settings.value?.email_verify_enabled ? verifyCode.value : undefined,
       invitation_code: invitation.value || undefined,
-      promo_code: promo.value.trim() || undefined
+      promo_code: promo.value.trim() || undefined,
+      turnstile_token: turnstileToken.value || undefined
     })
     // 后端由邮箱派生用户名，若填写了昵称则注册后补充资料
     if (username.value.trim()) {
@@ -186,6 +212,8 @@ async function onSubmit() {
     router.push('/dashboard')
   } catch (e) {
     error.value = errMessage(e, t('auth.errRegisterFailed'))
+    // 失败后 token 已被后端消费，须重新挑战
+    consumeTurnstile()
   } finally {
     loading.value = false
   }
@@ -517,6 +545,20 @@ async function onSubmit() {
               @click.stop
             >{{ t('auth.privacyPolicy') }}</router-link></span>
           </label>
+
+          <!-- Turnstile 人机验证（站点开启时展示；发验证码与注册提交都消费该 token） -->
+          <div
+            v-if="turnstileEnabled"
+            class="mb-[18px]"
+          >
+            <TurnstileWidget
+              ref="turnstileRef"
+              :site-key="turnstileSiteKey"
+              @verify="turnstileToken = $event"
+              @expire="turnstileToken = ''"
+              @error="turnstileToken = ''"
+            />
+          </div>
 
           <p
             v-if="error"

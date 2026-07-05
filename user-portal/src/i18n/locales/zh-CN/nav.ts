@@ -18,5 +18,6 @@ export default {
   logout: '退出登录',
   // 路由 / 浏览器标签标题
   login: '登录',
-  register: '注册'
+  register: '注册',
+  paymentResult: '支付结果'
 }

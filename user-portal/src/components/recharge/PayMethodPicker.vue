@@ -2,6 +2,7 @@
 import { computed, ref, type ComponentPublicInstance } from 'vue'
 import type { MethodLimit } from '@/api/types'
 import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
+import { SUPPORTED_PAYMENT_METHODS, type SupportedPaymentMethod } from '@/config/payMethods'
 
 const props = defineProps<{
   /** 后端返回的可用支付方式 key → limits */
@@ -11,15 +12,15 @@ const props = defineProps<{
 // Vue 3.4+ 官方推荐的 v-model 宏
 const model = defineModel<string>({ required: true })
 
-// 支付方式配置（只渲染 methods 中存在的项；label/desc 走 i18n key，模板内解析）
-const METHOD_CONFIG: Record<string, { labelKey: string; descKey: string; color: string; iconType: 'wechat' | 'alipay' | 'stripe' }> = {
+// 支付方式展示配置（键集合与 config/payMethods 白名单编译期绑定：白名单加通道、此处漏配会报错）
+const METHOD_CONFIG: Record<SupportedPaymentMethod, { labelKey: string; descKey: string; color: string; iconType: 'wechat' | 'alipay' | 'stripe' }> = {
   wxpay: { labelKey: 'recharge.methodWxpay', descKey: 'recharge.methodScanDesc', color: '#09BB07', iconType: 'wechat' },
   alipay: { labelKey: 'recharge.methodAlipay', descKey: 'recharge.methodScanDesc', color: '#1677FF', iconType: 'alipay' },
   stripe: { labelKey: 'recharge.methodStripe', descKey: 'recharge.methodStripeDesc', color: '#635BFF', iconType: 'stripe' }
 }
 
-// 只展示后端实际返回的支付方式，按 METHOD_CONFIG 顺序排（响应式，随 props.methods 变化）
-const availableMethods = computed(() => Object.keys(METHOD_CONFIG).filter((k) => k in props.methods))
+// 只展示「后端实际返回 ∩ 白名单」的支付方式，按白名单顺序排（响应式，随 props.methods 变化）
+const availableMethods = computed(() => SUPPORTED_PAYMENT_METHODS.filter((k) => k in props.methods))
 
 function pick(key: string) {
   model.value = key

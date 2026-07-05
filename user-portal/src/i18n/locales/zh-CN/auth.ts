@@ -21,6 +21,16 @@ export default {
   signUpFree: '免费注册',
   errEmptyCredentials: '请输入邮箱和密码',
   errLoginFailed: '登录失败，请检查邮箱和密码',
+  // —— TOTP 两步验证（账号开启 2FA 时的登录第二步） ——
+  totpTitle: '两步验证',
+  totpHint: '请输入身份验证器应用中的 6 位动态验证码。',
+  totpCodeLabel: '动态验证码',
+  totpPlaceholder: '6 位数字',
+  totpVerify: '验证并登录',
+  totpBack: '返回重新登录',
+  errTotpRequired: '请输入 6 位动态验证码',
+  // —— Cloudflare Turnstile 人机验证（站点开启时登录/注册/发码都需要） ——
+  errTurnstileRequired: '请先完成人机验证',
   // —— 注册页左侧品牌区 ——
   registerKicker: '3 分钟 · 即刻开通',
   registerHeadlinePre: '注册即送',

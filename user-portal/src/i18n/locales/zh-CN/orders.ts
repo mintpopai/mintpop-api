@@ -28,7 +28,6 @@ export default {
 
   // 列表
   empty: '暂无订单记录',
-  paySuccess: '支付成功，余额已更新 ✓',
 
   // 取消确认弹窗
   cancelTitle: '取消订单',
@@ -97,7 +96,6 @@ export default {
   // 行内操作
   actions: {
     view: '查看',
-    payNow: '立即支付',
     reorder: '重新下单'
   }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatBalance, formatCost, formatCNY, formatTokens, percent, maskApiKey } from '@/utils/format'
+import { formatBalance, formatCost, formatTokens, percent, maskApiKey } from '@/utils/format'
 
 describe('金额格式化', () => {
   it('formatBalance：两位小数 + 千分位，非有限值兜底 0', () => {
@@ -14,11 +14,6 @@ describe('金额格式化', () => {
     expect(formatCost(2)).toBe('2.0000')
     expect(formatCost(NaN)).toBe('0.0000')
     expect(formatCost(1234.5)).toBe('1,234.5000')
-  })
-
-  it('formatCNY：两位小数 + 千分位', () => {
-    expect(formatCNY(9876.5)).toBe('9,876.50')
-    expect(formatCNY(NaN)).toBe('0.00')
   })
 })
 

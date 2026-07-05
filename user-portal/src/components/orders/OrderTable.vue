@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { orderStatusMeta, orderKind, formatCNY, formatBalance, formatDateMinute } from '@/utils/format'
+import { orderStatusMeta, orderKind, formatPayAmount, formatBalance, formatDateMinute } from '@/utils/format'
 import type { PaymentOrder } from '@/api/types'
 
 const { t } = useI18n()
 
 defineProps<{ rows: PaymentOrder[] }>()
 
+// 待支付订单不提供「立即支付」：订单列表接口不含支付凭据（qr_code/pay_url/client_secret），
+// 后端也没有按订单重取凭据的用户接口——只能取消后重新下单（与主前端行为一致）
 const emit = defineEmits<{
   view: [order: PaymentOrder]
-  pay: [order: PaymentOrder]
   cancel: [order: PaymentOrder]
   reorder: [order: PaymentOrder]
 }>()
@@ -98,8 +99,9 @@ function paymentLabel(type: string | null | undefined): string {
 
       <!-- 实付 -->
       <div role="cell">
+        <!-- 实付按订单币种展示（币种由支付实例决定，Stripe 单常为 USD，不能硬编码 ¥） -->
         <div class="font-serif text-[15px] font-semibold text-text">
-          ¥{{ formatCNY(row.pay_amount) }}
+          {{ formatPayAmount(row.pay_amount, row.currency) }}
         </div>
         <div class="mt-0.5 text-[11px] text-subtle">
           ${{ formatBalance(row.amount) }}
@@ -140,13 +142,6 @@ function paymentLabel(type: string | null | undefined): string {
           @click="emit('view', row)"
         >
           {{ $t('orders.actions.view') }}
-        </button>
-        <button
-          v-if="row.status === 'PENDING'"
-          class="inline-flex cursor-pointer items-center gap-[5px] rounded-lg px-[9px] py-[6px] text-[12px] font-medium text-accent transition-colors hover:bg-muted"
-          @click="emit('pay', row)"
-        >
-          {{ $t('orders.actions.payNow') }}
         </button>
         <button
           v-if="row.status === 'PENDING'"

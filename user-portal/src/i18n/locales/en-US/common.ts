@@ -26,6 +26,7 @@ export default {
   other: 'Other',
   loadFailed: 'Failed to load',
   requestFailed: 'Request failed',
+  networkError: 'Network connection failed. Please check your network and try again.',
   optional: 'Optional',
   required: 'Required',
   yes: 'Yes',

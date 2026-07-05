@@ -6,6 +6,9 @@
 export const IS_APPLICATION_MODE =
   (import.meta.env.VITE_PORTAL_DISTRIBUTION_MODE ?? 'MODEL').trim().toUpperCase() === 'APPLICATION'
 
-/** 联系渠道（ContactView 使用；集中在此，换邮箱/群链接只改这一处） */
+/**
+ * 联系渠道（ContactView 使用）。注意收口范围仅限「组件层」：docs/ 与 legal/ 的 markdown
+ * 文档里另有邮箱硬编码副本（md 引不了常量），换邮箱时须全仓 grep 同步改。
+ */
 export const CONTACT_EMAIL = 'support@mintpop.ai'
 export const TELEGRAM_GROUP_URL = 'https://t.me/+NpAwBIWXs8FkMzVh'

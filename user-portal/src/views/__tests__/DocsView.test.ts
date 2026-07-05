@@ -8,6 +8,8 @@ vi.mock('@/docs/loaders', () => ({
   docKey: vi.fn((slug: string, locale: string) => `./${slug}.${locale}.md`)
 }))
 
+import { loadDoc } from '@/docs/loaders'
+
 // mock 公开设置接口：DocsView 渲染前会 ensureLoaded（供占位符取 api_base_url），
 // 不 mock 会在 jsdom 里发真实 XHR（虽被 store 吞掉，但产生告警噪声）
 vi.mock('@/api/settings', () => ({
@@ -84,5 +86,49 @@ describe('DocsView', () => {
     // URL 被纠正为首篇 slug，而非停留在非法 slug 上
     expect(router.currentRoute.value.fullPath).toBe(`/docs/${DOCS[0].slug}`)
     expect(wrapper.html()).toContain('<h1>')
+  })
+})
+
+describe('DocsView 图片点击放大', () => {
+  it('点击正文图片打开全屏预览，Esc 关闭', async () => {
+    // 本用例需要正文里有图片：覆盖一次 loadDoc 的返回
+    vi.mocked(loadDoc).mockResolvedValueOnce('# 快速开始\n\n![示例图](/img/use-api-key.png)')
+    const router = makeRouter()
+    router.push(`/docs/${DOCS[0].slug}`)
+    await router.isReady()
+    const wrapper = mountDocs(router)
+    await flushPromises()
+
+    // 点击正文图片 → Teleport 到 body 的 dialog 出现，大图 src 与被点图片一致
+    await wrapper.get('.prose img').trigger('click')
+    const dialog = document.body.querySelector('[role="dialog"]')
+    expect(dialog).not.toBeNull()
+    expect(dialog!.querySelector('img')?.getAttribute('src')).toContain('use-api-key.png')
+
+    // Esc → 预览关闭
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+    // Teleport 内容挂在 document.body，显式卸载避免污染后续用例
+    wrapper.unmount()
+  })
+
+  it('点击遮罩任意处关闭预览', async () => {
+    vi.mocked(loadDoc).mockResolvedValueOnce('# 快速开始\n\n![示例图](/img/use-api-key.png)')
+    const router = makeRouter()
+    router.push(`/docs/${DOCS[0].slug}`)
+    await router.isReady()
+    const wrapper = mountDocs(router)
+    await flushPromises()
+
+    await wrapper.get('.prose img').trigger('click')
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]')
+    expect(dialog).not.toBeNull()
+
+    // 点击遮罩层（整层任意处均可关闭）
+    dialog!.click()
+    await flushPromises()
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+    wrapper.unmount()
   })
 })

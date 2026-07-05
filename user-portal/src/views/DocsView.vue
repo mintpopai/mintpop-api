@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
+import ImageLightbox from '@/components/ui/ImageLightbox.vue'
 import { DOCS, DOC_GROUPS } from '@/docs/_manifest'
 import { loadDoc } from '@/docs/loaders'
 import { docPlaceholderValues, resolveDocPlaceholders } from '@/docs/placeholders'
@@ -132,6 +133,18 @@ watch(
   },
   { immediate: true }
 )
+
+// —— 图片点击放大 ——
+// v-html 内容上的事件委托：点到 IMG 即打开全屏预览。委托挂在容器上，正文重渲染无需重绑。
+const lightboxSrc = ref<string | null>(null)
+const lightboxAlt = ref('')
+function onProseClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (target.tagName !== 'IMG') return
+  const img = target as HTMLImageElement
+  lightboxSrc.value = img.currentSrc || img.src
+  lightboxAlt.value = img.alt
+}
 </script>
 
 <template>
@@ -179,6 +192,7 @@ watch(
           <div
             v-else
             class="prose prose-neutral max-w-none dark:prose-invert prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
+            @click="onProseClick"
             v-html="html"
           />
           <!-- eslint-enable vue/no-v-html -->
@@ -209,6 +223,12 @@ watch(
         </nav>
       </aside>
     </div>
+    <!-- 图片全屏预览（Teleport 到 body，放哪都行，挂在布局末尾便于阅读） -->
+    <ImageLightbox
+      :src="lightboxSrc"
+      :alt="lightboxAlt"
+      @close="lightboxSrc = null"
+    />
   </PortalLayout>
 </template>
 
@@ -310,5 +330,10 @@ watch(
 .prose :deep(:not(pre) > code::before),
 .prose :deep(:not(pre) > code::after) {
   content: none;
+}
+
+/* 正文图片可点击放大，光标提示 */
+.prose :deep(img) {
+  cursor: zoom-in;
 }
 </style>

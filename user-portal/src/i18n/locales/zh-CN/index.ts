@@ -16,6 +16,7 @@ import pricing from './pricing'
 import ui from './ui'
 import legal from './legal'
 import contact from './contact'
+import invite from './invite'
 
 const zhCN = {
   common,
@@ -31,7 +32,8 @@ const zhCN = {
   pricing,
   ui,
   legal,
-  contact
+  contact,
+  invite
 }
 
 export default zhCN

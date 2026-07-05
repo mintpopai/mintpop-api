@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { formatBalance, formatCost } from '@/utils/format'
+import { formatBalance, formatCost, formatRebateRate } from '@/utils/format'
 
 defineProps<{
   balance: number
   todayCost: number
+  /** 邀请返利比例（0-100）；null/缺省 = 功能关闭或未加载，不展示角标 */
+  inviteRatePercent?: number | null
 }>()
 </script>
 
@@ -35,6 +37,15 @@ defineProps<{
         {{ $t('dashboard.hero.todayCost', { cost: formatCost(todayCost) }) }}
       </div>
     </div>
+
+    <!-- 邀请返利角标：贴卡片顶部、避开右侧网点装饰（装饰自右缘起约 220px，md 起左移让位） -->
+    <RouterLink
+      v-if="inviteRatePercent != null"
+      to="/invite"
+      class="absolute right-[42px] top-[30px] rounded-full bg-accent/10 px-4 py-2 text-[13px] font-semibold text-pos transition-colors hover:bg-accent/15 md:right-[250px]"
+    >
+      {{ $t('dashboard.hero.inviteBadge', { rate: formatRebateRate(inviteRatePercent) }) }} →
+    </RouterLink>
 
     <div class="relative">
       <RouterLink

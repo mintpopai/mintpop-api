@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import HeroBalance from '@/components/dashboard/HeroBalance.vue'
@@ -11,11 +11,31 @@ import LifetimeStrip from '@/components/dashboard/LifetimeStrip.vue'
 import QuickActions from '@/components/dashboard/QuickActions.vue'
 import { useDashboard } from '@/composables/useDashboard'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
+import { getAffiliateDetail } from '@/api/user'
 
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 const { stats, trend, models, loading, error, loadAll } = useDashboard()
 
-onMounted(loadAll)
+// 邀请返利角标：站点开启邀请返利时展示当前用户实际生效的返利比例；
+// 拉取失败只影响角标（静默隐藏），不影响仪表盘主体
+const inviteRatePercent = ref<number | null>(null)
+
+async function loadInviteRate(): Promise<void> {
+  await settingsStore.ensureLoaded()
+  if (!settingsStore.settings?.affiliate_enabled) return
+  try {
+    inviteRatePercent.value = (await getAffiliateDetail()).effective_rebate_rate_percent
+  } catch {
+    inviteRatePercent.value = null
+  }
+}
+
+onMounted(() => {
+  loadAll()
+  void loadInviteRate()
+})
 </script>
 
 <template>
@@ -71,6 +91,7 @@ onMounted(loadAll)
       <HeroBalance
         :balance="authStore.balance"
         :today-cost="stats.today_actual_cost"
+        :invite-rate-percent="inviteRatePercent"
       />
 
       <KpiRow :stats="stats" />

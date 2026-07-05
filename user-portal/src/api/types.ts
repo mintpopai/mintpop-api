@@ -72,6 +72,8 @@ export interface RegisterRequest {
   promo_code?: string
   /** Cloudflare Turnstile token（站点开启人机验证时后端强制校验，缺失即拒绝注册） */
   turnstile_token?: string
+  /** 邀请返利码（选填），来自邀请链接 ?aff=；后端关闭邀请返利时忽略 */
+  aff_code?: string
 }
 
 /** 优惠码校验结果（对齐后端 ValidatePromoCodeResponse） */
@@ -105,6 +107,44 @@ export interface PublicSettings {
   /** Cloudflare Turnstile 人机验证（开启时登录/注册/发码都必须携带 turnstile_token） */
   turnstile_enabled?: boolean
   turnstile_site_key?: string
+  /** 是否开启邀请返利（开启时余额卡展示邀请入口、注册接受 aff_code） */
+  affiliate_enabled?: boolean
+}
+
+// ==================== 邀请返利 ====================
+
+/** 已邀请用户（对齐后端 GET /user/aff 的 invitees 元素） */
+export interface AffiliateInvitee {
+  user_id: number
+  email: string
+  username: string
+  created_at?: string
+  /** 该用户累计为我产生的返利（USD） */
+  total_rebate: number
+}
+
+/** 邀请返利详情（对齐后端 GET /user/aff） */
+export interface UserAffiliateDetail {
+  user_id: number
+  aff_code: string
+  inviter_id?: number | null
+  /** 已邀请人数 */
+  aff_count: number
+  /** 可转入余额的返利额度（USD） */
+  aff_quota: number
+  /** 冻结期内暂不可转的返利额度（USD） */
+  aff_frozen_quota: number
+  /** 历史累计返利额度（USD） */
+  aff_history_quota: number
+  /** 当前用户作为邀请人时实际生效的返利比例（专属覆盖全局）。0-100。 */
+  effective_rebate_rate_percent: number
+  invitees: AffiliateInvitee[]
+}
+
+/** 返利额度转余额结果（对齐后端 POST /user/aff/transfer） */
+export interface AffiliateTransferResponse {
+  transferred_quota: number
+  balance: number
 }
 
 // ==================== API 密钥 ====================

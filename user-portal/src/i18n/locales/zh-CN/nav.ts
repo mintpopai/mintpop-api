@@ -9,6 +9,7 @@ export default {
   recharge: '充值',
   orders: '我的订单',
   profile: '个人资料',
+  invite: '邀请返利',
   menu: '菜单',
   docs: '使用文档',
   contact: '联系方式',

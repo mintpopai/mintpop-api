@@ -72,6 +72,13 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'nav.profile' }
   },
   {
+    // 邀请返利（站点开启 affiliate_enabled 时经余额卡角标进入；关闭时视图内重定向回仪表盘）
+    path: '/invite',
+    name: 'Invite',
+    component: () => import('@/views/InviteView.vue'),
+    meta: { requiresAuth: true, title: 'nav.invite' }
+  },
+  {
     path: '/docs/:slug?',
     name: 'Docs',
     component: () => import('@/views/DocsView.vue'),

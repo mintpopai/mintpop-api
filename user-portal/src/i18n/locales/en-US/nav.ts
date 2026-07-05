@@ -9,6 +9,7 @@ export default {
   recharge: 'Recharge',
   orders: 'My Orders',
   profile: 'Profile',
+  invite: 'Referral',
   menu: 'Menu',
   docs: 'Docs',
   contact: 'Contact',

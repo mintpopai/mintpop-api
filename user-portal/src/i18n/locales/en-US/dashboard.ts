@@ -7,7 +7,9 @@ export default {
   hero: {
     balanceAvailable: 'Balance · Available',
     todayCost: "Today's spend ${cost}",
-    recharge: 'Recharge'
+    recharge: 'Recharge',
+    // Referral badge on the balance card (rate is a 0-100 percentage)
+    inviteBadge: 'Refer & earn {rate}%'
   },
   // KPI cards
   kpi: {

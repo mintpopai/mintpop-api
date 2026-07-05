@@ -41,6 +41,16 @@ export function formatDuration(ms: number | null | undefined): string {
   return v >= 1000 ? `${(v / 1000).toFixed(2)}s` : `${v.toFixed(0)}ms`
 }
 
+/**
+ * 返利比例展示（入参是 0-100 的百分数，后端已 clamp）：
+ * 保留 2 位后去掉尾零（20.00 → "20"、12.50 → "12.5"），与主前端口径一致。
+ */
+export function formatRebateRate(v: number | null | undefined): string {
+  const n = typeof v === 'number' && Number.isFinite(v) ? v : 0
+  const rounded = Math.round(n * 100) / 100
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toString()
+}
+
 /** 百分比（0-100 整数） */
 export function percent(part: number, whole: number): number {
   if (!whole || whole <= 0) return 0

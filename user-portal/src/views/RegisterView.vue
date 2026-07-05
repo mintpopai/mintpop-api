@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import * as authApi from '@/api/auth'
 import { getPublicSettings } from '@/api/settings'
@@ -10,7 +10,14 @@ import type { PublicSettings } from '@/api/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import TurnstileWidget from '@/components/common/TurnstileWidget.vue'
 import { errMessage } from '@/utils/error'
+import {
+  clearAffiliateReferralCode,
+  loadAffiliateReferralCode,
+  pickAffiliateCode,
+  storeAffiliateReferralCode
+} from '@/utils/affiliateReferral'
 
+const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -54,6 +61,22 @@ const promoBonus = ref<number | null>(null)
 const promoMsg = ref<string | null>(null)
 let promoTimer: ReturnType<typeof setTimeout> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+// ===== 邀请返利码（来自邀请链接 ?aff= / ?aff_code=）=====
+// 进站即落地 localStorage（30 天 TTL），用户之后再注册也能带上；不在表单展示
+const affCode = ref('')
+
+watch(
+  () => [route.query.aff, route.query.aff_code],
+  ([aff, legacy]) => {
+    const code = pickAffiliateCode(aff, legacy)
+    if (code) {
+      affCode.value = code
+      storeAffiliateReferralCode(code)
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(async () => {
   try {
@@ -192,14 +215,18 @@ async function onSubmit() {
   loading.value = true
   error.value = null
   try {
+    // 本次进站没带邀请码时，回取此前落地的（30 天内有效）
+    const aff = affCode.value || loadAffiliateReferralCode()
     await authApi.register({
       email: email.value,
       password: password.value,
       verify_code: settings.value?.email_verify_enabled ? verifyCode.value : undefined,
       invitation_code: invitation.value || undefined,
       promo_code: promo.value.trim() || undefined,
-      turnstile_token: turnstileToken.value || undefined
+      turnstile_token: turnstileToken.value || undefined,
+      aff_code: aff || undefined
     })
+    clearAffiliateReferralCode()
     // 后端由邮箱派生用户名，若填写了昵称则注册后补充资料
     if (username.value.trim()) {
       try {

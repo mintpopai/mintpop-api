@@ -7,7 +7,9 @@ export default {
   hero: {
     balanceAvailable: '账户余额 · 可用',
     todayCost: '今日消费 ${cost}',
-    recharge: '充值'
+    recharge: '充值',
+    // 邀请返利角标（点击进入邀请页；rate 为 0-100 的百分数）
+    inviteBadge: '邀请返 {rate}%'
   },
   // 关键指标卡片
   kpi: {

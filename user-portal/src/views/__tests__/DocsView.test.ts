@@ -103,22 +103,27 @@ describe('DocsView 图片点击放大', () => {
     const trigger = document.createElement('button')
     document.body.appendChild(trigger)
     trigger.focus()
+    try {
+      // 点击正文图片 → Teleport 到 body 的 dialog 出现，大图 src 与被点图片一致
+      await wrapper.get('.prose img').trigger('click')
+      const dialog = document.body.querySelector('[role="dialog"]')
+      expect(dialog).not.toBeNull()
+      expect(dialog!.querySelector('img')?.getAttribute('src')).toContain('use-api-key.png')
 
-    // 点击正文图片 → Teleport 到 body 的 dialog 出现，大图 src 与被点图片一致
-    await wrapper.get('.prose img').trigger('click')
-    const dialog = document.body.querySelector('[role="dialog"]')
-    expect(dialog).not.toBeNull()
-    expect(dialog!.querySelector('img')?.getAttribute('src')).toContain('use-api-key.png')
+      // jsdom 点击不移焦，手动把焦点移走，使关闭时的还焦是真实动作而非 no-op
+      trigger.blur()
 
-    // Esc → 预览关闭
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    await flushPromises()
-    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
-    // 关闭后焦点还原到打开前的元素（ImageLightbox 的 lastFocused 还焦逻辑）
-    expect(document.activeElement).toBe(trigger)
-    trigger.remove()
-    // Teleport 内容挂在 document.body，显式卸载避免污染后续用例
-    wrapper.unmount()
+      // Esc → 预览关闭
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      await flushPromises()
+      expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+      // 关闭后焦点还原到打开前的元素（ImageLightbox 的 lastFocused 还焦逻辑）
+      expect(document.activeElement).toBe(trigger)
+    } finally {
+      // 断言失败也要清理：移除 trigger、卸载 Teleport 内容（挂在 document.body），避免污染后续用例
+      trigger.remove()
+      wrapper.unmount()
+    }
   })
 
   it('点击遮罩任意处关闭预览', async () => {

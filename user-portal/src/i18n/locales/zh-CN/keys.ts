@@ -2,6 +2,10 @@ export default {
   title: 'API 密钥',
   subtitle: '管理您的 API 密钥与访问令牌。',
   createKey: '创建密钥',
+  guide: {
+    // 固定链接 /keys?guide=create 进入时的引导气泡文案
+    createHint: '点击这里即可创建您的 API 密钥'
+  },
   creating: '创建中…',
   createFailed: '创建失败，请重试',
   searchPlaceholder: '搜索名称或 Key…',

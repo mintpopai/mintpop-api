@@ -14,6 +14,7 @@ import EditKeyModal from '@/components/keys/EditKeyModal.vue'
 import UseKeyModal from '@/components/keys/UseKeyModal.vue'
 import { useI18n } from 'vue-i18n'
 import { useKeys } from '@/composables/useKeys'
+import { useCreateKeyGuide } from '@/composables/useCreateKeyGuide'
 import { useToast } from '@/composables/useToast'
 import { useSettingsStore } from '@/stores/settings'
 import { formatCost } from '@/utils/format'
@@ -29,6 +30,14 @@ const editTarget = ref<ApiKey | null>(null)
 const removeTarget = ref<ApiKey | null>(null)
 const removing = ref(false)
 const useTarget = ref<ApiKey | null>(null)
+
+// 固定链接 /keys?guide=create 进入时的「创建密钥」引导（高亮 + 气泡提示）
+const { active: guideActive, dismiss: dismissGuide } = useCreateKeyGuide()
+
+function openCreate() {
+  showCreate.value = true
+  dismissGuide()
+}
 
 onMounted(() => {
   k.load()
@@ -108,12 +117,25 @@ async function doToggle(key: ApiKey) {
         >
           ↻ {{ $t('common.refresh') }}
         </button>
-        <button
-          class="rounded-full bg-accent px-[22px] py-[11px] text-sm font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,.3)] transition-opacity hover:opacity-90"
-          @click="showCreate = true"
-        >
-          + {{ $t('keys.createKey') }}
-        </button>
+        <div class="relative">
+          <button
+            class="rounded-full bg-accent px-[22px] py-[11px] text-sm font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,.3)] transition-opacity hover:opacity-90"
+            :class="{ 'guide-pulse': guideActive }"
+            @click="openCreate"
+          >
+            + {{ $t('keys.createKey') }}
+          </button>
+          <!-- 引导气泡：点击气泡同样打开创建弹窗 -->
+          <div
+            v-if="guideActive"
+            class="guide-bubble absolute right-0 top-full z-20 mt-3 w-max max-w-[260px] cursor-pointer rounded-xl bg-text px-4 py-3 text-[13px] font-medium leading-relaxed text-card shadow-lg"
+            role="status"
+            @click="openCreate"
+          >
+            <span class="absolute -top-1.5 right-8 h-3 w-3 rotate-45 bg-text" />
+            {{ $t('keys.guide.createHint') }}
+          </div>
+        </div>
       </template>
     </PageHeader>
 
@@ -283,3 +305,58 @@ async function doToggle(key: ApiKey) {
     </Modal>
   </PortalLayout>
 </template>
+
+<style scoped>
+/* 「创建密钥」引导：按钮脉冲光环（叠加原有投影，避免动画期间投影消失） */
+.guide-pulse {
+  animation: guide-pulse 1.6s ease-out infinite;
+}
+
+@keyframes guide-pulse {
+  0% {
+    box-shadow:
+      0 4px 14px rgba(20, 194, 138, 0.3),
+      0 0 0 0 rgba(20, 194, 138, 0.5);
+  }
+  70% {
+    box-shadow:
+      0 4px 14px rgba(20, 194, 138, 0.3),
+      0 0 0 14px rgba(20, 194, 138, 0);
+  }
+  100% {
+    box-shadow:
+      0 4px 14px rgba(20, 194, 138, 0.3),
+      0 0 0 0 rgba(20, 194, 138, 0);
+  }
+}
+
+/* 引导气泡入场 */
+.guide-bubble {
+  animation: guide-bubble-in 0.35s ease;
+}
+
+@keyframes guide-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 用户偏好减少动效时：不做动画，改为静态高亮环 */
+@media (prefers-reduced-motion: reduce) {
+  .guide-pulse,
+  .guide-bubble {
+    animation: none;
+  }
+
+  .guide-pulse {
+    box-shadow:
+      0 4px 14px rgba(20, 194, 138, 0.3),
+      0 0 0 4px rgba(20, 194, 138, 0.35);
+  }
+}
+</style>

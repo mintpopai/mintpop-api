@@ -2,6 +2,10 @@ export default {
   title: 'API Keys',
   subtitle: 'Manage your API keys and access tokens.',
   createKey: 'Create Key',
+  guide: {
+    // 固定链接 /keys?guide=create 进入时的引导气泡文案
+    createHint: 'Click here to create your API key'
+  },
   creating: 'Creating…',
   createFailed: 'Failed to create, please try again',
   searchPlaceholder: 'Search by name or key…',

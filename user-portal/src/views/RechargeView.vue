@@ -332,8 +332,8 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- 右列（sticky） -->
-        <div class="sticky top-[88px] flex flex-col gap-[18px]">
+        <!-- 右列（sticky，吸顶相对 PortalLayout 的 main 滚动容器，顶栏在容器外） -->
+        <div class="sticky top-6 flex flex-col gap-[18px]">
           <!-- 账户卡 -->
           <div class="relative overflow-hidden rounded-[20px] bg-[#1A1A1A] p-[24px_26px] shadow-[0_4px_18px_rgba(0,0,0,0.12)]">
             <!-- 装饰性点阵背景 -->

@@ -74,7 +74,8 @@ watch(
     <div class="flex gap-10">
       <!-- 左侧目录（移动端隐藏，与 LegalView 目录同策略） -->
       <aside class="hidden w-56 shrink-0 lg:block">
-        <nav class="sticky top-[90px] flex flex-col gap-7">
+        <!-- 吸顶相对 PortalLayout 的 main 滚动容器（顶栏在容器外），偏移只需留一点呼吸间距 -->
+        <nav class="sticky top-6 flex flex-col gap-7">
           <!-- 一级分组标题（衬线大字号，不可点击），组内二级条目才是文档链接 -->
           <div
             v-for="group in DOC_GROUPS"

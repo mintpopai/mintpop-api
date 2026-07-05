@@ -66,7 +66,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-bg">
+  <!-- 应用壳：视口定高、窗口不滚动，滚动收进下方 main。这样滚动条只出现在顶栏下方，
+       且 main 上的 scrollbar-gutter: stable 预留槽位落在纯色内容背景上（无滚动条时不可见），
+       避免「长页有滚动条、短页没有」切页时挤压宽度导致布局左右晃动，顶栏也永远占满全宽。 -->
+  <div class="flex h-dvh flex-col bg-bg">
     <!-- ============ 顶栏 ============ -->
     <header
       class="sticky top-0 z-30 flex h-[66px] items-center gap-4 border-b border-border px-5 backdrop-blur-md sm:px-8 md:gap-7 lg:px-12"
@@ -285,7 +288,7 @@ onMounted(() => {
     </header>
 
     <!-- ============ 主体 ============ -->
-    <main class="min-w-0 flex-1 px-5 py-8 sm:px-8 lg:px-12 lg:py-11">
+    <main class="min-w-0 flex-1 overflow-y-auto px-5 py-8 [scrollbar-gutter:stable] sm:px-8 lg:px-12 lg:py-11">
       <div class="mx-auto max-w-[1240px]">
         <slot />
       </div>

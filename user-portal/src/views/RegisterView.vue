@@ -69,7 +69,7 @@ const invInvalid = ref(false)
 let invTimer: ReturnType<typeof setTimeout> | null = null
 
 // ===== 邀请返利码（来自邀请链接 ?aff= / ?aff_code=）=====
-// 进站即落地 localStorage（30 天 TTL）；affiliate 开启时作为「好友邀请码」输入框展示，可改可清空
+// 进站即落地 localStorage（30 天 TTL）；affiliate 开启时作为「好友返利码」输入框展示，可改可清空
 const affCode = ref('')
 
 watch(
@@ -574,7 +574,7 @@ async function onSubmit() {
             </p>
           </div>
 
-          <!-- 好友邀请码（邀请返利，仅在站点开启返利时显示；?aff= 链接进站自动回填） -->
+          <!-- 好友返利码（邀请返利，仅在站点开启返利时显示；?aff= 链接进站自动回填） -->
           <div
             v-if="settings?.affiliate_enabled"
             class="mb-[22px]"

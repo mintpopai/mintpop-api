@@ -85,7 +85,7 @@ beforeEach(() => {
   mockSettings.mockReset()
 })
 
-describe('RegisterView 好友邀请码', () => {
+describe('RegisterView 好友返利码', () => {
   it('访问 ?aff= 链接时输入框自动回填，且码已落地 localStorage', async () => {
     const wrapper = await mountView('?aff=V269J6HUH72F')
     const input = wrapper.find<HTMLInputElement>('#reg-aff')

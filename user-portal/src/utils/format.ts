@@ -211,6 +211,21 @@ export function formatPayAmount(amount: number, currency?: string | null): strin
   }
 }
 
+// Stripe 零小数币种（金额直接以整数最小单位计，名单来自 Stripe 文档 zero-decimal currencies）
+const STRIPE_ZERO_DECIMAL_CURRENCIES = new Set([
+  'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'
+])
+
+/**
+ * 金额（主单位）→ Stripe 最小货币单位整数（deferred 模式 Elements 的 amount 参数用）。
+ * 两位小数币种 ×100，零小数币种取整；口径对齐后端 payment.AmountToMinorUnit。
+ */
+export function toStripeMinorUnit(amount: number, currency?: string | null): number {
+  const v = Number.isFinite(amount) ? amount : 0
+  const c = normalizePaymentCurrency(currency)
+  return STRIPE_ZERO_DECIMAL_CURRENCIES.has(c) ? Math.round(v) : Math.round(v * 100)
+}
+
 /** 缓存命中率 0-100 整数（入参可能来自 API 缺失字段，故容忍 null/undefined） */
 export function cacheHitRate(cacheRead: number | null | undefined, input: number | null | undefined): number {
   return percent(cacheRead ?? 0, (input ?? 0) + (cacheRead ?? 0))

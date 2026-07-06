@@ -42,13 +42,15 @@ beforeEach(() => {
 })
 
 describe('useRecharge 默认支付方式', () => {
-  it('首个键是本门户不渲染的通道时，跳过它选中首个受支持的通道', async () => {
+  it('首个键是本门户不渲染的通道时，跳过它选中首个拍平选项', async () => {
     mockCheckout.mockResolvedValue(
       checkoutWith({ easypay: limit('easypay'), alipay: limit('alipay'), stripe: limit('stripe') })
     )
     const r = useRecharge()
     await r.load()
-    expect(r.method.value).toBe('alipay')
+    // 无直连微信 → 首个拍平选项是 Stripe 微信子方式；直连支付宝去重了 stripe:alipay
+    expect(r.payOptions.value.map((o) => o.key)).toEqual(['stripe:wxpay', 'alipay', 'stripe:card'])
+    expect(r.method.value).toBe('stripe:wxpay')
   })
 
   it('全部通道都不受支持时不选中任何方式（提交守卫据此拦截）', async () => {
@@ -63,5 +65,16 @@ describe('useRecharge 默认支付方式', () => {
     const r = useRecharge()
     await r.load()
     expect(r.method.value).toBe('wxpay')
+  })
+
+  it('存在 stripe 方式时拍平为微信/支付宝/银行卡选项并默认选中首个', async () => {
+    mockCheckout.mockResolvedValue(checkoutWith({ stripe: limit('stripe') }))
+    const r = useRecharge()
+    await r.load()
+    expect(r.payOptions.value.map((o) => o.key)).toEqual(['stripe:wxpay', 'stripe:alipay', 'stripe:card'])
+    expect(r.method.value).toBe('stripe:wxpay')
+    // 选中银行卡时：下单 payment_type 仍为 stripe，子方式供支付弹窗限定渲染
+    r.method.value = 'stripe:card'
+    expect(r.activePayOption.value).toMatchObject({ paymentType: 'stripe', subMethod: 'card', limitsKey: 'stripe' })
   })
 })

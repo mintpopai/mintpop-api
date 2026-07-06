@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { formatBalance, estimatePayAmount } from '@/utils/format'
+import { officialValueOf, OFFICIAL_SAVING_PERCENT } from '@/config/pricing'
 
 const props = defineProps<{
   /** 选中的充值金额（USD） */
@@ -9,6 +10,8 @@ const props = defineProps<{
   multiplier: number
   /** 手续费率，百分数（后端 checkout-info 的 recharge_fee_rate：5 = 5%，非小数） */
   feeRate: number
+  /** 当前余额（USD），用于展示「到账后余额」 */
+  balance: number
 }>()
 
 // 赠送金额
@@ -25,6 +28,15 @@ const payUsd = computed(() => {
 
 // 是否有有效金额
 const hasAmount = computed(() => props.amount !== null && props.amount > 0)
+
+// 官方价值比对（口径见 config/pricing）：等值用量与省下金额
+const officialValue = computed(() => officialValueOf(props.amount ?? 0))
+const savedAmount = computed(() => officialValue.value - (props.amount ?? 0))
+
+// 到账后余额 = 当前余额 + 充值金额 + 赠送
+const balanceAfter = computed(() => props.balance + (props.amount ?? 0) + bonus.value)
+
+const savingPercent = OFFICIAL_SAVING_PERCENT
 </script>
 
 <template>
@@ -42,16 +54,40 @@ const hasAmount = computed(() => props.amount !== null && props.amount > 0)
       </span>
     </div>
 
-    <!-- 赠送额度（分割线上方） -->
+    <!-- 赠送额度（有赠送才显示） -->
+    <div
+      v-if="bonus > 0"
+      class="mb-[13px] flex items-center justify-between"
+    >
+      <span class="text-sm text-text3">{{ $t('recharge.bonusCredit') }}</span>
+      <span class="text-[15px] font-semibold text-pos">
+        +${{ formatBalance(bonus) }}
+      </span>
+    </div>
+
+    <!-- 官方价值比对（口径见 config/pricing 的 OFFICIAL_VALUE_MULTIPLIER） -->
+    <div class="mb-[15px] rounded-xl2 bg-accent/6 px-4 py-3">
+      <div class="flex items-center justify-between">
+        <span class="text-[13px] text-text3">{{ $t('recharge.officialApiLine') }}</span>
+        <span class="text-[13px] font-medium text-subtle line-through">
+          {{ hasAmount ? `$${formatBalance(officialValue)}` : '—' }}
+        </span>
+      </div>
+      <div class="mt-1.5 flex items-center justify-between">
+        <span class="text-[13px] font-semibold text-pos">{{ $t('recharge.youSaved') }}</span>
+        <span class="text-[13px] font-semibold text-pos">
+          {{ hasAmount ? $t('recharge.savedValue', { amount: formatBalance(savedAmount), percent: savingPercent }) : '—' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- 到账后余额（分割线上方） -->
     <div
       class="mb-[15px] flex items-center justify-between border-b border-dashed border-border2 pb-[15px]"
     >
-      <span class="text-sm text-text3">{{ $t('recharge.bonusCredit') }}</span>
-      <span
-        class="text-[15px] font-semibold"
-        :class="bonus > 0 ? 'text-pos' : 'text-subtle'"
-      >
-        {{ bonus > 0 ? `+$${formatBalance(bonus)}` : '$0.00' }}
+      <span class="text-sm text-text3">{{ $t('recharge.balanceAfter') }}</span>
+      <span class="text-[15px] font-semibold text-text">
+        ${{ formatBalance(hasAmount ? balanceAfter : balance) }}
       </span>
     </div>
 

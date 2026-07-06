@@ -10,7 +10,7 @@ import PayMethodPicker from '@/components/recharge/PayMethodPicker.vue'
 import OrderSummary from '@/components/recharge/OrderSummary.vue'
 import RedeemCard from '@/components/recharge/RedeemCard.vue'
 import SubscriptionPlans from '@/components/recharge/SubscriptionPlans.vue'
-import PaymentResultModal from '@/components/payment/PaymentResultModal.vue'
+import PaymentResultModal, { type PaymentModalOrder } from '@/components/payment/PaymentResultModal.vue'
 import Modal from '@/components/ui/Modal.vue'
 import { useRecharge } from '@/composables/useRecharge'
 import { useToast } from '@/composables/useToast'
@@ -19,7 +19,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { getPlans } from '@/api/payment'
 import { formatBalance } from '@/utils/format'
 import { pollOrderUntilSettled } from '@/utils/orderPolling'
-import type { CreateOrderResult, SubscriptionPlan } from '@/api/types'
+import type { SubscriptionPlan } from '@/api/types'
 import { errMessage } from '@/utils/error'
 
 const { t } = useI18n()
@@ -29,7 +29,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 
-const { checkout, loading, error, loaded, amount, method, presets, popular, load, submitRecharge, submitSubscription } = useRecharge()
+const { checkout, loading, error, loaded, amount, method, payOptions, activePayOption, presets, popular, load, submitRecharge, submitSubscription } = useRecharge()
 
 // 分 tab：0 = 充值，1 = 订阅
 const activeTab = ref<0 | 1>(0)
@@ -41,9 +41,9 @@ const showSubscription = computed(() => settingsStore.settings?.purchase_subscri
 const submitting = ref(false)
 const submitError = ref('')
 
-// 支付结果弹窗
+// 支付结果弹窗（订单带上充值页选中的 Stripe 子方式，供弹窗只渲染该支付方式）
 const payModalOpen = ref(false)
-const currentOrder = ref<CreateOrderResult | null>(null)
+const currentOrder = ref<PaymentModalOrder | null>(null)
 
 // 成功提示
 const successNote = ref('')
@@ -54,7 +54,10 @@ const successNote = ref('')
 //   1. 全局最低/最高充值金额（min_amount/max_amount，管理端配置，下单校验以此为准）
 //   2. 当前选中支付方式的 per-instance 限额（single_min/single_max，用于路由到可用实例）
 // 故下限取两者较大者，上限取两者中「有限且较小」者。
-const activeMethodLimit = computed(() => checkout.value?.methods[method.value])
+// 限额键经拍平选项映射（Stripe 子方式共享 stripe 的限额），不能直接拿选项 key 查 methods
+const activeMethodLimit = computed(() =>
+  activePayOption.value ? checkout.value?.methods[activePayOption.value.limitsKey] : undefined
+)
 const effectiveMin = computed(() =>
   Math.max(checkout.value?.min_amount ?? 0, activeMethodLimit.value?.single_min ?? 0)
 )
@@ -81,7 +84,7 @@ async function handleSubmit() {
   successNote.value = ''
   try {
     const result = await submitRecharge()
-    currentOrder.value = result
+    currentOrder.value = { ...result, stripe_sub_method: activePayOption.value?.subMethod }
     payModalOpen.value = true
   } catch (e) {
     submitError.value = errMessage(e, t('recharge.errCreateOrder'))
@@ -154,7 +157,7 @@ async function handleConfirmSubscribe() {
   try {
     const result = await submitSubscription(selectedPlan.value)
     confirmOpen.value = false
-    currentOrder.value = result
+    currentOrder.value = { ...result, stripe_sub_method: activePayOption.value?.subMethod }
     payModalOpen.value = true
   } catch (e) {
     subscribeError.value = errMessage(e, t('recharge.errCreateOrder'))
@@ -321,7 +324,7 @@ onMounted(async () => {
 
           <PayMethodPicker
             v-model="method"
-            :methods="checkout.methods"
+            :options="payOptions"
           />
 
           <div
@@ -346,7 +349,7 @@ onMounted(async () => {
                 {{ $t('recharge.rechargeAccount') }}
               </div>
               <div class="mb-[18px] text-[15px] font-semibold text-white">
-                {{ authStore.user?.id ?? '—' }}
+                {{ authStore.user?.username ?? '—' }}
               </div>
               <div class="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">
                 {{ $t('recharge.currentBalance') }}
@@ -362,6 +365,7 @@ onMounted(async () => {
             :amount="amount"
             :multiplier="checkout.balance_recharge_multiplier"
             :fee-rate="checkout.recharge_fee_rate"
+            :balance="authStore.balance"
           >
             <template #action>
               <!-- 下单错误提示 -->
@@ -434,7 +438,7 @@ onMounted(async () => {
         <div class="mb-4">
           <PayMethodPicker
             v-model="method"
-            :methods="checkout.methods"
+            :options="payOptions"
           />
         </div>
 

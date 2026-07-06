@@ -1,26 +1,27 @@
 <script setup lang="ts">
 import { computed, ref, type ComponentPublicInstance } from 'vue'
-import type { MethodLimit } from '@/api/types'
 import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
-import { SUPPORTED_PAYMENT_METHODS, type SupportedPaymentMethod } from '@/config/payMethods'
+import type { PayOption } from '@/config/payMethods'
 
 const props = defineProps<{
-  /** 后端返回的可用支付方式 key → limits */
-  methods: Record<string, MethodLimit>
+  /** 拍平后的可选支付选项（useRecharge.payOptions，Stripe 已展开为微信/支付宝/银行卡） */
+  options: PayOption[]
 }>()
 
-// Vue 3.4+ 官方推荐的 v-model 宏
+// Vue 3.4+ 官方推荐的 v-model 宏（取值为 PayOption.key）
 const model = defineModel<string>({ required: true })
 
-// 支付方式展示配置（键集合与 config/payMethods 白名单编译期绑定：白名单加通道、此处漏配会报错）
-const METHOD_CONFIG: Record<SupportedPaymentMethod, { labelKey: string; descKey: string; color: string; iconType: 'wechat' | 'alipay' | 'stripe' }> = {
+// 展示配置按「视觉种类」取：Stripe 子方式与直连同名通道共用同一套图标文案
+type DisplayKind = 'wxpay' | 'alipay' | 'card'
+const DISPLAY_CONFIG: Record<DisplayKind, { labelKey: string; descKey: string; color: string; iconType: 'wechat' | 'alipay' | 'card' }> = {
   wxpay: { labelKey: 'recharge.methodWxpay', descKey: 'recharge.methodScanDesc', color: '#09BB07', iconType: 'wechat' },
   alipay: { labelKey: 'recharge.methodAlipay', descKey: 'recharge.methodScanDesc', color: '#1677FF', iconType: 'alipay' },
-  stripe: { labelKey: 'recharge.methodStripe', descKey: 'recharge.methodStripeDesc', color: '#635BFF', iconType: 'stripe' }
+  card: { labelKey: 'recharge.methodCard', descKey: 'recharge.methodCardDesc', color: '#635BFF', iconType: 'card' }
 }
 
-// 只展示「后端实际返回 ∩ 白名单」的支付方式，按白名单顺序排（响应式，随 props.methods 变化）
-const availableMethods = computed(() => SUPPORTED_PAYMENT_METHODS.filter((k) => k in props.methods))
+function displayFor(option: PayOption) {
+  return DISPLAY_CONFIG[(option.subMethod ?? option.paymentType) as DisplayKind]
+}
 
 function pick(key: string) {
   model.value = key
@@ -28,7 +29,7 @@ function pick(key: string) {
 
 // roving tabindex：选中项（未选中时首项兜底）tabindex=0，其余 -1
 const rovingIndex = computed(() => {
-  const idx = availableMethods.value.findIndex((k) => k === model.value)
+  const idx = props.options.findIndex((o) => o.key === model.value)
   return idx === -1 ? 0 : idx
 })
 
@@ -40,10 +41,10 @@ function setItemRef(el: Element | ComponentPublicInstance | null, i: number) {
 
 // 方向键组内循环移动并选中（WAI-ARIA radio group 模式），与既有 Enter/Space 选中互不干扰
 function onArrowKeydown(e: KeyboardEvent, i: number) {
-  const next = nextRadioIndex(i, availableMethods.value.length, e.key)
+  const next = nextRadioIndex(i, props.options.length, e.key)
   if (next === null) return
   e.preventDefault()
-  pick(availableMethods.value[next])
+  pick(props.options[next].key)
   itemRefs.value[next]?.focus()
 }
 </script>
@@ -75,31 +76,31 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
       class="grid grid-cols-1 gap-3 sm:grid-cols-3"
     >
       <div
-        v-for="(key, i) in availableMethods"
-        :key="key"
+        v-for="(option, i) in options"
+        :key="option.key"
         :ref="(el) => setItemRef(el, i)"
         role="radio"
-        :aria-checked="model === key"
+        :aria-checked="model === option.key"
         :tabindex="i === rovingIndex ? 0 : -1"
         class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-140 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         :class="
-          model === key
+          model === option.key
             ? 'border-accent bg-accent/6'
             : 'border-border2 bg-card hover:border-[#9FE6CD]'
         "
-        @click="pick(key)"
-        @keydown.enter.prevent="pick(key)"
-        @keydown.space.prevent="pick(key)"
+        @click="pick(option.key)"
+        @keydown.enter.prevent="pick(option.key)"
+        @keydown.space.prevent="pick(option.key)"
         @keydown="onArrowKeydown($event, i)"
       >
         <!-- 品牌图标 -->
         <span
           class="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[9px]"
-          :style="{ background: METHOD_CONFIG[key].color }"
+          :style="{ background: displayFor(option).color }"
         >
           <!-- 微信 -->
           <svg
-            v-if="METHOD_CONFIG[key].iconType === 'wechat'"
+            v-if="displayFor(option).iconType === 'wechat'"
             width="20"
             height="20"
             viewBox="0 0 24 24"
@@ -111,13 +112,13 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
 
           <!-- 支付宝 -->
           <span
-            v-else-if="METHOD_CONFIG[key].iconType === 'alipay'"
+            v-else-if="displayFor(option).iconType === 'alipay'"
             class="text-base font-bold text-white"
           >支</span>
 
-          <!-- Stripe -->
+          <!-- 银行卡 -->
           <svg
-            v-else-if="METHOD_CONFIG[key].iconType === 'stripe'"
+            v-else-if="displayFor(option).iconType === 'card'"
             width="20"
             height="20"
             viewBox="0 0 24 24"
@@ -141,10 +142,10 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
         <!-- 文字 -->
         <div class="min-w-0 flex-1">
           <div class="text-sm font-semibold text-text">
-            {{ $t(METHOD_CONFIG[key].labelKey) }}
+            {{ $t(displayFor(option).labelKey) }}
           </div>
           <div class="mt-0.5 text-xs text-subtle">
-            {{ $t(METHOD_CONFIG[key].descKey) }}
+            {{ $t(displayFor(option).descKey) }}
           </div>
         </div>
 
@@ -152,7 +153,7 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
         <span
           class="h-[18px] w-[18px] flex-none rounded-full transition-[background,box-shadow] duration-140"
           :class="
-            model === key
+            model === option.key
               ? 'bg-accent shadow-[inset_0_0_0_3px_#fff,0_0_0_1px_#14C28A]'
               : 'bg-card shadow-[inset_0_0_0_1.5px_#D8D5CC]'
           "

@@ -20,6 +20,8 @@ export default {
   // QR code area
   qrAlt: 'Payment QR code',
   scanHint: 'Scan with WeChat / Alipay to pay',
+  scanWechatHint: 'Scan with WeChat to pay',
+  loadingQr: 'Generating QR code…',
   qrValidity: 'QR code valid for {time}',
   redirecting: 'Redirecting to the payment page, please wait…',
   // Footer actions

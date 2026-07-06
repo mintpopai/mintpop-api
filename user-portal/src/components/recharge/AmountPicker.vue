@@ -2,6 +2,8 @@
 import { ref, computed, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
+import { officialValueOf } from '@/config/pricing'
+import { formatNumber } from '@/utils/format'
 
 const { t } = useI18n()
 
@@ -154,11 +156,15 @@ const validationMsg = computed(() => {
         <div class="font-serif text-[26px] font-medium leading-none text-text">
           ${{ v }}
         </div>
+        <!-- 官方价值比对（口径见 config/pricing 的 OFFICIAL_VALUE_MULTIPLIER）；有赠送时再叠加赠送行 -->
+        <div class="mt-[7px] text-[11px] text-pos">
+          {{ $t('recharge.officialValueApprox', { value: formatNumber(officialValueOf(v)) }) }}
+        </div>
         <div
-          class="mt-[7px] text-[11px]"
-          :class="bonusFor(v) > 0 ? 'text-pos' : 'text-subtle'"
+          v-if="bonusFor(v) > 0"
+          class="mt-[3px] text-[11px] text-pos"
         >
-          {{ bonusFor(v) > 0 ? $t('recharge.bonus', { amount: bonusFor(v).toFixed(2) }) : $t('recharge.instantUse') }}
+          {{ $t('recharge.bonus', { amount: bonusFor(v).toFixed(2) }) }}
         </div>
       </div>
     </div>

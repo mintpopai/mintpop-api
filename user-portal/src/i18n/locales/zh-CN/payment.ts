@@ -20,6 +20,8 @@ export default {
   // 二维码区
   qrAlt: '支付二维码',
   scanHint: '请使用微信 / 支付宝扫码支付',
+  scanWechatHint: '请使用微信扫码支付',
+  loadingQr: '正在生成二维码…',
   qrValidity: '二维码有效期：{time}',
   redirecting: '正在跳转至支付页面，请稍候…',
   // 底部操作

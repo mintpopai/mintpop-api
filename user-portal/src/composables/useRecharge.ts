@@ -1,10 +1,10 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import i18n from '@/i18n'
 import { getCheckoutInfo, createOrder, verifyOrder } from '@/api/payment'
 import { redeem as redeemApi } from '@/api/redeem'
 import type { CheckoutInfoResponse, CreateOrderResult, RedeemResult, SubscriptionPlan } from '@/api/types'
 import { errMessage } from '@/utils/error'
-import { pickDefaultPaymentMethod } from '@/config/payMethods'
+import { buildPayOptions, pickDefaultPayOption } from '@/config/payMethods'
 
 // 预设充值档位（精简为业界主流的少量档位，大额靠自定义输入兜底）
 const PRESETS = [10, 50, 100, 200]
@@ -20,18 +20,24 @@ export function useRecharge() {
   // 选中的预设金额（null 表示使用自定义）
   const amount = ref<number | null>(100)
 
-  // 选中的支付方式
+  // 选中的支付选项 key（拍平后的 PayOption.key，如 wxpay / stripe:card）
   const method = ref('')
+
+  // 拍平后的支付选项列表（Stripe 展开为微信/支付宝/银行卡；过滤本门户不渲染的通道）
+  const payOptions = computed(() => (checkout.value ? buildPayOptions(checkout.value.methods) : []))
+
+  // 选中 key → 下单参数与限额键（未选中返回 undefined，提交守卫据此拦截）
+  const activePayOption = computed(() => payOptions.value.find((o) => o.key === method.value))
 
   async function load() {
     loading.value = true
     error.value = null
     try {
       checkout.value = await getCheckoutInfo()
-      // 默认选中按白名单优先级挑：methods 是 Go map（键序不稳定）且可能含本门户不渲染的通道，
+      // 默认选中按拍平列表顺序挑：methods 是 Go map（键序不稳定）且可能含本门户不渲染的通道，
       // 直接取首键会选中一个界面上看不见的方式
       if (!method.value) {
-        method.value = pickDefaultPaymentMethod(Object.keys(checkout.value.methods))
+        method.value = pickDefaultPayOption(payOptions.value)
       }
       loaded.value = true
     } catch (e) {
@@ -57,7 +63,7 @@ export function useRecharge() {
     }
     return createOrder({
       amount: amount.value,
-      payment_type: method.value,
+      payment_type: orderPaymentType(),
       order_type: 'balance',
       return_url: paymentReturnURL()
     })
@@ -66,11 +72,22 @@ export function useRecharge() {
   async function submitSubscription(plan: SubscriptionPlan): Promise<CreateOrderResult> {
     return createOrder({
       amount: plan.price,
-      payment_type: method.value,
+      payment_type: orderPaymentType(),
       order_type: 'subscription',
       plan_id: plan.id,
       return_url: paymentReturnURL()
     })
+  }
+
+  // 选中的拍平选项 → 下单 payment_type（Stripe 子方式选项统一下 'stripe'；
+  // 子方式只影响支付弹窗渲染哪种方式，由视图层随订单传给 PaymentResultModal）
+  function orderPaymentType(): string {
+    const opt = activePayOption.value
+    if (!opt) {
+      // 视图层提交守卫要求 method 非空且在选项内；此处兜底防御性抛错而非带假值下单
+      throw new Error(i18n.global.t('recharge.errCreateOrder'))
+    }
+    return opt.paymentType
   }
 
   async function redeem(code: string): Promise<RedeemResult> {
@@ -84,6 +101,8 @@ export function useRecharge() {
     loaded,
     amount,
     method,
+    payOptions,
+    activePayOption,
     presets: PRESETS,
     popular: POPULAR,
     load,

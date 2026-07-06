@@ -3,7 +3,7 @@
 //   （fee = amount × rate / 100，rate 是「百分数」而非小数；手续费向上取整到分）
 // - formatPayAmount：按订单币种格式化（订单币种由支付实例决定，不能硬编码 ¥）
 import { describe, it, expect } from 'vitest'
-import { estimatePayAmount, formatPayAmount } from '@/utils/format'
+import { estimatePayAmount, formatPayAmount, toStripeMinorUnit } from '@/utils/format'
 
 describe('estimatePayAmount（对齐后端 fee.go：百分数费率 + 手续费向上取整到分）', () => {
   it('费率 5（=5%）：$10 → $10.50，而不是把 5 当小数算成 $60', () => {
@@ -46,5 +46,21 @@ describe('formatPayAmount（按币种格式化，未知/缺失币种回退 CNY�
 
   it('非法币种字符串回退 CNY', () => {
     expect(formatPayAmount(10.5, 'not-a-currency')).toBe('¥10.50')
+  })
+})
+
+describe('toStripeMinorUnit（deferred Elements 金额单位，口径对齐后端 AmountToMinorUnit）', () => {
+  it('两位小数币种 ×100 取整', () => {
+    expect(toStripeMinorUnit(10.5, 'USD')).toBe(1050)
+    expect(toStripeMinorUnit(0.1 + 0.2, 'CNY')).toBe(30)
+  })
+
+  it('零小数币种直接取整', () => {
+    expect(toStripeMinorUnit(1234, 'JPY')).toBe(1234)
+  })
+
+  it('缺失/非法币种回退默认币种（CNY，两位小数）', () => {
+    expect(toStripeMinorUnit(5, undefined)).toBe(500)
+    expect(toStripeMinorUnit(5, 'x')).toBe(500)
   })
 })

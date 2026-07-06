@@ -65,6 +65,15 @@ async function mountView(query = '', affiliateEnabled: boolean | undefined = tru
   return wrapper
 }
 
+async function fillAndSubmit(wrapper: Awaited<ReturnType<typeof mountView>>) {
+  await wrapper.find('#reg-email').setValue('a@b.com')
+  await wrapper.find('#reg-password').setValue('123456')
+  await wrapper.find('#reg-confirm-password').setValue('123456')
+  await wrapper.find('input[type="checkbox"]').setValue(true)
+  await wrapper.find('form').trigger('submit.prevent')
+  await flushPromises()
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   localStorage.clear()
@@ -100,5 +109,21 @@ describe('RegisterView 好友邀请码', () => {
     const wrapper = mount(RegisterView, { global: { plugins: [router, i18n] } })
     await flushPromises()
     expect(wrapper.find('#reg-aff').exists()).toBe(false)
+  })
+
+  it('提交时携带输入框中的邀请码（手动修改以修改值为准）', async () => {
+    const wrapper = await mountView('?aff=V269J6HUH72F')
+    await wrapper.find('#reg-aff').setValue('MANUAL123')
+    await fillAndSubmit(wrapper)
+    expect(mockRegister).toHaveBeenCalledTimes(1)
+    expect(mockRegister.mock.calls[0][0].aff_code).toBe('MANUAL123')
+  })
+
+  it('清空输入框后提交不携带邀请码（即使 localStorage 有落地码）', async () => {
+    const wrapper = await mountView('?aff=V269J6HUH72F')
+    await wrapper.find('#reg-aff').setValue('')
+    await fillAndSubmit(wrapper)
+    expect(mockRegister).toHaveBeenCalledTimes(1)
+    expect(mockRegister.mock.calls[0][0].aff_code).toBeUndefined()
   })
 })

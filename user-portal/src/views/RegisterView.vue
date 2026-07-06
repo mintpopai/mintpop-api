@@ -219,8 +219,8 @@ async function onSubmit() {
   loading.value = true
   error.value = null
   try {
-    // 本次进站没带邀请码时，回取此前落地的（30 天内有效）
-    const aff = affCode.value || loadAffiliateReferralCode()
+    // 回填已前移到进页时（watch + onMounted），此处以输入框内容为准：用户清空即视为不带邀请码
+    const aff = affCode.value.trim()
     await authApi.register({
       email: email.value,
       password: password.value,

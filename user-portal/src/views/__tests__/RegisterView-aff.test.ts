@@ -28,8 +28,8 @@ import type { PublicSettings } from '@/api/types'
 const mockSettings = vi.mocked(getPublicSettings)
 const mockRegister = vi.mocked(authApi.register)
 
-function settingsWith(affiliateEnabled: boolean | undefined): PublicSettings {
-  return {
+function settingsWith(affiliateEnabled: boolean | undefined | 'not-set' = true): PublicSettings {
+  const result: Partial<PublicSettings> = {
     registration_enabled: true,
     email_verify_enabled: false,
     invitation_code_enabled: false,
@@ -40,9 +40,13 @@ function settingsWith(affiliateEnabled: boolean | undefined): PublicSettings {
     oidc_oauth_enabled: false,
     oidc_oauth_provider_name: '',
     wechat_oauth_enabled: false,
-    site_name: 'Test',
-    affiliate_enabled: affiliateEnabled
+    site_name: 'Test'
   }
+  // 只在显式设置时才加入 affiliate_enabled 字段；不设置时对应 undefined 值
+  if (affiliateEnabled !== 'not-set') {
+    result.affiliate_enabled = affiliateEnabled
+  }
+  return result as PublicSettings
 }
 
 function makeRouter(): Router {
@@ -55,7 +59,7 @@ function makeRouter(): Router {
   })
 }
 
-async function mountView(query = '', affiliateEnabled: boolean | undefined = true) {
+async function mountView(query = '', affiliateEnabled: boolean | undefined | 'not-set' = true) {
   mockSettings.mockResolvedValue(settingsWith(affiliateEnabled))
   const router = makeRouter()
   router.push(`/register${query}`)
@@ -101,6 +105,12 @@ describe('RegisterView 好友邀请码', () => {
     expect(wrapper.find('#reg-aff').exists()).toBe(false)
   })
 
+  it('affiliate_enabled 为 undefined（未知）时不渲染输入框', async () => {
+    // 补充 undefined 分支：settings 加载完但 affiliate_enabled 为 undefined（未知状态，即字段不存在）
+    const wrapper = await mountView('?aff=V269J6HUH72F', 'not-set')
+    expect(wrapper.find('#reg-aff').exists()).toBe(false)
+  })
+
   it('settings 拉取失败时不渲染输入框（静默逻辑保留）', async () => {
     mockSettings.mockRejectedValue(new Error('network'))
     const router = makeRouter()
@@ -109,6 +119,11 @@ describe('RegisterView 好友邀请码', () => {
     const wrapper = mount(RegisterView, { global: { plugins: [router, i18n] } })
     await flushPromises()
     expect(wrapper.find('#reg-aff').exists()).toBe(false)
+
+    // 验证静默逻辑保留：settings 失败时 URL 带来的码仍随提交携带
+    await fillAndSubmit(wrapper)
+    expect(mockRegister).toHaveBeenCalledTimes(1)
+    expect(mockRegister.mock.calls[0][0].aff_code).toBe('V269J6HUH72F')
   })
 
   it('提交时携带输入框中的邀请码（手动修改以修改值为准）', async () => {

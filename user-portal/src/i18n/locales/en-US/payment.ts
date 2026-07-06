@@ -21,6 +21,8 @@ export default {
   qrAlt: 'Payment QR code',
   scanHint: 'Scan with WeChat / Alipay to pay',
   scanWechatHint: 'Scan with WeChat to pay',
+  scanAlipayHint: 'Scan with Alipay to pay',
+  alipayFallback: "Can't scan? Open the Alipay payment page →",
   loadingQr: 'Generating QR code…',
   qrValidity: 'QR code valid for {time}',
   redirecting: 'Redirecting to the payment page, please wait…',

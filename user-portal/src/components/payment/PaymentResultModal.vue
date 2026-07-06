@@ -9,6 +9,7 @@ import { errMessage } from '@/utils/error'
 import { resolvePaymentPollAction, orderStatusMeta, toStripeMinorUnit } from '@/utils/format'
 import { pollOrderUntilSettled } from '@/utils/orderPolling'
 import { STRIPE_PM_TYPE, type StripeSubMethod } from '@/config/payMethods'
+import { isMobileDevice } from '@/utils/device'
 
 const { t, locale } = useI18n()
 
@@ -100,8 +101,11 @@ const isStripeCardForm = computed(() => {
   return !sub || sub === 'card'
 })
 
-// Stripe 微信二维码生成中（弹窗打开到二维码直出之间的加载态）
+// Stripe 二维码生成中（弹窗打开到二维码直出之间的加载态，微信/支付宝共用）
 const stripeQrLoading = ref(false)
+
+// Stripe 支付宝托管支付页 URL：桌面端扫码模式下留作「无法扫码就跳转」的兜底入口
+const alipayFallbackUrl = ref('')
 
 // 二维码本地生成为 data URL（qrcode 库，与主前端 PaymentQRDialog 一致）：
 // 不走第三方渲染服务——支付链接不出站，也不受境外服务在大陆可达性影响
@@ -314,7 +318,64 @@ async function initStripeWechatQr(clientSecret: string) {
   }
 }
 
-// Stripe 支付宝：无任何可填信息，直接整页跳转 Stripe 托管支付页（跳过弹窗内确认步骤）；
+// Stripe 支付宝（桌面端）：handleActions:false 确认后拿 next_action 里的托管支付页 URL，
+// 弹窗内直出二维码（与 Stripe 托管页展示的二维码同源），手机扫码支付、桌面靠轮询确认到账；
+// URL 同时留作「无法扫码就跳转」的兜底入口
+async function initStripeAlipayQr(clientSecret: string) {
+  stripeInitError.value = ''
+  errMsg.value = ''
+  stripeQrLoading.value = true
+  try {
+    const stripe = await ensureStripe()
+    if (aborted) return
+    if (!stripe) {
+      errMsg.value = stripeInitError.value || t('payment.stripeLoadFailed')
+      return
+    }
+    const returnUrl = new URL(window.location.href)
+    if (props.order?.out_trade_no) {
+      returnUrl.searchParams.set('pay_return', props.order.out_trade_no)
+    }
+    const result = await stripe.confirmAlipayPayment(
+      clientSecret,
+      { return_url: returnUrl.toString() },
+      { handleActions: false }
+    )
+    if (aborted) return
+    if (result.error) {
+      errMsg.value = result.error.message || t('payment.stripeLoadFailed')
+      return
+    }
+    // alipay 的 next_action 类型是 alipay_handle_redirect（stripe-js 类型未收录，运行时存在）
+    const nextAction = result.paymentIntent?.next_action as {
+      alipay_handle_redirect?: { url?: string | null; native_url?: string | null }
+      redirect_to_url?: { url?: string | null }
+    } | null
+    const url = nextAction?.alipay_handle_redirect?.url || nextAction?.redirect_to_url?.url || ''
+    if (!url) {
+      errMsg.value = t('payment.stripeLoadFailed')
+      return
+    }
+    alipayFallbackUrl.value = url
+    qrImageUrl.value = await QRCode.toDataURL(url, { width: 200, margin: 2, errorCorrectionLevel: 'L' })
+  } catch (e) {
+    // stripe-js 对入参/集成问题会直接抛 IntegrationError：透出原始信息，便于定位
+    if (!aborted) {
+      errMsg.value = e instanceof Error && e.message ? e.message : t('payment.stripeLoadFailed')
+    }
+  } finally {
+    stripeQrLoading.value = false
+  }
+}
+
+// 无法扫码时的兜底：跳去 Stripe 托管支付页（与手机端的整页跳转同一目的地）
+function openAlipayFallback() {
+  if (alipayFallbackUrl.value) {
+    window.location.href = alipayFallbackUrl.value
+  }
+}
+
+// Stripe 支付宝（移动端）：无任何可填信息，直接整页跳转 Stripe 托管支付页（跳过弹窗内确认步骤）；
 // 付完按 return_url 回本页，充值页据 pay_return 参数轮询确认到账
 async function redirectStripeAlipay(clientSecret: string) {
   try {
@@ -463,16 +524,26 @@ watch(
       aborted = false
       status.value = props.order.status || 'PENDING'
       errMsg.value = ''
-      // 上一单（如 Stripe 微信）可能残留二维码；本单不带 qr_code 时先清掉，避免闪现旧码
+      // 上一单（如 Stripe 微信/支付宝）可能残留二维码；本单不带 qr_code 时先清掉，避免闪现旧码
       if (!props.order.qr_code) {
         qrImageUrl.value = ''
       }
+      alipayFallbackUrl.value = ''
 
       if (props.order.client_secret) {
         const sub = isStripe.value ? props.order.stripe_sub_method : undefined
         if (sub === 'alipay') {
-          // Stripe 支付宝：直接整页跳转托管支付页，弹窗只短暂显示「正在跳转」
-          redirectStripeAlipay(props.order.client_secret)
+          if (isMobileDevice()) {
+            // 手机端：直接整页跳转托管支付页（同一设备完成支付并回跳），弹窗只短暂显示「正在跳转」
+            redirectStripeAlipay(props.order.client_secret)
+            return
+          }
+          // 桌面端：弹窗直出支付宝二维码 + 倒计时 + 轮询（桌面没有支付宝 App 可跳，扫码体验更顺）
+          startCountdown()
+          initStripeAlipayQr(props.order.client_secret)
+          if (props.order.out_trade_no) {
+            startPoll(props.order.out_trade_no)
+          }
           return
         }
         if (sub === 'wxpay') {
@@ -608,8 +679,23 @@ onBeforeUnmount(() => {
           class="h-[200px] w-[200px] rounded-xl2 border border-border2 bg-muted"
         >
         <p class="text-sm text-text3">
-          {{ order.stripe_sub_method === 'wxpay' ? $t('payment.scanWechatHint') : $t('payment.scanHint') }}
+          {{
+            order.stripe_sub_method === 'wxpay'
+              ? $t('payment.scanWechatHint')
+              : order.stripe_sub_method === 'alipay'
+                ? $t('payment.scanAlipayHint')
+                : $t('payment.scanHint')
+          }}
         </p>
+
+        <!-- 支付宝扫码兜底：跳去 Stripe 托管支付页 -->
+        <button
+          v-if="alipayFallbackUrl"
+          class="text-xs text-accent underline underline-offset-2 hover:opacity-80"
+          @click="openAlipayFallback"
+        >
+          {{ $t('payment.alipayFallback') }}
+        </button>
 
         <!-- 倒计时 -->
         <div

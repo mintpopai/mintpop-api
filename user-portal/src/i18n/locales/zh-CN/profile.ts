@@ -42,6 +42,13 @@ export default {
     bindFailed: '发起绑定失败',
     unbindFailed: '解绑失败'
   },
+  // 邀请返利卡
+  invite: {
+    title: '邀请返利',
+    subtitle: '分享邀请码或链接，邀请新用户获得返利。',
+    goToInvite: '前往邀请页',
+    loadFailed: '加载邀请码失败'
+  },
   // 登录方式绑定
   binding: {
     title: '登录方式绑定',

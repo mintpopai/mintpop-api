@@ -42,6 +42,13 @@ export default {
     bindFailed: 'Failed to start binding',
     unbindFailed: 'Failed to unbind'
   },
+  // Referral card
+  invite: {
+    title: 'Referral',
+    subtitle: 'Share your code or link to invite users and earn rebates.',
+    goToInvite: 'Open referral page',
+    loadFailed: 'Failed to load referral code'
+  },
   // Account bindings
   binding: {
     title: 'Account bindings',

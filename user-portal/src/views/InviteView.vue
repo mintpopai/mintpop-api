@@ -6,12 +6,12 @@ import PortalLayout from '@/layouts/PortalLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
+import InviteShareBox from '@/components/invite/InviteShareBox.vue'
 import { getAffiliateDetail, transferAffiliateQuota } from '@/api/user'
 import type { UserAffiliateDetail } from '@/api/types'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { useToast } from '@/composables/useToast'
-import { useCopy } from '@/composables/useCopy'
 import { formatBalance, formatDateTime, formatNumber, formatRebateRate } from '@/utils/format'
 import { errMessage } from '@/utils/error'
 
@@ -20,18 +20,11 @@ const router = useRouter()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 const toast = useToast()
-// 复制 + 按钮「已复制」反馈（copiedKey 取 'code' | 'link'）
-const { copiedKey, copy } = useCopy()
 
 const loading = ref(true)
 const error = ref<string | null>(null)
 const transferring = ref(false)
 const detail = ref<UserAffiliateDetail | null>(null)
-
-const inviteLink = computed(() => {
-  if (!detail.value) return ''
-  return `${window.location.origin}/register?aff=${encodeURIComponent(detail.value.aff_code)}`
-})
 
 const rebateRateText = computed(
   () => `${formatRebateRate(detail.value?.effective_rebate_rate_percent)}%`
@@ -152,37 +145,10 @@ onMounted(async () => {
           {{ $t('invite.share.title') }}
         </h2>
 
-        <div class="mt-5 grid gap-4 md:grid-cols-2">
-          <div>
-            <div class="mb-[9px] text-xs font-semibold tracking-wide text-text2">
-              {{ $t('invite.share.yourCode') }}
-            </div>
-            <div class="flex items-center gap-2 rounded-xl2 border-[1.5px] border-border2 bg-muted py-2 pl-4 pr-2">
-              <code class="num min-w-0 flex-1 truncate text-sm font-semibold text-text">{{ detail.aff_code }}</code>
-              <button
-                class="flex-none rounded-full bg-card px-4 py-[7px] text-[13px] font-medium text-text2 shadow-pill transition-colors hover:text-text"
-                @click="copy(detail.aff_code, 'code')"
-              >
-                {{ copiedKey === 'code' ? $t('invite.share.copied') : $t('invite.share.copy') }}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <div class="mb-[9px] text-xs font-semibold tracking-wide text-text2">
-              {{ $t('invite.share.inviteLink') }}
-            </div>
-            <div class="flex items-center gap-2 rounded-xl2 border-[1.5px] border-border2 bg-muted py-2 pl-4 pr-2">
-              <code class="num min-w-0 flex-1 truncate text-sm text-text2">{{ inviteLink }}</code>
-              <button
-                class="flex-none rounded-full bg-card px-4 py-[7px] text-[13px] font-medium text-text2 shadow-pill transition-colors hover:text-text"
-                @click="copy(inviteLink, 'link')"
-              >
-                {{ copiedKey === 'link' ? $t('invite.share.copied') : $t('invite.share.copy') }}
-              </button>
-            </div>
-          </div>
-        </div>
+        <InviteShareBox
+          class="mt-5"
+          :aff-code="detail.aff_code"
+        />
 
         <!-- 使用说明 -->
         <div class="mt-5 rounded-xl2 bg-accent/8 p-5">

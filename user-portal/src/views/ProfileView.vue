@@ -6,6 +6,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import AccountHero from '@/components/profile/AccountHero.vue'
 import ProfileForm from '@/components/profile/ProfileForm.vue'
+import InviteCard from '@/components/profile/InviteCard.vue'
 import BindingList from '@/components/profile/BindingList.vue'
 import { useProfile } from '@/composables/useProfile'
 import { useSettingsStore } from '@/stores/settings'
@@ -59,6 +60,9 @@ onMounted(() => {
         @upload="p.saveAvatar"
         @remove-avatar="p.removeAvatar"
       />
+
+      <!-- 邀请返利卡：站点开启邀请返利时才展示（与 InviteView 的门控同语义） -->
+      <InviteCard v-if="settings?.affiliate_enabled" />
 
       <BindingList
         :user="p.user.value"

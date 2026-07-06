@@ -62,6 +62,12 @@ const promoMsg = ref<string | null>(null)
 let promoTimer: ReturnType<typeof setTimeout> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
+// 邀请码实时校验状态（后端开启邀请码注册时必填且须有效，与 frontend 注册页行为对齐）
+const invValidating = ref(false)
+const invValid = ref(false)
+const invInvalid = ref(false)
+let invTimer: ReturnType<typeof setTimeout> | null = null
+
 // ===== 邀请返利码（来自邀请链接 ?aff= / ?aff_code=）=====
 // 进站即落地 localStorage（30 天 TTL）；affiliate 开启时作为「好友邀请码」输入框展示，可改可清空
 const affCode = ref('')
@@ -92,6 +98,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (promoTimer) clearTimeout(promoTimer)
+  if (invTimer) clearTimeout(invTimer)
   // 验证码倒计时一并清理，避免离开页面后 interval 空转最多 60s
   if (countdownTimer) clearInterval(countdownTimer)
 })
@@ -150,6 +157,32 @@ async function runPromoValidation(code: string) {
   }
 }
 
+function onInvitationInput() {
+  invValid.value = false
+  invInvalid.value = false
+  if (invTimer) clearTimeout(invTimer)
+  const code = invitation.value.trim()
+  if (!code) {
+    invValidating.value = false
+    return
+  }
+  invTimer = setTimeout(() => runInvitationValidation(code), 500)
+}
+
+async function runInvitationValidation(code: string) {
+  invValidating.value = true
+  try {
+    const res = await authApi.validateInvitationCode(code)
+    invValid.value = res.valid
+    invInvalid.value = !res.valid
+  } catch {
+    invValid.value = false
+    invInvalid.value = true
+  } finally {
+    invValidating.value = false
+  }
+}
+
 async function sendCode() {
   if (!email.value) {
     error.value = t('auth.errEmailRequired')
@@ -197,6 +230,26 @@ async function onSubmit() {
     error.value = t('auth.errAgreeRequired')
     return
   }
+  // 后端开启邀请码注册时邀请码必填且须有效（与 frontend 注册页行为对齐）；
+  // 同样堵住防抖窗口内提交的竞态：无结论则先同步校验一次
+  if (settings.value?.invitation_code_enabled === true) {
+    const code = invitation.value.trim()
+    if (!code) {
+      error.value = t('auth.errInvitationRequired')
+      return
+    }
+    if (invTimer) {
+      clearTimeout(invTimer)
+      invTimer = null
+    }
+    if (!invValid.value && !invInvalid.value) {
+      await runInvitationValidation(code)
+    }
+    if (invInvalid.value) {
+      error.value = t('auth.errInvitationInvalid')
+      return
+    }
+  }
   // 填了优惠码时：若尚未得到校验结论（在防抖窗口内点击提交），先取消防抖并同步校验一次，
   // 堵住「防抖未触发 → 结论未出 → 直接放行注册」的竞态；无效则阻止提交
   if (promo.value.trim()) {
@@ -225,7 +278,7 @@ async function onSubmit() {
       email: email.value,
       password: password.value,
       verify_code: settings.value?.email_verify_enabled ? verifyCode.value : undefined,
-      invitation_code: invitation.value || undefined,
+      invitation_code: invitation.value.trim() || undefined,
       promo_code: promo.value.trim() || undefined,
       turnstile_token: turnstileToken.value || undefined,
       aff_code: aff || undefined
@@ -475,7 +528,7 @@ async function onSubmit() {
             <label
               for="reg-invitation"
               class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-            >{{ t('auth.invitationLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
+            >{{ t('auth.invitationLabel') }}</label>
             <div class="relative">
               <svg
                 class="ico"
@@ -498,8 +551,27 @@ async function onSubmit() {
                 type="text"
                 class="fld"
                 :placeholder="t('auth.invitationPlaceholder')"
+                @input="onInvitationInput"
               >
             </div>
+            <p
+              v-if="invValidating"
+              class="mt-1.5 text-xs text-subtle"
+            >
+              {{ t('auth.invitationValidating') }}
+            </p>
+            <p
+              v-else-if="invValid"
+              class="mt-1.5 text-xs font-medium text-pos"
+            >
+              {{ t('auth.invitationValid') }}
+            </p>
+            <p
+              v-else-if="invInvalid"
+              class="mt-1.5 text-xs text-neg"
+            >
+              {{ t('auth.invitationInvalid') }}
+            </p>
           </div>
 
           <!-- 好友邀请码（邀请返利，仅在站点开启返利时显示；?aff= 链接进站自动回填） -->

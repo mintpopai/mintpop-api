@@ -4,6 +4,7 @@ import type {
   LoginResponse,
   RegisterRequest,
   User,
+  ValidateInvitationCodeResult,
   ValidatePromoCodeResult
 } from './types'
 
@@ -48,6 +49,14 @@ export async function sendVerifyCode(email: string, turnstileToken?: string): Pr
 /** 校验优惠码（公开接口，注册前调用），返回是否有效及赠送金额 */
 export async function validatePromoCode(code: string): Promise<ValidatePromoCodeResult> {
   const { data } = await apiClient.post<ValidatePromoCodeResult>('/auth/validate-promo-code', { code })
+  return data
+}
+
+/** 校验邀请码（公开接口，注册前调用）；后端开启邀请码注册时该码必填且须有效 */
+export async function validateInvitationCode(code: string): Promise<ValidateInvitationCodeResult> {
+  const { data } = await apiClient.post<ValidateInvitationCodeResult>('/auth/validate-invitation-code', {
+    code
+  })
   return data
 }
 

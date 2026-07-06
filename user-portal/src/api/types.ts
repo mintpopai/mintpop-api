@@ -86,6 +86,13 @@ export interface ValidatePromoCodeResult {
   message?: string
 }
 
+/** 邀请码校验结果（对齐后端 ValidateInvitationCodeResponse；后端开启邀请码注册时该码必填） */
+export interface ValidateInvitationCodeResult {
+  valid: boolean
+  /** 无效原因错误码，如 INVITATION_CODE_INVALID / INVITATION_CODE_USED 等 */
+  error_code?: string
+}
+
 /** 公开站点设置（仅取本前端所需字段） */
 export interface PublicSettings {
   registration_enabled: boolean

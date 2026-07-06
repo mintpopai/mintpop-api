@@ -476,20 +476,6 @@ func TestValidateProviderNotificationMetadataAllowsLegacyOrdersWithoutSnapshotFi
 	assert.NoError(t, err)
 }
 
-func TestParseLegacyPaymentOrderID(t *testing.T) {
-	t.Parallel()
-
-	oid, ok := parseLegacyPaymentOrderID("sub2_42", &dbent.NotFoundError{})
-	assert.True(t, ok)
-	assert.EqualValues(t, 42, oid)
-
-	_, ok = parseLegacyPaymentOrderID("42", &dbent.NotFoundError{})
-	assert.False(t, ok)
-
-	_, ok = parseLegacyPaymentOrderID("sub2_42", errors.New("db down"))
-	assert.False(t, ok)
-}
-
 func TestIsValidProviderAmount(t *testing.T) {
 	t.Parallel()
 

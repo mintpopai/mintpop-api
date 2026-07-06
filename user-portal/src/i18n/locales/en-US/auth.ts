@@ -56,6 +56,8 @@ export default {
   invitationLabel: 'Invitation code',
   optionalSuffix: '· Optional',
   invitationPlaceholder: 'Have a code? Get extra credit',
+  affLabel: 'Referral code',
+  affPlaceholder: "Enter your friend's referral code",
   promoLabel: 'Promo code',
   promoPlaceholder: 'Have a promo code? Get bonus credit',
   promoValidating: 'Validating promo code…',

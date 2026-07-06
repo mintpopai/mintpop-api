@@ -63,7 +63,7 @@ let promoTimer: ReturnType<typeof setTimeout> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 // ===== 邀请返利码（来自邀请链接 ?aff= / ?aff_code=）=====
-// 进站即落地 localStorage（30 天 TTL），用户之后再注册也能带上；不在表单展示
+// 进站即落地 localStorage（30 天 TTL）；affiliate 开启时作为「好友邀请码」输入框展示，可改可清空
 const affCode = ref('')
 
 watch(
@@ -79,6 +79,10 @@ watch(
 )
 
 onMounted(async () => {
+  // URL 没带码时，回取此前落地的邀请码（30 天内有效）回填到输入框
+  if (!affCode.value) {
+    affCode.value = loadAffiliateReferralCode()
+  }
   try {
     settings.value = await getPublicSettings()
   } catch {
@@ -494,6 +498,39 @@ async function onSubmit() {
                 type="text"
                 class="fld"
                 :placeholder="t('auth.invitationPlaceholder')"
+              >
+            </div>
+          </div>
+
+          <!-- 好友邀请码（邀请返利，仅在站点开启返利时显示；?aff= 链接进站自动回填） -->
+          <div
+            v-if="settings?.affiliate_enabled"
+            class="mb-[22px]"
+          >
+            <label
+              for="reg-aff"
+              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+            >{{ t('auth.affLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
+            <div class="relative">
+              <svg
+                class="ico"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+              ><circle
+                cx="9"
+                cy="8"
+                r="4"
+              /><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /><path d="M19 8v6M16 11h6" /></svg>
+              <input
+                id="reg-aff"
+                v-model="affCode"
+                type="text"
+                class="fld"
+                :placeholder="t('auth.affPlaceholder')"
               >
             </div>
           </div>

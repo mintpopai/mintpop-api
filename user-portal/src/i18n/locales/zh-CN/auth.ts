@@ -56,6 +56,8 @@ export default {
   invitationLabel: '邀请码',
   optionalSuffix: '· 选填',
   invitationPlaceholder: '有邀请码可享额外额度',
+  affLabel: '好友邀请码',
+  affPlaceholder: '填写好友分享的邀请码',
   promoLabel: '优惠码',
   promoPlaceholder: '有优惠码可获赠余额',
   promoValidating: '优惠码校验中…',

@@ -1,11 +1,15 @@
 import { vi } from 'vitest'
 
 // 只测视图编排：exchangePendingOAuth/login2FA（stores/auth.ts 内部调用）、getProfile 全部 mock 掉，
-// 避免 jsdom 真实 XHR
-vi.mock('@/api/auth', () => ({
-  exchangePendingOAuth: vi.fn(),
-  login2FA: vi.fn()
-}))
+// 避免 jsdom 真实 XHR；applyOidcFragmentToken 纯 localStorage 读写、无 XHR，保留真实实现以断言落地效果
+vi.mock('@/api/auth', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/api/auth')>()
+  return {
+    ...actual,
+    exchangePendingOAuth: vi.fn(),
+    login2FA: vi.fn()
+  }
+})
 vi.mock('@/api/user', () => ({
   getProfile: vi.fn()
 }))
@@ -125,20 +129,56 @@ describe('OidcCallbackView', () => {
     expect(wrapper.find('a[href="/login"]').exists()).toBe(true)
   })
 
-  it('fragment 带 error：直接展示错误，不调 exchange', async () => {
-    window.location.hash = '#error=provider_error&message=upstream'
+  it('fragment 带 error_message：直接展示错误，不调 exchange', async () => {
+    window.location.hash = '#error=provider_error&error_message=upstream'
     const { wrapper } = await mountView()
     expect(mockExchange).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('登录未完成')
     expect(wrapper.text()).toContain('upstream')
   })
 
-  it('fragment 只有 error+description：展示 description 而非裸错误码', async () => {
-    window.location.hash = '#error=provider_error&description=upstream%20provider%20unavailable'
+  it('fragment 只有 error+error_description：展示 error_description 而非裸错误码', async () => {
+    window.location.hash = '#error=provider_error&error_description=upstream%20provider%20unavailable'
     const { wrapper } = await mountView()
     expect(mockExchange).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('upstream provider unavailable')
     expect(wrapper.text()).not.toContain('provider_error')
+  })
+
+  it('fragment 同时带 error_message 与 error_description：error_description 优先（对齐主前端）', async () => {
+    window.location.hash =
+      '#error=provider_error&error_message=short&error_description=detailed%20reason'
+    const { wrapper } = await mountView()
+    expect(mockExchange).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('detailed reason')
+    expect(wrapper.text()).not.toContain('short')
+  })
+
+  it('fragment 只有裸 error：展示错误码本身', async () => {
+    window.location.hash = '#error=provider_error'
+    const { wrapper } = await mountView()
+    expect(mockExchange).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('provider_error')
+  })
+
+  it('fragment 带 access_token：落地 token + fetchUser + 跳转 fragment redirect + 清理 URL hash + 不调 exchange', async () => {
+    window.location.hash = '#access_token=frag-tok&refresh_token=frag-refresh&redirect=%2Fkeys'
+    mockGetProfile.mockResolvedValue(fakeUser)
+    const { router } = await mountView()
+    expect(mockExchange).not.toHaveBeenCalled()
+    expect(localStorage.getItem('auth_token')).toBe('frag-tok')
+    expect(localStorage.getItem('refresh_token')).toBe('frag-refresh')
+    expect(mockGetProfile).toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/keys')
+    expect(window.location.hash).toBe('')
+  })
+
+  it('fragment 带 access_token 但无 redirect：回退跳转 /dashboard', async () => {
+    window.location.hash = '#access_token=frag-tok'
+    mockGetProfile.mockResolvedValue(fakeUser)
+    const { router } = await mountView()
+    expect(mockExchange).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/dashboard')
   })
 
   it('交换成功但无 redirect：回退跳转 /dashboard', async () => {

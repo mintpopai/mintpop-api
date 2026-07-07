@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
-import { exchangePendingOAuth } from '@/api/auth'
+import { exchangePendingOAuth, applyOidcFragmentToken } from '@/api/auth'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { errMessage } from '@/utils/error'
@@ -23,12 +23,26 @@ const totpError = ref('')
 const loading = ref(false)
 
 onMounted(async () => {
-  // 后端失败时把 error/message/description 放在 URL fragment（成功不带任何 token 参数）；
-  // 展示优先级 message > description > 裸错误码，避免只有 description 时裸显错误码
+  // 三条出路，优先级从高到低：
+  // 1) 快捷路径（已验证邮箱且本地无同邮箱账号）：后端不落 pending cookie，token 直接经
+  //    URL fragment 下发（access_token/refresh_token/expires_in/token_type/redirect）。
+  // 2) 失败路径：fragment 带 error/error_message/error_description；展示优先级
+  //    error_description > error_message > 裸错误码 error（对齐主前端 frontend/src/views/auth/OidcCallbackView.vue）。
+  // 3) 都没有 → pending 路径，靠 cookie 调 exchangePendingOAuth 换结果。
   const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const fragToken = fragment.get('access_token')
+  if (fragToken) {
+    applyOidcFragmentToken(fragToken, fragment.get('refresh_token') || undefined)
+    // 清理 URL fragment：token 不该留在地址栏/浏览器历史里
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    await authStore.fetchUser()
+    router.replace(fragment.get('redirect') || '/dashboard')
+    return
+  }
   const fragError = fragment.get('error')
   if (fragError) {
-    errorDetail.value = fragment.get('message') || fragment.get('description') || fragError
+    errorDetail.value =
+      fragment.get('error_description') || fragment.get('error_message') || fragError
     state.value = 'ERROR'
     return
   }

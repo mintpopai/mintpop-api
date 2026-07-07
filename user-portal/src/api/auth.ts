@@ -81,6 +81,16 @@ export async function exchangePendingOAuth(): Promise<OidcPendingExchangeResult>
   return data
 }
 
+/**
+ * 统一登录回调快捷路径：已验证邮箱且本地无同邮箱账号时，后端不落 pending cookie，
+ * 而是把 token 直接放进回调 URL 的 fragment（此时调 exchangePendingOAuth 必得 session not found）。
+ * 落地方式与上面各函数一致，供 OidcCallbackView 消费 fragment 后调用。
+ */
+export function applyOidcFragmentToken(accessToken: string, refreshToken?: string): void {
+  localStorage.setItem(TOKEN_KEY, accessToken)
+  if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+}
+
 /** 当前登录用户（含 balance 等基础信息） */
 export async function getCurrentUser(): Promise<User> {
   const { data } = await apiClient.get<User>('/auth/me')

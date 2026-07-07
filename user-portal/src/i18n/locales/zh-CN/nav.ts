@@ -20,5 +20,7 @@ export default {
   // 路由 / 浏览器标签标题
   login: '登录',
   register: '注册',
-  paymentResult: '支付结果'
+  paymentResult: '支付结果',
+  forgotPassword: '忘记密码',
+  resetPassword: '重置密码'
 }

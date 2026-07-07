@@ -20,5 +20,7 @@ export default {
   // Route / browser tab titles
   login: 'Sign in',
   register: 'Sign up',
-  paymentResult: 'Payment Result'
+  paymentResult: 'Payment Result',
+  forgotPassword: 'Forgot Password',
+  resetPassword: 'Reset Password'
 }

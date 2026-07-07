@@ -31,7 +31,7 @@ export default {
     namePlaceholder: '例如：生产环境',
     editNamePlaceholder: '密钥名称',
     group: '分组',
-    noGroup: '不指定分组',
+    selectGroup: '请选择分组',
     expiryLabel: '有效期（天，留空表示永不过期）',
     expiryPlaceholder: '例如：30',
     quotaLabel: '配额（USD，留空表示不限）',

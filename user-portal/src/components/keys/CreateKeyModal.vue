@@ -46,14 +46,16 @@ watch(
 )
 
 function submit() {
-  if (!name.value.trim() || submitting.value) return
+  // 与 frontend 语义对齐：分组必填，未选分组不允许提交
+  const gid = groupId.value
+  if (!name.value.trim() || gid === null || submitting.value) return
   submitting.value = true
   errorMsg.value = ''
   emit(
     'submit',
     {
       name: name.value.trim(),
-      group_id: groupId.value ?? undefined,
+      group_id: gid,
       expires_in_days: expiresInDays.value ?? undefined,
       quota: quota.value ?? undefined
     },
@@ -105,14 +107,19 @@ function copyKey() {
           <label
             :for="groupFieldId"
             class="mb-1.5 block text-xs font-medium text-text2"
-          >{{ $t('keys.form.group') }}</label>
+          >{{ $t('keys.form.group') }} <span class="text-neg">*</span></label>
           <select
             :id="groupFieldId"
             v-model="groupId"
             class="w-full input-base"
           >
-            <option :value="null">
-              {{ $t('keys.form.noGroup') }}
+            <!-- 占位项不可选：分组必填，disabled+hidden 仅在未选时作占位显示 -->
+            <option
+              :value="null"
+              disabled
+              hidden
+            >
+              {{ $t('keys.form.selectGroup') }}
             </option>
             <option
               v-for="g in groups"
@@ -201,7 +208,7 @@ function copyKey() {
         </button>
         <button
           class="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,.3)] transition-opacity hover:opacity-90 disabled:opacity-50"
-          :disabled="!name.trim() || submitting"
+          :disabled="!name.trim() || groupId === null || submitting"
           @click="submit"
         >
           {{ submitting ? $t('keys.creating') : $t('keys.createKey') }}

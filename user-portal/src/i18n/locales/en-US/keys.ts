@@ -31,7 +31,7 @@ export default {
     namePlaceholder: 'e.g. Production',
     editNamePlaceholder: 'Key name',
     group: 'Group',
-    noGroup: 'No group',
+    selectGroup: 'Select a group',
     expiryLabel: 'Expiry (days, leave empty for never)',
     expiryPlaceholder: 'e.g. 30',
     quotaLabel: 'Quota (USD, leave empty for unlimited)',

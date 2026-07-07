@@ -43,7 +43,9 @@ watch(
 )
 
 function submit() {
-  if (!props.target || !name.value.trim() || submitting.value) return
+  // 与 frontend 语义对齐：分组必填；历史无分组密钥必须先选定分组才能保存
+  const gid = groupId.value
+  if (!props.target || !name.value.trim() || gid === null || submitting.value) return
   submitting.value = true
   emit(
     'submit',
@@ -51,8 +53,7 @@ function submit() {
     {
       name: name.value.trim(),
       status: status.value,
-      // 「不指定分组」对应 null，确保清除分组也能持久化
-      group_id: groupId.value
+      group_id: gid
     },
     // 与 CreateKeyModal 同款 done 回调：父组件处理完调用，无论成败复位提交态
     // （此前只在弹窗关闭时复位，父组件失败不关弹窗会永久卡在「保存中」）
@@ -90,14 +91,19 @@ function submit() {
         <label
           :for="groupFieldId"
           class="mb-1.5 block text-xs font-medium text-text2"
-        >{{ $t('keys.form.group') }}</label>
+        >{{ $t('keys.form.group') }} <span class="text-neg">*</span></label>
         <select
           :id="groupFieldId"
           v-model="groupId"
           class="w-full input-base"
         >
-          <option :value="null">
-            {{ $t('keys.form.noGroup') }}
+          <!-- 占位项不可选：分组必填，disabled+hidden 仅为历史无分组密钥作占位显示 -->
+          <option
+            :value="null"
+            disabled
+            hidden
+          >
+            {{ $t('keys.form.selectGroup') }}
           </option>
           <option
             v-for="g in groups"
@@ -138,7 +144,7 @@ function submit() {
       </button>
       <button
         class="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,.3)] transition-opacity hover:opacity-90 disabled:opacity-50"
-        :disabled="!name.trim() || submitting"
+        :disabled="!name.trim() || groupId === null || submitting"
         @click="submit"
       >
         {{ submitting ? $t('keys.edit.saving') : $t('common.save') }}

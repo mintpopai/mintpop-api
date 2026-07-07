@@ -185,7 +185,8 @@ export interface ApiKey {
 
 export interface CreateApiKeyRequest {
   name: string
-  group_id?: number
+  // 分组必填（与 frontend 语义一致）：无分组的 Key 网关无法确定平台，也生成不了使用配置
+  group_id: number
   expires_in_days?: number
   quota?: number
 }
@@ -193,7 +194,8 @@ export interface CreateApiKeyRequest {
 export interface UpdateApiKeyRequest {
   name?: string
   status?: 'active' | 'inactive'
-  group_id?: number | null
+  // 分组只允许改绑、不允许清空（与 frontend 语义一致）
+  group_id?: number
 }
 
 /** 单个密钥的批量用量统计 */

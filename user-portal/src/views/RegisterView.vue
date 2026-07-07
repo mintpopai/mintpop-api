@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import type { PublicSettings } from '@/api/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import TurnstileWidget from '@/components/common/TurnstileWidget.vue'
+import AuthShell from '@/components/auth/AuthShell.vue'
 import { errMessage } from '@/utils/error'
 import {
   clearAffiliateReferralCode,
@@ -305,49 +306,16 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen font-sans">
-    <!-- ============ 左侧品牌区 ============ -->
-    <div
-      class="relative hidden w-[46%] flex-none flex-col justify-between overflow-hidden border-r border-border bg-muted px-14 py-[54px] lg:flex"
-    >
-      <div
-        class="pointer-events-none absolute right-[-90px] top-[-70px] h-[340px] w-[340px] opacity-50"
-        style="background: linear-gradient(150deg, #0e9e72 0%, #14c28a 45%, rgba(20, 194, 138, 0) 92%); -webkit-mask-image: radial-gradient(#000 2px, transparent 2.2px); mask-image: radial-gradient(#000 2px, transparent 2.2px); -webkit-mask-size: 18px 18px; mask-size: 18px 18px;"
-      />
-      <div
-        class="pointer-events-none absolute -bottom-20 left-[-70px] h-[260px] w-[260px] opacity-[0.06]"
-        style="background: radial-gradient(#1a1a1a 1.7px, transparent 1.9px); background-size: 15px 15px;"
-      />
-
-      <div class="relative flex items-center">
-        <img
-          src="/wordmark-dark.png"
-          alt="MintPop API"
-          class="block h-8 w-auto dark:hidden"
-        >
-        <img
-          src="/wordmark-light.png"
-          alt="MintPop API"
-          class="hidden h-8 w-auto dark:block"
-        >
-      </div>
-
-      <div class="relative max-w-[420px]">
-        <div class="mb-5 text-xs font-semibold uppercase tracking-[0.14em] text-pos">
-          {{ t('auth.registerKicker') }}
-        </div>
-        <h2 class="font-serif text-[42px] font-medium leading-[1.12] tracking-tight text-text">
-          {{ t('auth.registerHeadlinePre') }}<span class="relative whitespace-nowrap">{{ t('auth.registerHeadlineMark') }}<span
-            class="absolute inset-x-0 bottom-0.5 -z-10 h-[9px] rounded-xs bg-accent opacity-[0.28]"
-          /></span>{{ t('auth.registerHeadlineEnd') }}
-        </h2>
-        <p class="mt-5 text-[15px] leading-relaxed text-text3">
-          {{ t('auth.registerBrandDesc') }}
-        </p>
-      </div>
-
-      <!-- 步骤 -->
-      <div class="relative flex flex-col gap-3.5">
+  <AuthShell
+    :kicker="t('auth.registerKicker')"
+    :headline-pre="t('auth.registerHeadlinePre')"
+    :headline-mark="t('auth.registerHeadlineMark')"
+    :headline-end="t('auth.registerHeadlineEnd')"
+    :desc="t('auth.registerBrandDesc')"
+  >
+    <template #brand-footer>
+      <!-- 三步骤（覆盖缺省的模型标签行） -->
+      <div class="flex flex-col gap-3.5">
         <div class="flex items-center gap-[13px]">
           <span class="flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full bg-accent text-[13px] font-semibold text-white">1</span>
           <span class="text-sm font-medium text-text2">{{ t('auth.step1') }}</span>
@@ -361,406 +329,370 @@ async function onSubmit() {
           <span class="text-sm font-medium text-subtle">{{ t('auth.step3') }}</span>
         </div>
       </div>
+    </template>
+
+    <div class="mb-[30px]">
+      <h1 class="mb-2 font-serif text-4xl font-medium tracking-tight text-text">
+        {{ t('auth.createAccount') }}
+      </h1>
+      <p class="text-sm text-subtle">
+        {{ t('auth.registerSubtitle') }}
+      </p>
     </div>
 
-    <!-- ============ 右侧表单 ============ -->
-    <div class="flex min-w-0 flex-1 items-center justify-center bg-bg px-10 py-12">
-      <div class="w-full max-w-[392px]">
-        <div class="mb-[30px]">
-          <h1 class="mb-2 font-serif text-4xl font-medium tracking-tight text-text">
-            {{ t('auth.createAccount') }}
-          </h1>
-          <p class="text-sm text-subtle">
-            {{ t('auth.registerSubtitle') }}
-          </p>
+    <form @submit.prevent="onSubmit">
+      <div class="mb-4">
+        <label
+          for="reg-username"
+          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+        >{{ t('auth.usernameLabel') }}</label>
+        <div class="relative">
+          <svg
+            class="ico"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          ><circle
+            cx="12"
+            cy="8"
+            r="4"
+          /><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /></svg>
+          <input
+            id="reg-username"
+            v-model="username"
+            type="text"
+            class="fld"
+            :placeholder="t('auth.usernamePlaceholder')"
+          >
         </div>
+      </div>
 
-        <form @submit.prevent="onSubmit">
-          <div class="mb-4">
-            <label
-              for="reg-username"
-              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-            >{{ t('auth.usernameLabel') }}</label>
-            <div class="relative">
-              <svg
-                class="ico"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-              ><circle
-                cx="12"
-                cy="8"
-                r="4"
-              /><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /></svg>
-              <input
-                id="reg-username"
-                v-model="username"
-                type="text"
-                class="fld"
-                :placeholder="t('auth.usernamePlaceholder')"
-              >
-            </div>
-          </div>
-
-          <div class="mb-4">
-            <label
-              for="reg-email"
-              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-            >{{ t('auth.emailLabel') }}</label>
-            <div class="relative">
-              <svg
-                class="ico"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-              ><rect
-                x="3"
-                y="5"
-                width="18"
-                height="14"
-                rx="2.5"
-              /><path d="M3.5 7l8.5 6 8.5-6" /></svg>
-              <input
-                id="reg-email"
-                v-model="email"
-                type="email"
-                class="fld"
-                placeholder="you@example.com"
-              >
-            </div>
-          </div>
-
-          <!-- 邮箱验证码（仅在站点开启邮箱验证时显示） -->
-          <div
-            v-if="settings?.email_verify_enabled"
-            class="mb-4"
+      <div class="mb-4">
+        <label
+          for="reg-email"
+          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+        >{{ t('auth.emailLabel') }}</label>
+        <div class="relative">
+          <svg
+            class="ico"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          ><rect
+            x="3"
+            y="5"
+            width="18"
+            height="14"
+            rx="2.5"
+          /><path d="M3.5 7l8.5 6 8.5-6" /></svg>
+          <input
+            id="reg-email"
+            v-model="email"
+            type="email"
+            class="fld"
+            placeholder="you@example.com"
           >
-            <label
-              for="reg-verify-code"
-              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-            >{{ t('auth.verifyCodeLabel') }}</label>
-            <div class="flex gap-2">
-              <input
-                id="reg-verify-code"
-                v-model="verifyCode"
-                type="text"
-                class="fld pl-4!"
-                :placeholder="t('auth.verifyCodePlaceholder')"
-              >
-              <button
-                type="button"
-                :disabled="sending || countdown > 0"
-                class="flex-none whitespace-nowrap rounded-xl2 border-[1.5px] border-border2 px-3.5 text-[13px] font-medium text-text2 disabled:opacity-50"
-                @click="sendCode"
-              >
-                {{ countdown > 0 ? `${countdown}s` : t('auth.sendCode') }}
-              </button>
-            </div>
-          </div>
+        </div>
+      </div>
 
-          <div class="mb-4 grid grid-cols-2 gap-3">
-            <div>
-              <label
-                for="reg-password"
-                class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-              >{{ t('auth.passwordLabel') }}</label>
-              <div class="relative">
-                <svg
-                  class="ico"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                ><rect
-                  x="4"
-                  y="11"
-                  width="16"
-                  height="9"
-                  rx="2"
-                /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
-                <input
-                  id="reg-password"
-                  v-model="password"
-                  type="password"
-                  class="fld"
-                  :placeholder="t('auth.passwordMinPlaceholder')"
-                >
-              </div>
-            </div>
-            <div>
-              <label
-                for="reg-confirm-password"
-                class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-              >{{ t('auth.confirmPasswordLabel') }}</label>
-              <div class="relative">
-                <svg
-                  class="ico"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                ><path d="M5 13l4 4 10-10" /></svg>
-                <input
-                  id="reg-confirm-password"
-                  v-model="confirm"
-                  type="password"
-                  class="fld"
-                  :placeholder="t('auth.confirmPasswordPlaceholder')"
-                >
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-if="settings?.invitation_code_enabled === true"
-            class="mb-[22px]"
+      <!-- 邮箱验证码（仅在站点开启邮箱验证时显示） -->
+      <div
+        v-if="settings?.email_verify_enabled"
+        class="mb-4"
+      >
+        <label
+          for="reg-verify-code"
+          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+        >{{ t('auth.verifyCodeLabel') }}</label>
+        <div class="flex gap-2">
+          <input
+            id="reg-verify-code"
+            v-model="verifyCode"
+            type="text"
+            class="fld pl-4!"
+            :placeholder="t('auth.verifyCodePlaceholder')"
           >
-            <label
-              for="reg-invitation"
-              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-            >{{ t('auth.invitationLabel') }}</label>
-            <div class="relative">
-              <svg
-                class="ico"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-              ><rect
-                x="3"
-                y="8"
-                width="18"
-                height="13"
-                rx="2"
-              /><path d="M3 12h18M12 8V5a2 2 0 0 1 4 0M12 8V5a2 2 0 0 0-4 0" /></svg>
-              <input
-                id="reg-invitation"
-                v-model="invitation"
-                type="text"
-                class="fld"
-                :placeholder="t('auth.invitationPlaceholder')"
-                @input="onInvitationInput"
-              >
-            </div>
-            <p
-              v-if="invValidating"
-              class="mt-1.5 text-xs text-subtle"
-            >
-              {{ t('auth.invitationValidating') }}
-            </p>
-            <p
-              v-else-if="invValid"
-              class="mt-1.5 text-xs font-medium text-pos"
-            >
-              {{ t('auth.invitationValid') }}
-            </p>
-            <p
-              v-else-if="invInvalid"
-              class="mt-1.5 text-xs text-neg"
-            >
-              {{ t('auth.invitationInvalid') }}
-            </p>
-          </div>
-
-          <!-- 好友返利码（邀请返利，仅在站点开启返利时显示；?aff= 链接进站自动回填） -->
-          <div
-            v-if="settings?.affiliate_enabled"
-            class="mb-[22px]"
-          >
-            <label
-              for="reg-aff"
-              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-            >{{ t('auth.affLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
-            <div class="relative">
-              <svg
-                class="ico"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-              ><circle
-                cx="9"
-                cy="8"
-                r="4"
-              /><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /><path d="M19 8v6M16 11h6" /></svg>
-              <input
-                id="reg-aff"
-                v-model="affCode"
-                type="text"
-                class="fld"
-                :placeholder="t('auth.affPlaceholder')"
-              >
-            </div>
-          </div>
-
-          <!-- 优惠码（仅在站点开启优惠码时显示；settings 未加载完成时为 null 不渲染，避免闪烁） -->
-          <div
-            v-if="settings?.promo_code_enabled"
-            class="mb-[22px]"
-          >
-            <label
-              for="reg-promo"
-              class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-            >{{ t('auth.promoLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
-            <div class="relative">
-              <svg
-                class="ico"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-              ><rect
-                x="3"
-                y="8"
-                width="18"
-                height="4"
-                rx="1"
-              /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
-              <input
-                id="reg-promo"
-                v-model="promo"
-                type="text"
-                class="fld"
-                :placeholder="t('auth.promoPlaceholder')"
-                @input="onPromoInput"
-              >
-            </div>
-            <p
-              v-if="promoValidating"
-              class="mt-1.5 text-xs text-subtle"
-            >
-              {{ t('auth.promoValidating') }}
-            </p>
-            <p
-              v-else-if="promoValid"
-              class="mt-1.5 text-xs font-medium text-pos"
-            >
-              {{ t('auth.promoValid', { amount: (promoBonus ?? 0).toFixed(2) }) }}
-            </p>
-            <p
-              v-else-if="promoInvalid"
-              class="mt-1.5 text-xs text-neg"
-            >
-              {{ promoMsg }}
-            </p>
-          </div>
-
-          <label class="mb-[22px] flex cursor-pointer items-start gap-[9px] text-[13px] leading-snug text-text3">
-            <input
-              v-model="agreed"
-              type="checkbox"
-              class="mt-0.5 h-[17px] w-[17px] flex-none rounded-[5px] accent-accent"
-            >
-            <span>{{ t('auth.agreePrefix') }} <router-link
-              to="/legal#agreement"
-              target="_blank"
-              rel="noopener"
-              class="font-semibold text-text underline-offset-2 hover:underline"
-              @click.stop
-            >{{ t('auth.termsOfService') }}</router-link> {{ t('auth.and') }} <router-link
-              to="/legal#privacy"
-              target="_blank"
-              rel="noopener"
-              class="font-semibold text-text underline-offset-2 hover:underline"
-              @click.stop
-            >{{ t('auth.privacyPolicy') }}</router-link></span>
-          </label>
-
-          <!-- Turnstile 人机验证（站点开启时展示；发验证码与注册提交都消费该 token） -->
-          <div
-            v-if="turnstileEnabled"
-            class="mb-[18px]"
-          >
-            <TurnstileWidget
-              ref="turnstileRef"
-              :site-key="turnstileSiteKey"
-              @verify="turnstileToken = $event"
-              @expire="turnstileToken = ''"
-              @error="turnstileToken = ''"
-            />
-          </div>
-
-          <p
-            v-if="error"
-            class="mb-4 text-sm text-neg"
-          >
-            {{ error }}
-          </p>
-
           <button
-            type="submit"
-            :disabled="loading"
-            class="flex w-full items-center justify-center gap-2 rounded-xl2 bg-accent py-[15px] text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-            style="box-shadow: 0 4px 14px rgba(20, 194, 138, 0.32)"
+            type="button"
+            :disabled="sending || countdown > 0"
+            class="flex-none whitespace-nowrap rounded-xl2 border-[1.5px] border-border2 px-3.5 text-[13px] font-medium text-text2 disabled:opacity-50"
+            @click="sendCode"
           >
-            <LoadingSpinner
-              v-if="loading"
-              :size="16"
-            />
-            <span>{{ loading ? t('auth.creating') : t('auth.createAccount') }}</span>
-            <span
-              v-if="!loading"
-              class="text-base"
-            >→</span>
+            {{ countdown > 0 ? `${countdown}s` : t('auth.sendCode') }}
           </button>
-        </form>
+        </div>
+      </div>
 
-        <p class="mt-[26px] text-center text-sm text-subtle">
-          {{ t('auth.haveAccount') }}<router-link
-            to="/login"
-            class="border-b-2 border-accent pb-px font-semibold text-text"
+      <div class="mb-4 grid grid-cols-2 gap-3">
+        <div>
+          <label
+            for="reg-password"
+            class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+          >{{ t('auth.passwordLabel') }}</label>
+          <div class="relative">
+            <svg
+              class="ico"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            ><rect
+              x="4"
+              y="11"
+              width="16"
+              height="9"
+              rx="2"
+            /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+            <input
+              id="reg-password"
+              v-model="password"
+              type="password"
+              class="fld"
+              :placeholder="t('auth.passwordMinPlaceholder')"
+            >
+          </div>
+        </div>
+        <div>
+          <label
+            for="reg-confirm-password"
+            class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+          >{{ t('auth.confirmPasswordLabel') }}</label>
+          <div class="relative">
+            <svg
+              class="ico"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            ><path d="M5 13l4 4 10-10" /></svg>
+            <input
+              id="reg-confirm-password"
+              v-model="confirm"
+              type="password"
+              class="fld"
+              :placeholder="t('auth.confirmPasswordPlaceholder')"
+            >
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-if="settings?.invitation_code_enabled === true"
+        class="mb-[22px]"
+      >
+        <label
+          for="reg-invitation"
+          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+        >{{ t('auth.invitationLabel') }}</label>
+        <div class="relative">
+          <svg
+            class="ico"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          ><rect
+            x="3"
+            y="8"
+            width="18"
+            height="13"
+            rx="2"
+          /><path d="M3 12h18M12 8V5a2 2 0 0 1 4 0M12 8V5a2 2 0 0 0-4 0" /></svg>
+          <input
+            id="reg-invitation"
+            v-model="invitation"
+            type="text"
+            class="fld"
+            :placeholder="t('auth.invitationPlaceholder')"
+            @input="onInvitationInput"
           >
-            {{ t('auth.signInDirect') }}
-          </router-link>
+        </div>
+        <p
+          v-if="invValidating"
+          class="mt-1.5 text-xs text-subtle"
+        >
+          {{ t('auth.invitationValidating') }}
+        </p>
+        <p
+          v-else-if="invValid"
+          class="mt-1.5 text-xs font-medium text-pos"
+        >
+          {{ t('auth.invitationValid') }}
+        </p>
+        <p
+          v-else-if="invInvalid"
+          class="mt-1.5 text-xs text-neg"
+        >
+          {{ t('auth.invitationInvalid') }}
         </p>
       </div>
-    </div>
-  </div>
-</template>
 
-<style scoped>
-.fld {
-  width: 100%;
-  font: 400 15px 'Space Grotesk', sans-serif;
-  color: var(--text);
-  background: var(--card);
-  border: 1.5px solid var(--border2);
-  border-radius: 12px;
-  padding: 14px 16px 14px 44px;
-  outline: none;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-.fld::placeholder {
-  color: var(--faint);
-}
-.fld:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(20, 194, 138, 0.13);
-}
-.ico {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--faint);
-  pointer-events: none;
-}
-</style>
+      <!-- 好友返利码（邀请返利，仅在站点开启返利时显示；?aff= 链接进站自动回填） -->
+      <div
+        v-if="settings?.affiliate_enabled"
+        class="mb-[22px]"
+      >
+        <label
+          for="reg-aff"
+          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+        >{{ t('auth.affLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
+        <div class="relative">
+          <svg
+            class="ico"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          ><circle
+            cx="9"
+            cy="8"
+            r="4"
+          /><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /><path d="M19 8v6M16 11h6" /></svg>
+          <input
+            id="reg-aff"
+            v-model="affCode"
+            type="text"
+            class="fld"
+            :placeholder="t('auth.affPlaceholder')"
+          >
+        </div>
+      </div>
+
+      <!-- 优惠码（仅在站点开启优惠码时显示；settings 未加载完成时为 null 不渲染，避免闪烁） -->
+      <div
+        v-if="settings?.promo_code_enabled"
+        class="mb-[22px]"
+      >
+        <label
+          for="reg-promo"
+          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
+        >{{ t('auth.promoLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
+        <div class="relative">
+          <svg
+            class="ico"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          ><rect
+            x="3"
+            y="8"
+            width="18"
+            height="4"
+            rx="1"
+          /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
+          <input
+            id="reg-promo"
+            v-model="promo"
+            type="text"
+            class="fld"
+            :placeholder="t('auth.promoPlaceholder')"
+            @input="onPromoInput"
+          >
+        </div>
+        <p
+          v-if="promoValidating"
+          class="mt-1.5 text-xs text-subtle"
+        >
+          {{ t('auth.promoValidating') }}
+        </p>
+        <p
+          v-else-if="promoValid"
+          class="mt-1.5 text-xs font-medium text-pos"
+        >
+          {{ t('auth.promoValid', { amount: (promoBonus ?? 0).toFixed(2) }) }}
+        </p>
+        <p
+          v-else-if="promoInvalid"
+          class="mt-1.5 text-xs text-neg"
+        >
+          {{ promoMsg }}
+        </p>
+      </div>
+
+      <label class="mb-[22px] flex cursor-pointer items-start gap-[9px] text-[13px] leading-snug text-text3">
+        <input
+          v-model="agreed"
+          type="checkbox"
+          class="mt-0.5 h-[17px] w-[17px] flex-none rounded-[5px] accent-accent"
+        >
+        <span>{{ t('auth.agreePrefix') }} <router-link
+          to="/legal#agreement"
+          target="_blank"
+          rel="noopener"
+          class="font-semibold text-text underline-offset-2 hover:underline"
+          @click.stop
+        >{{ t('auth.termsOfService') }}</router-link> {{ t('auth.and') }} <router-link
+          to="/legal#privacy"
+          target="_blank"
+          rel="noopener"
+          class="font-semibold text-text underline-offset-2 hover:underline"
+          @click.stop
+        >{{ t('auth.privacyPolicy') }}</router-link></span>
+      </label>
+
+      <!-- Turnstile 人机验证（站点开启时展示；发验证码与注册提交都消费该 token） -->
+      <div
+        v-if="turnstileEnabled"
+        class="mb-[18px]"
+      >
+        <TurnstileWidget
+          ref="turnstileRef"
+          :site-key="turnstileSiteKey"
+          @verify="turnstileToken = $event"
+          @expire="turnstileToken = ''"
+          @error="turnstileToken = ''"
+        />
+      </div>
+
+      <p
+        v-if="error"
+        class="mb-4 text-sm text-neg"
+      >
+        {{ error }}
+      </p>
+
+      <button
+        type="submit"
+        :disabled="loading"
+        class="flex w-full items-center justify-center gap-2 rounded-xl2 bg-accent py-[15px] text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+        style="box-shadow: 0 4px 14px rgba(20, 194, 138, 0.32)"
+      >
+        <LoadingSpinner
+          v-if="loading"
+          :size="16"
+        />
+        <span>{{ loading ? t('auth.creating') : t('auth.createAccount') }}</span>
+        <span
+          v-if="!loading"
+          class="text-base"
+        >→</span>
+      </button>
+    </form>
+
+    <p class="mt-[26px] text-center text-sm text-subtle">
+      {{ t('auth.haveAccount') }}<router-link
+        to="/login"
+        class="border-b-2 border-accent pb-px font-semibold text-text"
+      >
+        {{ t('auth.signInDirect') }}
+      </router-link>
+    </p>
+  </AuthShell>
+</template>

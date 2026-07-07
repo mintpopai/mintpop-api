@@ -7,6 +7,7 @@ import { useSettingsStore } from '@/stores/settings'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import TurnstileWidget from '@/components/common/TurnstileWidget.vue'
 import AuthShell from '@/components/auth/AuthShell.vue'
+import OidcLoginButton from '@/components/auth/OidcLoginButton.vue'
 import { errMessage } from '@/utils/error'
 import { IS_APPLICATION_MODE } from '@/config/portal'
 
@@ -193,6 +194,8 @@ function backToCredentials() {
       v-else
       @submit.prevent="onSubmit"
     >
+      <OidcLoginButton />
+
       <div class="mb-[18px]">
         <label
           for="login-email"

@@ -15,7 +15,9 @@ import axios, {
 import type { ApiResponse } from './types'
 import i18n, { LOCALE_STORAGE_KEY } from '@/i18n'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+// 导出供极少数「非 axios、需整页跳转」场景复用（如 OidcLoginButton 拼接 GET start 端点 URL），
+// 避免各处各自重复解析 VITE_API_BASE_URL
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
 
 export const TOKEN_KEY = 'auth_token'
 export const REFRESH_KEY = 'refresh_token'

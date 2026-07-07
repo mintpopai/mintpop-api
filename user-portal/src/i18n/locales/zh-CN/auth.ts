@@ -21,6 +21,9 @@ export default {
   signUpFree: '免费注册',
   errEmptyCredentials: '请输入邮箱和密码',
   errLoginFailed: '登录失败，请检查邮箱和密码',
+  // —— 统一登录（mintpop 账号 / OIDC） ——
+  oidcSignIn: '使用 {provider} 账号登录',
+  oidcOr: '或使用邮箱登录',
   // —— TOTP 两步验证（账号开启 2FA 时的登录第二步） ——
   totpTitle: '两步验证',
   totpHint: '请输入身份验证器应用中的 6 位动态验证码。',

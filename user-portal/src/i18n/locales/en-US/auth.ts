@@ -21,6 +21,9 @@ export default {
   signUpFree: 'Sign up free',
   errEmptyCredentials: 'Please enter your email and password',
   errLoginFailed: 'Sign in failed. Please check your email and password.',
+  // —— Unified sign-in (mintpop account / OIDC) ——
+  oidcSignIn: 'Sign in with {provider}',
+  oidcOr: 'or continue with email',
   // —— TOTP two-factor authentication (second login step when 2FA is enabled) ——
   totpTitle: 'Two-factor authentication',
   totpHint: 'Enter the 6-digit code from your authenticator app.',

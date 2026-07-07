@@ -83,16 +83,13 @@ describe('OidcLoginButton', () => {
     const wrapper = await mountButton('?redirect=%2Fbilling', { oidc_oauth_enabled: true })
     await wrapper.find('button').trigger('click')
     expect(mockNavigate).toHaveBeenCalledTimes(1)
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/oauth/oidc/start?redirect=%2Fbilling')
-    )
+    // 精确匹配完整地址（vitest 下无 VITE_API_BASE_URL，API base 固定为 /api/v1）
+    expect(mockNavigate).toHaveBeenCalledWith('/api/v1/auth/oauth/oidc/start?redirect=%2Fbilling')
   })
 
   it('无 redirect 查询参数时默认回跳 /dashboard', async () => {
     const wrapper = await mountButton('', { oidc_oauth_enabled: true })
     await wrapper.find('button').trigger('click')
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/oauth/oidc/start?redirect=%2Fdashboard')
-    )
+    expect(mockNavigate).toHaveBeenCalledWith('/api/v1/auth/oauth/oidc/start?redirect=%2Fdashboard')
   })
 })

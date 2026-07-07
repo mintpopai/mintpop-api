@@ -103,6 +103,13 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ContactView.vue'),
     meta: { requiresAuth: true, title: 'nav.contact' }
   },
+  {
+    // 统一登录（OIDC）回调落点：后端处理完成后 302 到此（成功不带 token；失败 fragment 带 error/message）
+    path: '/auth/oidc/callback',
+    name: 'OidcCallback',
+    component: () => import('@/views/OidcCallbackView.vue'),
+    meta: { requiresAuth: false, title: 'nav.oidcCallback' }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' }
 ]
 

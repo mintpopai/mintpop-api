@@ -2,6 +2,7 @@ import { apiClient, TOKEN_KEY, REFRESH_KEY } from './client'
 import type {
   LoginRequest,
   LoginResponse,
+  OidcPendingExchangeResult,
   RegisterRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
@@ -69,6 +70,14 @@ export async function validateInvitationCode(code: string): Promise<ValidateInvi
   const { data } = await apiClient.post<ValidateInvitationCodeResult>('/auth/validate-invitation-code', {
     code
   })
+  return data
+}
+
+/** 统一登录回调后凭 cookie 交换结果（POST /auth/oauth/pending/exchange）；拿到 token 即落地 */
+export async function exchangePendingOAuth(): Promise<OidcPendingExchangeResult> {
+  const { data } = await apiClient.post<OidcPendingExchangeResult>('/auth/oauth/pending/exchange', {})
+  if (data.access_token) localStorage.setItem(TOKEN_KEY, data.access_token)
+  if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
   return data
 }
 

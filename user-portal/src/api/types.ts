@@ -358,6 +358,18 @@ export interface BindStartResult {
   authorize_url: string
 }
 
+/** 统一登录（OIDC）pending 交换结果：有 access_token 即登录完成；requires_2fa 走两步验证；其余为待人工处理状态 */
+export interface OidcPendingExchangeResult {
+  access_token?: string
+  refresh_token?: string
+  redirect?: string
+  error?: string
+  requires_2fa?: boolean
+  temp_token?: string
+  user_email_masked?: string
+  auth_result?: string
+}
+
 // ==================== 兑换码 ====================
 
 export interface RedeemResult {

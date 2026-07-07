@@ -124,5 +124,15 @@ export default {
   errTokenInvalid: 'The reset link is invalid or has expired. Please request a new one.',
   errResetFailed: 'Reset failed. Please try again later.',
   showPassword: 'Show password',
-  hidePassword: 'Hide password'
+  hidePassword: 'Hide password',
+  // —— Unified sign-in (OIDC) callback page ——
+  oidcCallbackKicker: 'Unified sign-in',
+  oidcCallbackHeadlinePre: 'Connecting to your',
+  oidcCallbackHeadlineMark: ' mintpop account',
+  oidcCallbackTitle: 'Unified sign-in',
+  oidcProcessing: 'Completing sign-in…',
+  oidcErrExchange: 'Your sign-in session has expired. Please sign in again.',
+  oidcErrorTitle: 'Sign-in incomplete',
+  oidcBackToLogin: 'Back to email sign-in',
+  oidcBindGuide: 'This email is already registered on this site. Please sign in with your email and password first, then bind your unified account under "Profile → Sign-in methods" to enable one-click unified sign-in.'
 }

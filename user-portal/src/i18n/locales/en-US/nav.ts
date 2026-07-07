@@ -22,5 +22,6 @@ export default {
   register: 'Sign up',
   paymentResult: 'Payment Result',
   forgotPassword: 'Forgot Password',
-  resetPassword: 'Reset Password'
+  resetPassword: 'Reset Password',
+  oidcCallback: 'Unified Sign-in'
 }

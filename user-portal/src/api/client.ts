@@ -111,6 +111,7 @@ apiClient.interceptors.response.use(
         return Promise.reject({
           status: response.status,
           code: body.code,
+          reason: body.reason,
           message: body.message || 'Unknown error'
         })
       }
@@ -174,6 +175,7 @@ function normalize(error: AxiosError<ApiResponse<unknown>>) {
   return {
     status: error.response?.status,
     code: data?.code ?? error.code,
+    reason: data?.reason,
     message: data?.message || (error.response ? error.message : '') || fallback
   }
 }

@@ -62,6 +62,33 @@ describe('统一返回体解包', () => {
     apiClient.defaults.adapter = async (config) => ok(config, { code: 110001, message: '重复操作', data: null })
     await expect(apiClient.get('/whatever')).rejects.toMatchObject({ code: 110001, message: '重复操作' })
   })
+
+  it('code!==0 时同时透传字符串错误码 reason（HTTP 200）', async () => {
+    apiClient.defaults.adapter = async (config) =>
+      ok(config, { code: 400, message: 'invalid token', reason: 'INVALID_RESET_TOKEN', data: null })
+    await expect(apiClient.post('/auth/reset-password', {})).rejects.toMatchObject({
+      code: 400,
+      reason: 'INVALID_RESET_TOKEN',
+      message: 'invalid token'
+    })
+  })
+
+  it('HTTP 4xx 时透传响应体的字符串错误码 reason', async () => {
+    apiClient.defaults.adapter = async (config) => {
+      const response = {
+        status: 400,
+        statusText: 'Bad Request',
+        headers: {},
+        config,
+        data: { code: 400, message: 'invalid or expired password reset token', reason: 'INVALID_RESET_TOKEN', data: null }
+      } as AxiosResponse
+      throw new AxiosError('Request failed with status code 400', 'ERR_BAD_REQUEST', config, {}, response)
+    }
+    await expect(apiClient.post('/auth/reset-password', {})).rejects.toMatchObject({
+      status: 400,
+      reason: 'INVALID_RESET_TOKEN'
+    })
+  })
 })
 
 describe('网络层错误归一化', () => {

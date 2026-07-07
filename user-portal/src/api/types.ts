@@ -4,6 +4,8 @@
 export interface ApiResponse<T> {
   code: number
   message?: string
+  /** 字符串错误码（后端 infraerrors 的 Reason，如 INVALID_RESET_TOKEN），供页面识别语义错误 */
+  reason?: string
   data: T
 }
 
@@ -11,6 +13,8 @@ export interface ApiResponse<T> {
 export interface ApiError {
   status?: number
   code?: number | string
+  /** 字符串错误码（同 ApiResponse.reason），语义分支优先用它、不要解析 message 文本 */
+  reason?: string
   message: string
 }
 

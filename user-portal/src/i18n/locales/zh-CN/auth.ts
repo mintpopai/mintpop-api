@@ -132,6 +132,7 @@ export default {
   oidcCallbackTitle: '统一登录',
   oidcProcessing: '正在完成登录…',
   oidcErrExchange: '登录会话已失效，请重新发起登录',
+  oidcErrTotpFailed: '验证码校验失败，请重试',
   oidcErrorTitle: '登录未完成',
   oidcBackToLogin: '返回邮箱密码登录',
   oidcBindGuide: '该邮箱已注册过本站账号。请先使用邮箱密码登录，然后在「个人资料 → 登录方式绑定」中绑定统一账号，之后即可一键统一登录。'

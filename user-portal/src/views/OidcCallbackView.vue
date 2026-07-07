@@ -18,14 +18,17 @@ const errorDetail = ref('')
 const tempToken = ref('')
 const emailMasked = ref('')
 const totpCode = ref('')
+// TOTP 步内联错误：验证码提交失败原地重试（对齐 LoginView），不落入终态 ERROR
+const totpError = ref('')
 const loading = ref(false)
 
 onMounted(async () => {
-  // 后端失败时把 error 放在 URL fragment（成功不带任何 token 参数）
+  // 后端失败时把 error/message/description 放在 URL fragment（成功不带任何 token 参数）；
+  // 展示优先级 message > description > 裸错误码，避免只有 description 时裸显错误码
   const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''))
   const fragError = fragment.get('error')
   if (fragError) {
-    errorDetail.value = fragment.get('message') || fragError
+    errorDetail.value = fragment.get('message') || fragment.get('description') || fragError
     state.value = 'ERROR'
     return
   }
@@ -52,14 +55,18 @@ onMounted(async () => {
 
 async function onSubmitTotp() {
   const code = totpCode.value.trim()
-  if (!/^\d{6}$/.test(code)) return
+  if (!/^\d{6}$/.test(code)) {
+    totpError.value = t('auth.errTotpRequired')
+    return
+  }
   loading.value = true
+  totpError.value = ''
   try {
     await authStore.loginWith2FA(tempToken.value, code)
     router.replace('/dashboard')
   } catch (e) {
-    errorDetail.value = errMessage(e, t('auth.errLoginFailed'))
-    state.value = 'ERROR'
+    // 验证码输错等失败原地重试即可，不落终态 ERROR（不必重走整个 OIDC 授权）
+    totpError.value = errMessage(e, t('auth.oidcErrTotpFailed'))
   } finally {
     loading.value = false
   }
@@ -111,6 +118,12 @@ async function onSubmitTotp() {
           :placeholder="t('auth.totpPlaceholder')"
         >
       </div>
+      <p
+        v-if="totpError"
+        class="mb-4 text-sm text-neg"
+      >
+        {{ totpError }}
+      </p>
       <button
         type="submit"
         :disabled="loading"

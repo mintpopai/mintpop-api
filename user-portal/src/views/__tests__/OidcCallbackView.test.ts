@@ -91,10 +91,38 @@ describe('OidcCallbackView', () => {
     expect(router.currentRoute.value.path).toBe('/dashboard')
   })
 
+  it('TOTP 提交失败：停留 TOTP 步内联展示错误，重试成功后跳转', async () => {
+    mockExchange.mockResolvedValue({
+      requires_2fa: true,
+      temp_token: 'tmp',
+      user_email_masked: 'a***@x.com'
+    })
+    // 第一次提交失败（验证码错误等）
+    mockLogin2FA.mockRejectedValueOnce({ status: 400, code: 400, message: '验证码错误' })
+    const { wrapper, router } = await mountView()
+    await wrapper.find('input[inputmode="numeric"]').setValue('111111')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+    // 仍在 TOTP 步（输入框还在）、内联错误可见、不跳转、不落终态 ERROR
+    expect(wrapper.find('input[inputmode="numeric"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('验证码错误')
+    expect(router.currentRoute.value.path).toBe('/auth/oidc/callback')
+
+    // 原地重输后重试成功 → /dashboard（验证重试路径真的能走通）
+    mockLogin2FA.mockResolvedValueOnce({ access_token: 'tok2', user: fakeUser })
+    await wrapper.find('input[inputmode="numeric"]').setValue('222222')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+    expect(mockLogin2FA).toHaveBeenLastCalledWith('tmp', '222222')
+    expect(router.currentRoute.value.path).toBe('/dashboard')
+  })
+
   it('同邮箱待绑定等 pending：展示引导文案与返回登录', async () => {
     mockExchange.mockResolvedValue({ error: 'bind_login_required' })
     const { wrapper } = await mountView()
     expect(wrapper.text()).toContain('邮箱密码登录')
+    // 「返回登录」链接指向 /login
+    expect(wrapper.find('a[href="/login"]').exists()).toBe(true)
   })
 
   it('fragment 带 error：直接展示错误，不调 exchange', async () => {
@@ -102,6 +130,22 @@ describe('OidcCallbackView', () => {
     const { wrapper } = await mountView()
     expect(mockExchange).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('登录未完成')
+    expect(wrapper.text()).toContain('upstream')
+  })
+
+  it('fragment 只有 error+description：展示 description 而非裸错误码', async () => {
+    window.location.hash = '#error=provider_error&description=upstream%20provider%20unavailable'
+    const { wrapper } = await mountView()
+    expect(mockExchange).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('upstream provider unavailable')
+    expect(wrapper.text()).not.toContain('provider_error')
+  })
+
+  it('交换成功但无 redirect：回退跳转 /dashboard', async () => {
+    mockExchange.mockResolvedValue({ access_token: 'tok' })
+    mockGetProfile.mockResolvedValue(fakeUser)
+    const { router } = await mountView()
+    expect(router.currentRoute.value.path).toBe('/dashboard')
   })
 
   it('交换请求本身失败：展示错误态', async () => {

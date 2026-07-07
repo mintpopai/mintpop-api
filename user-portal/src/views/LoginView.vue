@@ -34,6 +34,9 @@ const turnstileSiteKey = computed(() => settingsStore.settings?.turnstile_site_k
 const turnstileToken = ref('')
 const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
 
+// 站点开启密码重置时才在登录页展示「忘记密码？」入口
+const passwordResetEnabled = computed(() => !!settingsStore.settings?.password_reset_enabled)
+
 // token 是一次性的：每次登录请求（无论成败）都会消费掉，之后必须 reset 重新挑战
 function consumeTurnstile() {
   turnstileToken.value = ''
@@ -228,6 +231,13 @@ function backToCredentials() {
             for="login-password"
             class="text-xs font-semibold tracking-wide text-text2"
           >{{ t('auth.passwordLabel') }}</label>
+          <router-link
+            v-if="passwordResetEnabled"
+            to="/forgot-password"
+            class="text-xs font-medium text-subtle underline-offset-2 transition hover:text-text hover:underline"
+          >
+            {{ t('auth.forgotEntry') }}
+          </router-link>
         </div>
         <div class="relative">
           <svg

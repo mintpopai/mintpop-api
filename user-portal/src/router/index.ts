@@ -17,6 +17,12 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false, title: 'nav.register' }
   },
   {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPasswordView.vue'),
+    meta: { requiresAuth: false, title: 'nav.forgotPassword' }
+  },
+  {
     path: '/legal',
     name: 'Legal',
     component: () => import('@/views/LegalView.vue'),

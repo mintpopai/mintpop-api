@@ -23,6 +23,13 @@ export const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false, title: 'nav.forgotPassword' }
   },
   {
+    // 邮件重置链接的落点：后端拼 <frontend_url>/reset-password?email=&token=，勿改路径
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('@/views/ResetPasswordView.vue'),
+    meta: { requiresAuth: false, title: 'nav.resetPassword' }
+  },
+  {
     path: '/legal',
     name: 'Legal',
     component: () => import('@/views/LegalView.vue'),

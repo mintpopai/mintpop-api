@@ -66,7 +66,8 @@ const brandTags = IS_APPLICATION_MODE ? ['Text', 'Vision', 'Voice'] : ['Claude',
         </p>
       </div>
 
-      <!-- 左栏底部：缺省渲染模型/能力标签，页面可用 #brand-footer 覆盖 -->
+      <!-- 左栏底部：缺省渲染模型/能力标签，页面可用 #brand-footer 覆盖。
+           包裹层自带 relative（把插槽内容整体抬到点阵装饰层之上），插槽内容不必再带 -->
       <div class="relative">
         <slot name="brand-footer">
           <div class="flex flex-wrap gap-2.5">

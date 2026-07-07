@@ -3,6 +3,8 @@ import type {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
   User,
   ValidateInvitationCodeResult,
   ValidatePromoCodeResult
@@ -44,6 +46,16 @@ export async function sendVerifyCode(email: string, turnstileToken?: string): Pr
     email,
     turnstile_token: turnstileToken || undefined
   })
+}
+
+/** 忘记密码：请求发送重置邮件（后端防枚举——无论邮箱是否注册都返回成功） */
+export async function forgotPassword(payload: ForgotPasswordRequest): Promise<void> {
+  await apiClient.post('/auth/forgot-password', payload)
+}
+
+/** 凭邮件链接里的一次性 token 重置密码（成功后后端吊销全部旧会话，须重新登录） */
+export async function resetPassword(payload: ResetPasswordRequest): Promise<void> {
+  await apiClient.post('/auth/reset-password', payload)
 }
 
 /** 校验优惠码（公开接口，注册前调用），返回是否有效及赠送金额 */

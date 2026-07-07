@@ -80,6 +80,20 @@ export interface RegisterRequest {
   aff_code?: string
 }
 
+/** 忘记密码：请求发送重置邮件 */
+export interface ForgotPasswordRequest {
+  email: string
+  /** Cloudflare Turnstile token（站点开启人机验证时后端强制校验，缺失即拒绝） */
+  turnstile_token?: string
+}
+
+/** 凭邮件里的一次性 token 重置密码 */
+export interface ResetPasswordRequest {
+  email: string
+  token: string
+  new_password: string
+}
+
 /** 优惠码校验结果（对齐后端 ValidatePromoCodeResponse） */
 export interface ValidatePromoCodeResult {
   valid: boolean

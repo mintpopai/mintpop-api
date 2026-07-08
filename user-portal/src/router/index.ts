@@ -10,25 +10,11 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/LoginView.vue'),
     meta: { requiresAuth: false, title: 'nav.login' }
   },
-  {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/views/RegisterView.vue'),
-    meta: { requiresAuth: false, title: 'nav.register' }
-  },
-  {
-    path: '/forgot-password',
-    name: 'ForgotPassword',
-    component: () => import('@/views/ForgotPasswordView.vue'),
-    meta: { requiresAuth: false, title: 'nav.forgotPassword' }
-  },
-  {
-    // 邮件重置链接的落点：后端拼 <frontend_url>/reset-password?email=&token=，勿改路径
-    path: '/reset-password',
-    name: 'ResetPassword',
-    component: () => import('@/views/ResetPasswordView.vue'),
-    meta: { requiresAuth: false, title: 'nav.resetPassword' }
-  },
+  // 本地注册/找回/重置已收敛到统一认证中心（Logto）：portal 只允许统一登录，
+  // 这些旧入口一律重定向到登录页（保留路径避免书签/深链 404）。
+  { path: '/register', redirect: '/login' },
+  { path: '/forgot-password', redirect: '/login' },
+  { path: '/reset-password', redirect: '/login' },
   {
     path: '/legal',
     name: 'Legal',

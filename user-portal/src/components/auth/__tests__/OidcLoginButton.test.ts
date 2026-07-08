@@ -46,13 +46,17 @@ function makeRouter(): Router {
   })
 }
 
-async function mountButton(query: string, overrides: Partial<PublicSettings> = {}) {
+async function mountButton(
+  query: string,
+  overrides: Partial<PublicSettings> = {},
+  props: { standalone?: boolean } = {}
+) {
   const router = makeRouter()
   router.push(`/login${query}`)
   await router.isReady()
   setActivePinia(createPinia())
   useSettingsStore().settings = settingsWith(overrides)
-  const wrapper = mount(OidcLoginButton, { global: { plugins: [router, i18n] } })
+  const wrapper = mount(OidcLoginButton, { props, global: { plugins: [router, i18n] } })
   await wrapper.vm.$nextTick()
   return wrapper
 }
@@ -91,5 +95,23 @@ describe('OidcLoginButton', () => {
     const wrapper = await mountButton('', { oidc_oauth_enabled: true })
     await wrapper.find('button').trigger('click')
     expect(mockNavigate).toHaveBeenCalledWith('/api/v1/auth/oauth/oidc/start?redirect=%2Fdashboard')
+  })
+
+  describe('standalone 模式（portal 唯一登录方式）', () => {
+    it('即使开关关闭也强制渲染按钮（唯一入口不受门控）', async () => {
+      const wrapper = await mountButton('', { oidc_oauth_enabled: false }, { standalone: true })
+      expect(wrapper.find('button').exists()).toBe(true)
+    })
+
+    it('不渲染「或使用邮箱登录」分隔线（无其它登录方式并存）', async () => {
+      const wrapper = await mountButton('', { oidc_oauth_enabled: true }, { standalone: true })
+      expect(wrapper.text()).not.toContain('或使用邮箱登录')
+    })
+
+    it('点击仍整页跳转到 start 端点', async () => {
+      const wrapper = await mountButton('?redirect=%2Fbilling', { oidc_oauth_enabled: false }, { standalone: true })
+      await wrapper.find('button').trigger('click')
+      expect(mockNavigate).toHaveBeenCalledWith('/api/v1/auth/oauth/oidc/start?redirect=%2Fbilling')
+    })
   })
 })

@@ -21,6 +21,8 @@ interface ProviderRow {
   name: string
   desc: string
   bound: boolean
+  /** 是否允许解绑；缺省视为 true。统一登录（OIDC）是 portal 唯一登录凭证，解绑会把自己锁死，故不可解绑 */
+  unbindable?: boolean
   /** 文本图标（LinuxDo/钉钉/OIDC 用单字符） */
   iconChar?: string
   /** 特殊 SVG 图标（目前仅微信） */
@@ -39,7 +41,8 @@ const providers = computed<ProviderRow[]>(() => {
     rows.push({ key: 'dingtalk', name: t('profile.binding.providers.dingtalk'), desc: t('profile.binding.desc.dingtalk'), bound: !!u.dingtalk_bound, iconChar: '钉' })
   }
   if (s.oidc_oauth_enabled) {
-    rows.push({ key: 'oidc', name: s.oidc_oauth_provider_name || 'OIDC', desc: t('profile.binding.desc.oidc'), bound: !!u.oidc_bound, iconChar: 'O' })
+    // 统一登录是唯一登录方式：可绑定，但不可解绑（解绑即锁死自己）
+    rows.push({ key: 'oidc', name: s.oidc_oauth_provider_name || 'OIDC', desc: t('profile.binding.desc.oidc'), bound: !!u.oidc_bound, unbindable: false, iconChar: 'O' })
   }
   if (s.wechat_oauth_enabled) {
     rows.push({ key: 'wechat', name: t('profile.binding.providers.wechat'), desc: t('profile.binding.desc.wechat'), bound: !!u.wechat_bound, iconType: 'wechat' })
@@ -149,9 +152,9 @@ const providers = computed<ProviderRow[]>(() => {
           </div>
         </div>
 
-        <!-- 操作 -->
+        <!-- 操作：不可解绑的已绑定渠道（如统一登录）不渲染任何按钮，与邮箱行一致 -->
         <button
-          v-if="p.bound"
+          v-if="p.bound && p.unbindable !== false"
           class="cursor-pointer rounded-[9px] border-[1.5px] border-border2 bg-card px-[18px] py-[9px] text-[13px] font-medium text-text2 hover:text-neg"
           type="button"
           @click="emit('unbind', p.key)"
@@ -159,7 +162,7 @@ const providers = computed<ProviderRow[]>(() => {
           {{ $t('profile.binding.unbind') }}
         </button>
         <button
-          v-else
+          v-else-if="!p.bound"
           class="cursor-pointer rounded-[9px] border-[1.5px] border-[rgba(20,194,138,0.35)] bg-[rgba(20,194,138,0.1)] px-[18px] py-[9px] text-[13px] font-semibold text-pos hover:bg-[rgba(20,194,138,0.18)]"
           type="button"
           @click="emit('bind', p.key)"

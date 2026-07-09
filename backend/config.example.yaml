@@ -950,6 +950,10 @@ oidc_connect:
   clock_skew_seconds: 120
   # 若 Provider 返回 email_verified=false，是否拒绝登录
   require_email_verified: false
+  # authorize 请求的 prompt 参数。默认 "login"：每次登录都强制上游（Logto 等）重新认证（bypass SSO），
+  # 使门户登出后再登录必须重新输入凭据、可切换账号，而非被上游 SSO 会话静默带回原账号。
+  # 置空等价于 "login"；如需其它行为可改为 "consent" / "select_account" 等 OIDC 标准值。
+  prompt: "login"
   userinfo_email_path: ""
   userinfo_id_path: ""
   userinfo_username_path: ""

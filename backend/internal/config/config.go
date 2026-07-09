@@ -288,6 +288,11 @@ type OIDCConnectConfig struct {
 	ClockSkewSeconds        int    `mapstructure:"clock_skew_seconds"`     // 默认 120
 	RequireEmailVerified    bool   `mapstructure:"require_email_verified"` // 默认 false
 
+	// OIDC authorize 请求的 prompt 参数。默认 "login"：每次登录都强制上游重新认证（bypass SSO），
+	// 使门户登出后再登录必须重新输入凭据、可切换账号，而非被上游 SSO 会话静默带回原账号。
+	// 置空则回退为 "login"；可显式配置为 "consent" / "select_account" 等其它 OIDC 标准值。
+	Prompt string `mapstructure:"prompt"`
+
 	// 可选：用于从 userinfo JSON 中提取字段的 gjson 路径。
 	// 为空时，服务端会尝试一组常见字段名。
 	UserInfoEmailPath    string `mapstructure:"userinfo_email_path"`
@@ -1739,6 +1744,7 @@ func setDefaults() {
 	viper.SetDefault("oidc_connect.allowed_signing_algs", "RS256,ES256,PS256")
 	viper.SetDefault("oidc_connect.clock_skew_seconds", 120)
 	viper.SetDefault("oidc_connect.require_email_verified", false)
+	viper.SetDefault("oidc_connect.prompt", "login")
 	viper.SetDefault("oidc_connect.userinfo_email_path", "")
 	viper.SetDefault("oidc_connect.userinfo_id_path", "")
 	viper.SetDefault("oidc_connect.userinfo_username_path", "")

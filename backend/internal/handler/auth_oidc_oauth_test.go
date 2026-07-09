@@ -55,6 +55,34 @@ func TestBuildOIDCAuthorizeURLIncludesNonceAndPKCE(t *testing.T) {
 	require.Contains(t, u, "scope=openid+email+profile")
 }
 
+// 登录一律非静默：未显式配置 prompt 时默认带 prompt=login，强制上游（Logto 等）弹登录页，
+// 使门户登出后再次登录必须重新认证、可切换账号，而不是被 SSO 会话静默带回原账号。
+func TestBuildOIDCAuthorizeURLDefaultsToPromptLogin(t *testing.T) {
+	cfg := config.OIDCConnectConfig{
+		AuthorizeURL: "https://issuer.example.com/auth",
+		ClientID:     "cid",
+		Scopes:       "openid email profile",
+	}
+
+	u, err := buildOIDCAuthorizeURL(cfg, "state123", "", "", "https://app.example.com/callback")
+	require.NoError(t, err)
+	require.Contains(t, u, "prompt=login")
+}
+
+// 显式配置的 prompt 覆盖默认值（如需 consent / select_account 等）。
+func TestBuildOIDCAuthorizeURLRespectsConfiguredPrompt(t *testing.T) {
+	cfg := config.OIDCConnectConfig{
+		AuthorizeURL: "https://issuer.example.com/auth",
+		ClientID:     "cid",
+		Prompt:       "consent",
+	}
+
+	u, err := buildOIDCAuthorizeURL(cfg, "state123", "", "", "https://app.example.com/callback")
+	require.NoError(t, err)
+	require.Contains(t, u, "prompt=consent")
+	require.NotContains(t, u, "prompt=login")
+}
+
 func TestOIDCParseAndValidateIDToken(t *testing.T) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)

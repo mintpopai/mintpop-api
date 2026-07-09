@@ -947,6 +947,13 @@ func buildOIDCAuthorizeURL(cfg config.OIDCConnectConfig, state, nonce, codeChall
 		q.Set("scope", cfg.Scopes)
 	}
 	q.Set("state", state)
+	// 强制非静默登录：默认带 prompt=login 让上游（Logto 等）bypass SSO、每次都弹登录页，
+	// 从而门户登出后再登录必须重新认证、可切换账号。可经配置覆盖为其它 OIDC prompt 值。
+	prompt := strings.TrimSpace(cfg.Prompt)
+	if prompt == "" {
+		prompt = "login"
+	}
+	q.Set("prompt", prompt)
 	if strings.TrimSpace(nonce) != "" {
 		q.Set("nonce", nonce)
 	}

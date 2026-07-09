@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import * as authApi from '@/api/auth'
+import { onboardOidcAccount } from '@/api/auth'
 import { getPublicSettings } from '@/api/settings'
-import { updateProfile } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import type { PublicSettings } from '@/api/types'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import TurnstileWidget from '@/components/common/TurnstileWidget.vue'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import { errMessage } from '@/utils/error'
+import i18n from '@/i18n'
 import {
   clearAffiliateReferralCode,
   loadAffiliateReferralCode,
@@ -18,41 +17,21 @@ import {
   storeAffiliateReferralCode
 } from '@/utils/affiliateReferral'
 
+// 不用 useI18n()：它要求 i18n 插件已 app.use() 安装到当前 app 实例，而本组件
+// 也会在未安装插件的宿主中被挂载（如测试）。直接取全局 composer 的 t 与
+// useI18n({ useScope: 'global' }) 拿到的是同一个实例，效果等价（与 AuthShell、utils/composables 同惯例）。
+const t = i18n.global.t
+
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
 const authStore = useAuthStore()
 
-const username = ref('')
-const email = ref('')
-const password = ref('')
-const confirm = ref('')
 const invitation = ref('')
 const promo = ref('')
-const verifyCode = ref('')
-// 协议勾选必须默认不勾选：预勾选在 GDPR 等合规口径下不构成有效同意
-const agreed = ref(false)
 
 const settings = ref<PublicSettings | null>(null)
-const loading = ref(false)
-const error = ref<string | null>(null)
-
-// ===== Cloudflare Turnstile（站点开启时后端对注册与发验证码都强制校验）=====
-const turnstileEnabled = computed(
-  () => !!settings.value?.turnstile_enabled && !!settings.value?.turnstile_site_key
-)
-const turnstileSiteKey = computed(() => settings.value?.turnstile_site_key ?? '')
-const turnstileToken = ref('')
-const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
-
-// token 是一次性的：发验证码 / 注册每发一次请求（无论成败）都会消费掉，之后须 reset 重新挑战
-function consumeTurnstile() {
-  turnstileToken.value = ''
-  turnstileRef.value?.reset()
-}
-
-const sending = ref(false)
-const countdown = ref(0)
+const submitting = ref(false)
+const error = ref('')
 
 // 优惠码实时校验状态（有效时展示赠送金额，无效时阻止提交）
 const promoValidating = ref(false)
@@ -61,9 +40,8 @@ const promoInvalid = ref(false)
 const promoBonus = ref<number | null>(null)
 const promoMsg = ref<string | null>(null)
 let promoTimer: ReturnType<typeof setTimeout> | null = null
-let countdownTimer: ReturnType<typeof setInterval> | null = null
 
-// 邀请码实时校验状态（后端开启邀请码注册时必填且须有效，与 frontend 注册页行为对齐）
+// 邀请码实时校验状态（后端开启邀请码注册时必填且须有效）
 const invValidating = ref(false)
 const invValid = ref(false)
 const invInvalid = ref(false)
@@ -93,15 +71,13 @@ onMounted(async () => {
   try {
     settings.value = await getPublicSettings()
   } catch {
-    // 拉取失败时按最常见配置（无邀请码 / 无邮箱验证 / 无优惠码）兜底
+    // 拉取失败时按最常见配置（无邀请码 / 无优惠码）兜底
   }
 })
 
 onUnmounted(() => {
   if (promoTimer) clearTimeout(promoTimer)
   if (invTimer) clearTimeout(invTimer)
-  // 验证码倒计时一并清理，避免离开页面后 interval 空转最多 60s
-  if (countdownTimer) clearInterval(countdownTimer)
 })
 
 function promoErrorMessage(code?: string): string {
@@ -184,54 +160,9 @@ async function runInvitationValidation(code: string) {
   }
 }
 
-async function sendCode() {
-  if (!email.value) {
-    error.value = t('auth.errEmailRequired')
-    return
-  }
-  if (turnstileEnabled.value && !turnstileToken.value) {
-    error.value = t('auth.errTurnstileRequired')
-    return
-  }
-  sending.value = true
-  error.value = null
-  try {
-    await authApi.sendVerifyCode(email.value, turnstileToken.value)
-    countdown.value = 60
-    countdownTimer = setInterval(() => {
-      countdown.value -= 1
-      if (countdown.value <= 0 && countdownTimer) {
-        clearInterval(countdownTimer)
-        countdownTimer = null
-      }
-    }, 1000)
-  } catch (e) {
-    error.value = errMessage(e, t('auth.errSendCodeFailed'))
-  } finally {
-    // token 单次有效，发码请求（无论成败）已消费，重新挑战供后续注册提交使用
-    consumeTurnstile()
-    sending.value = false
-  }
-}
-
 async function onSubmit() {
-  if (!email.value || !password.value) {
-    error.value = t('auth.errEmailPasswordRequired')
-    return
-  }
-  if (password.value.length < 6) {
-    error.value = t('auth.errPasswordTooShort')
-    return
-  }
-  if (password.value !== confirm.value) {
-    error.value = t('auth.errPasswordMismatch')
-    return
-  }
-  if (!agreed.value) {
-    error.value = t('auth.errAgreeRequired')
-    return
-  }
-  // 后端开启邀请码注册时邀请码必填且须有效（与 frontend 注册页行为对齐）；
+  error.value = ''
+  // 后端开启邀请码注册时邀请码必填且须有效；
   // 同样堵住防抖窗口内提交的竞态：无结论则先同步校验一次
   if (settings.value?.invitation_code_enabled === true) {
     const code = invitation.value.trim()
@@ -251,8 +182,7 @@ async function onSubmit() {
       return
     }
   }
-  // 填了优惠码时：若尚未得到校验结论（在防抖窗口内点击提交），先取消防抖并同步校验一次，
-  // 堵住「防抖未触发 → 结论未出 → 直接放行注册」的竞态；无效则阻止提交
+  // 填了优惠码时同样堵竞态：防抖窗口内提交先同步校验一次，无效则阻止提交
   if (promo.value.trim()) {
     if (promoTimer) {
       clearTimeout(promoTimer)
@@ -266,41 +196,23 @@ async function onSubmit() {
       return
     }
   }
-  if (turnstileEnabled.value && !turnstileToken.value) {
-    error.value = t('auth.errTurnstileRequired')
-    return
-  }
-  loading.value = true
-  error.value = null
+  submitting.value = true
   try {
-    // 回填已前移到进页时（watch + onMounted），此处以输入框内容为准：用户清空即视为不带邀请码
-    const aff = affCode.value.trim()
-    await authApi.register({
-      email: email.value,
-      password: password.value,
-      verify_code: settings.value?.email_verify_enabled ? verifyCode.value : undefined,
+    // 回填已前移到进页时（watch + onMounted），此处以输入框内容为准：用户清空即视为不带返利码
+    const aff = affCode.value.trim() || loadAffiliateReferralCode()
+    const res = await onboardOidcAccount({
       invitation_code: invitation.value.trim() || undefined,
       promo_code: promo.value.trim() || undefined,
-      turnstile_token: turnstileToken.value || undefined,
       aff_code: aff || undefined
     })
     clearAffiliateReferralCode()
-    // 后端由邮箱派生用户名，若填写了昵称则注册后补充资料
-    if (username.value.trim()) {
-      try {
-        await updateProfile({ username: username.value.trim() })
-      } catch {
-        // 资料补充失败不阻断注册成功流程
-      }
-    }
     await authStore.fetchUser()
-    router.push('/dashboard')
+    const redirect = (route.query.redirect as string) || res?.redirect || '/dashboard'
+    router.replace(redirect)
   } catch (e) {
-    error.value = errMessage(e, t('auth.errRegisterFailed'))
-    // 失败后 token 已被后端消费，须重新挑战
-    consumeTurnstile()
+    error.value = errMessage(e, t('auth.onboardingFailed'))
   } finally {
-    loading.value = false
+    submitting.value = false
   }
 }
 </script>
@@ -341,157 +253,13 @@ async function onSubmit() {
     </div>
 
     <form @submit.prevent="onSubmit">
-      <div class="mb-4">
-        <label
-          for="reg-username"
-          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-        >{{ t('auth.usernameLabel') }}</label>
-        <div class="relative">
-          <svg
-            class="ico"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-          ><circle
-            cx="12"
-            cy="8"
-            r="4"
-          /><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /></svg>
-          <input
-            id="reg-username"
-            v-model="username"
-            type="text"
-            class="fld"
-            :placeholder="t('auth.usernamePlaceholder')"
-          >
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label
-          for="reg-email"
-          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-        >{{ t('auth.emailLabel') }}</label>
-        <div class="relative">
-          <svg
-            class="ico"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.7"
-          ><rect
-            x="3"
-            y="5"
-            width="18"
-            height="14"
-            rx="2.5"
-          /><path d="M3.5 7l8.5 6 8.5-6" /></svg>
-          <input
-            id="reg-email"
-            v-model="email"
-            type="email"
-            class="fld"
-            placeholder="you@example.com"
-          >
-        </div>
-      </div>
-
-      <!-- 邮箱验证码（仅在站点开启邮箱验证时显示） -->
-      <div
-        v-if="settings?.email_verify_enabled"
-        class="mb-4"
-      >
-        <label
-          for="reg-verify-code"
-          class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-        >{{ t('auth.verifyCodeLabel') }}</label>
-        <div class="flex gap-2">
-          <input
-            id="reg-verify-code"
-            v-model="verifyCode"
-            type="text"
-            class="fld pl-4!"
-            :placeholder="t('auth.verifyCodePlaceholder')"
-          >
-          <button
-            type="button"
-            :disabled="sending || countdown > 0"
-            class="flex-none whitespace-nowrap rounded-xl2 border-[1.5px] border-border2 px-3.5 text-[13px] font-medium text-text2 disabled:opacity-50"
-            @click="sendCode"
-          >
-            {{ countdown > 0 ? `${countdown}s` : t('auth.sendCode') }}
-          </button>
-        </div>
-      </div>
-
-      <div class="mb-4 grid grid-cols-2 gap-3">
-        <div>
-          <label
-            for="reg-password"
-            class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-          >{{ t('auth.passwordLabel') }}</label>
-          <div class="relative">
-            <svg
-              class="ico"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-            ><rect
-              x="4"
-              y="11"
-              width="16"
-              height="9"
-              rx="2"
-            /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
-            <input
-              id="reg-password"
-              v-model="password"
-              type="password"
-              class="fld"
-              :placeholder="t('auth.passwordMinPlaceholder')"
-            >
-          </div>
-        </div>
-        <div>
-          <label
-            for="reg-confirm-password"
-            class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
-          >{{ t('auth.confirmPasswordLabel') }}</label>
-          <div class="relative">
-            <svg
-              class="ico"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-            ><path d="M5 13l4 4 10-10" /></svg>
-            <input
-              id="reg-confirm-password"
-              v-model="confirm"
-              type="password"
-              class="fld"
-              :placeholder="t('auth.confirmPasswordPlaceholder')"
-            >
-          </div>
-        </div>
-      </div>
-
+      <!-- 邀请码（仅在站点开启邀请码时显示；开启时必填） -->
       <div
         v-if="settings?.invitation_code_enabled === true"
         class="mb-[22px]"
       >
         <label
-          for="reg-invitation"
+          for="onboard-invitation"
           class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
         >{{ t('auth.invitationLabel') }}</label>
         <div class="relative">
@@ -511,8 +279,9 @@ async function onSubmit() {
             rx="2"
           /><path d="M3 12h18M12 8V5a2 2 0 0 1 4 0M12 8V5a2 2 0 0 0-4 0" /></svg>
           <input
-            id="reg-invitation"
+            id="onboard-invitation"
             v-model="invitation"
+            data-test="onboarding-invitation"
             type="text"
             class="fld"
             :placeholder="t('auth.invitationPlaceholder')"
@@ -545,7 +314,7 @@ async function onSubmit() {
         class="mb-[22px]"
       >
         <label
-          for="reg-aff"
+          for="onboard-aff"
           class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
         >{{ t('auth.affLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
         <div class="relative">
@@ -563,8 +332,9 @@ async function onSubmit() {
             r="4"
           /><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" /><path d="M19 8v6M16 11h6" /></svg>
           <input
-            id="reg-aff"
+            id="onboard-aff"
             v-model="affCode"
+            data-test="onboarding-aff"
             type="text"
             class="fld"
             :placeholder="t('auth.affPlaceholder')"
@@ -578,7 +348,7 @@ async function onSubmit() {
         class="mb-[22px]"
       >
         <label
-          for="reg-promo"
+          for="onboard-promo"
           class="mb-[9px] block text-xs font-semibold tracking-wide text-text2"
         >{{ t('auth.promoLabel') }} <span class="font-normal text-faint">{{ t('auth.optionalSuffix') }}</span></label>
         <div class="relative">
@@ -598,8 +368,9 @@ async function onSubmit() {
             rx="1"
           /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
           <input
-            id="reg-promo"
+            id="onboard-promo"
             v-model="promo"
+            data-test="onboarding-promo"
             type="text"
             class="fld"
             :placeholder="t('auth.promoPlaceholder')"
@@ -626,41 +397,6 @@ async function onSubmit() {
         </p>
       </div>
 
-      <label class="mb-[22px] flex cursor-pointer items-start gap-[9px] text-[13px] leading-snug text-text3">
-        <input
-          v-model="agreed"
-          type="checkbox"
-          class="mt-0.5 h-[17px] w-[17px] flex-none rounded-[5px] accent-accent"
-        >
-        <span>{{ t('auth.agreePrefix') }} <router-link
-          to="/legal#agreement"
-          target="_blank"
-          rel="noopener"
-          class="font-semibold text-text underline-offset-2 hover:underline"
-          @click.stop
-        >{{ t('auth.termsOfService') }}</router-link> {{ t('auth.and') }} <router-link
-          to="/legal#privacy"
-          target="_blank"
-          rel="noopener"
-          class="font-semibold text-text underline-offset-2 hover:underline"
-          @click.stop
-        >{{ t('auth.privacyPolicy') }}</router-link></span>
-      </label>
-
-      <!-- Turnstile 人机验证（站点开启时展示；发验证码与注册提交都消费该 token） -->
-      <div
-        v-if="turnstileEnabled"
-        class="mb-[18px]"
-      >
-        <TurnstileWidget
-          ref="turnstileRef"
-          :site-key="turnstileSiteKey"
-          @verify="turnstileToken = $event"
-          @expire="turnstileToken = ''"
-          @error="turnstileToken = ''"
-        />
-      </div>
-
       <p
         v-if="error"
         class="mb-4 text-sm text-neg"
@@ -669,30 +405,23 @@ async function onSubmit() {
       </p>
 
       <button
-        type="submit"
-        :disabled="loading"
+        type="button"
+        data-test="onboarding-submit"
+        :disabled="submitting"
         class="flex w-full items-center justify-center gap-2 rounded-xl2 bg-accent py-[15px] text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         style="box-shadow: 0 4px 14px rgba(20, 194, 138, 0.32)"
+        @click="onSubmit"
       >
         <LoadingSpinner
-          v-if="loading"
+          v-if="submitting"
           :size="16"
         />
-        <span>{{ loading ? t('auth.creating') : t('auth.createAccount') }}</span>
+        <span>{{ submitting ? t('auth.creating') : t('auth.createAccount') }}</span>
         <span
-          v-if="!loading"
+          v-if="!submitting"
           class="text-base"
         >→</span>
       </button>
     </form>
-
-    <p class="mt-[26px] text-center text-sm text-subtle">
-      {{ t('auth.haveAccount') }}<router-link
-        to="/login"
-        class="border-b-2 border-accent pb-px font-semibold text-text"
-      >
-        {{ t('auth.signInDirect') }}
-      </router-link>
-    </p>
   </AuthShell>
 </template>

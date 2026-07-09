@@ -23,5 +23,6 @@ export default {
   paymentResult: '支付结果',
   forgotPassword: '忘记密码',
   resetPassword: '重置密码',
-  oidcCallback: '统一登录'
+  oidcCallback: '统一登录',
+  onboarding: '完善账号'
 }

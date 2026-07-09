@@ -96,6 +96,12 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/OidcCallbackView.vue'),
     meta: { requiresAuth: false, title: 'nav.oidcCallback' }
   },
+  {
+    path: '/onboarding',
+    name: 'Onboarding',
+    component: () => import('@/views/OnboardingView.vue'),
+    meta: { requiresAuth: false, title: 'nav.onboarding' }
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' }
 ]
 

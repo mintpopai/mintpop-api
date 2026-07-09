@@ -23,5 +23,6 @@ export default {
   paymentResult: 'Payment Result',
   forgotPassword: 'Forgot Password',
   resetPassword: 'Reset Password',
-  oidcCallback: 'Unified Sign-in'
+  oidcCallback: 'Unified Sign-in',
+  onboarding: 'Complete Profile'
 }

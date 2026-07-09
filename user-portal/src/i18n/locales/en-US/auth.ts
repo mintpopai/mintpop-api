@@ -1,4 +1,4 @@
-/** Login / Register pages (LoginView, RegisterView) */
+/** Login / Onboarding pages (LoginView, OnboardingView) */
 export default {
   // —— Login left brand panel ——
   loginKicker: 'One API · Many models',
@@ -93,6 +93,8 @@ export default {
   errPasswordMismatch: 'The passwords do not match',
   errAgreeRequired: 'Please read and agree to the Terms of Service and Privacy Policy',
   errRegisterFailed: 'Registration failed. Please try again later.',
+  // —— Unified sign-in (OIDC) passwordless onboarding page ——
+  onboardingFailed: 'Onboarding failed. Please try again.',
   // —— Forgot/reset password left brand panel (shared by both pages) ——
   forgotKicker: 'Account recovery',
   forgotHeadlinePre: 'Regain ',

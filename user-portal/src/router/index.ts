@@ -111,7 +111,7 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !authed) {
     return { name: 'Login', query: { redirect: to.fullPath } }
   }
-  if ((to.name === 'Login' || to.name === 'Register') && authed) {
+  if (to.name === 'Login' && authed) {
     return { name: 'Dashboard' }
   }
   return true

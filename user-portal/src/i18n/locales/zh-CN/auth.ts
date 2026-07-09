@@ -1,4 +1,4 @@
-/** 登录 / 注册页（LoginView、RegisterView） */
+/** 登录 / 开户页（LoginView、OnboardingView） */
 export default {
   // —— 登录页左侧品牌区 ——
   loginKicker: '一个 API · 多种模型',
@@ -93,6 +93,8 @@ export default {
   errPasswordMismatch: '两次输入的密码不一致',
   errAgreeRequired: '请先阅读并同意服务条款与隐私政策',
   errRegisterFailed: '注册失败，请稍后重试',
+  // —— 统一登录（OIDC）无密码开户页 ——
+  onboardingFailed: '开户失败，请重试',
   // —— 忘记/重置密码页左侧品牌区（两页共用） ——
   forgotKicker: '账号找回',
   forgotHeadlinePre: '几步之内，',

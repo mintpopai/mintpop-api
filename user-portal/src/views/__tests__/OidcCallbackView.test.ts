@@ -125,6 +125,7 @@ describe('OidcCallbackView', () => {
   it('交换返回 registration_required：跳转开户屏并透传 redirect', async () => {
     mockExchange.mockResolvedValue({ registration_required: true, redirect: '/dashboard' })
     const { router } = await mountView()
+    await flushPromises()
     expect(mockGetProfile).not.toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/onboarding')
     expect(router.currentRoute.value.query.redirect).toBe('/dashboard')
@@ -133,6 +134,7 @@ describe('OidcCallbackView', () => {
   it('交换返回 registration_required 但无 redirect：回退 /dashboard 作为 query', async () => {
     mockExchange.mockResolvedValue({ registration_required: true })
     const { router } = await mountView()
+    await flushPromises()
     expect(router.currentRoute.value.path).toBe('/onboarding')
     expect(router.currentRoute.value.query.redirect).toBe('/dashboard')
   })

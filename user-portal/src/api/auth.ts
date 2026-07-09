@@ -3,6 +3,7 @@ import type {
   LoginRequest,
   LoginResponse,
   OidcPendingExchangeResult,
+  OnboardOidcRequest,
   RegisterRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
@@ -78,6 +79,22 @@ export async function exchangePendingOAuth(): Promise<OidcPendingExchangeResult>
   const { data } = await apiClient.post<OidcPendingExchangeResult>('/auth/oauth/pending/exchange', {})
   if (data.access_token) localStorage.setItem(TOKEN_KEY, data.access_token)
   if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
+  return data
+}
+
+/** 统一登录无密码开户：全新用户凭真实邮箱+三码建号（POST /auth/oauth/oidc/onboard）；
+ * 后端返回裸 token 对象（无 ApiResponse 包装），拦截器原样透传，故直接取 response.data */
+export async function onboardOidcAccount(
+  payload: OnboardOidcRequest
+): Promise<OidcPendingExchangeResult> {
+  const { data } = await apiClient.post<OidcPendingExchangeResult>(
+    '/auth/oauth/oidc/onboard',
+    payload
+  )
+  if (data?.access_token) {
+    localStorage.setItem(TOKEN_KEY, data.access_token)
+    if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
+  }
   return data
 }
 

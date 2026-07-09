@@ -368,6 +368,15 @@ export interface OidcPendingExchangeResult {
   temp_token?: string
   user_email_masked?: string
   auth_result?: string
+  registration_required?: boolean
+  promo_code?: string
+}
+
+/** 统一登录（OIDC）无密码开户请求：全新用户凭真实邮箱+三码建号 */
+export interface OnboardOidcRequest {
+  invitation_code?: string
+  promo_code?: string
+  aff_code?: string
 }
 
 // ==================== 兑换码 ====================

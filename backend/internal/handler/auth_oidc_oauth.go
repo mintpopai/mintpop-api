@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"net/http"
@@ -689,6 +690,126 @@ func (h *AuthHandler) CompleteOIDCOAuthRegistration(c *gin.Context) {
 		return
 	}
 	h.authService.RecordSuccessfulLogin(c.Request.Context(), user.ID)
+	clearOAuthPendingSessionCookie(c, secureCookie)
+	clearOAuthPendingBrowserCookie(c, secureCookie)
+
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  tokenPair.AccessToken,
+		"refresh_token": tokenPair.RefreshToken,
+		"expires_in":    tokenPair.ExpiresIn,
+		"token_type":    "Bearer",
+	})
+}
+
+type onboardOIDCOAuthRequest struct {
+	InvitationCode string `json:"invitation_code,omitempty"`
+	PromoCode      string `json:"promo_code,omitempty"`
+	AffCode        string `json:"aff_code,omitempty"`
+}
+
+// OnboardOIDCOAuthAccount 完成 OIDC 全新用户的无密码开户建号：用上游已验证的真实邮箱
+// （compat_email）+ 三码建号，复用 LoginOrRegisterVerifiedEmailOAuthWithSignupCodes。
+// 只受理 registration_required 的全新待开户 pending session；不碰共用的 complete-registration 状态机。
+// POST /api/v1/auth/oauth/oidc/onboard
+func (h *AuthHandler) OnboardOIDCOAuthAccount(c *gin.Context) {
+	var req onboardOIDCOAuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST", "message": err.Error()})
+		return
+	}
+
+	secureCookie := isRequestHTTPS(c)
+	sessionToken, err := readOAuthPendingSessionCookie(c)
+	if err != nil {
+		clearOAuthPendingSessionCookie(c, secureCookie)
+		clearOAuthPendingBrowserCookie(c, secureCookie)
+		response.ErrorFrom(c, service.ErrPendingAuthSessionNotFound)
+		return
+	}
+	browserSessionKey, err := readOAuthPendingBrowserCookie(c)
+	if err != nil {
+		clearOAuthPendingSessionCookie(c, secureCookie)
+		clearOAuthPendingBrowserCookie(c, secureCookie)
+		response.ErrorFrom(c, service.ErrPendingAuthBrowserMismatch)
+		return
+	}
+	pendingSvc, err := h.pendingIdentityService()
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	session, err := pendingSvc.GetBrowserSession(c.Request.Context(), sessionToken, browserSessionKey)
+	if err != nil {
+		clearOAuthPendingSessionCookie(c, secureCookie)
+		clearOAuthPendingBrowserCookie(c, secureCookie)
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := ensurePendingOAuthCompleteRegistrationSession(session); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	// 只受理 Task 2 打了 registration_required 标志的全新待开户 session。
+	payload, _ := readCompletionResponse(session.LocalFlowState)
+	if reg, _ := payload["registration_required"].(bool); !reg {
+		response.ErrorFrom(c, infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid"))
+		return
+	}
+	if err := h.ensureBackendModeAllowsNewUserLogin(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	claims := session.UpstreamIdentityClaims
+	verifiedEmail := pendingSessionStringValue(claims, "compat_email")
+	emailVerified, _ := claims["email_verified"].(bool)
+	// 安全红线：必须有上游已验证的真实邮箱才能无密码开户。
+	if verifiedEmail == "" || !emailVerified {
+		response.ErrorFrom(c, infraerrors.Forbidden("OAUTH_EMAIL_NOT_VERIFIED", "oauth email is not verified"))
+		return
+	}
+
+	promoCode := strings.TrimSpace(req.PromoCode)
+	if promoCode == "" {
+		promoCode = pendingOAuthPromoCode(session)
+	}
+
+	// claims["email"] 是回调阶段写入的 synthetic 占位邮箱（用于 legacy 静默建号路径），
+	// 与本接口实际采用的真实已验证邮箱（verifiedEmail=compat_email）不是一回事。
+	// ensureEmailOAuthIdentity 会先把 metadata["email"] 设成 input.Email，再用 UpstreamMetadata 覆盖，
+	// 若原样透传 claims 会让 synthetic 占位邮箱覆盖回真实邮箱，故克隆后剔除该键。
+	metadata := cloneOAuthMetadata(claims)
+	delete(metadata, "email")
+
+	input := service.EmailOAuthIdentityInput{
+		ProviderType:     strings.TrimSpace(session.ProviderType),
+		ProviderKey:      strings.TrimSpace(session.ProviderKey),
+		ProviderSubject:  strings.TrimSpace(session.ProviderSubject),
+		Email:            verifiedEmail,
+		EmailVerified:    true,
+		Username:         pendingSessionStringValue(claims, "username"),
+		DisplayName:      pendingSessionStringValue(claims, "suggested_display_name"),
+		AvatarURL:        pendingSessionStringValue(claims, "suggested_avatar_url"),
+		UpstreamMetadata: metadata,
+	}
+	tokenPair, _, err := h.authService.LoginOrRegisterVerifiedEmailOAuthWithSignupCodes(
+		c.Request.Context(),
+		input,
+		strings.TrimSpace(req.InvitationCode),
+		strings.TrimSpace(req.AffCode),
+		promoCode,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	if _, err := pendingSvc.ConsumeBrowserSession(c.Request.Context(), sessionToken, browserSessionKey); err != nil {
+		clearOAuthPendingSessionCookie(c, secureCookie)
+		clearOAuthPendingBrowserCookie(c, secureCookie)
+		response.ErrorFrom(c, err)
+		return
+	}
 	clearOAuthPendingSessionCookie(c, secureCookie)
 	clearOAuthPendingBrowserCookie(c, secureCookie)
 

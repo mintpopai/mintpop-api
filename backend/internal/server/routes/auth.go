@@ -170,6 +170,12 @@ func RegisterAuthRoutes(
 			}),
 			h.Auth.CompleteOIDCOAuthRegistration,
 		)
+		auth.POST("/oauth/oidc/onboard",
+			rateLimiter.LimitWithOptions("oauth-oidc-onboard", 10, time.Minute, middleware.RateLimitOptions{
+				FailureMode: middleware.RateLimitFailClose,
+			}),
+			h.Auth.OnboardOIDCOAuthAccount,
+		)
 		auth.POST("/oauth/oidc/bind-login",
 			rateLimiter.LimitWithOptions("oauth-oidc-bind-login", 20, time.Minute, middleware.RateLimitOptions{
 				FailureMode: middleware.RateLimitFailClose,

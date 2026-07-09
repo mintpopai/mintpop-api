@@ -1163,3 +1163,132 @@ func newOIDCTestProvider(t *testing.T, fixture oidcProviderFixture) (config.OIDC
 	}
 	return cfg, server.Close
 }
+
+func driveOIDCCallbackToRegistrationPending(t *testing.T, handler *AuthHandler, subject string, slug string) *http.Cookie {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	req := httptest.NewRequest(http.MethodGet,
+		"/api/v1/auth/oauth/oidc/callback?code=oidc-code&state=state-"+slug, nil)
+	req.AddCookie(encodedCookie(oidcOAuthStateCookieName, "state-"+slug))
+	req.AddCookie(encodedCookie(oidcOAuthRedirectCookie, "/dashboard"))
+	req.AddCookie(encodedCookie(oidcOAuthVerifierCookie, "verifier-"+slug))
+	req.AddCookie(encodedCookie(oidcOAuthNonceCookie, "nonce-"+subject)) // 对齐现有回调测试 nonce 拼法（TestOIDCOAuthCallbackNewUserFallsToRegistrationPending: "nonce-"+fixture.Subject）
+	req.AddCookie(encodedCookie(oidcOAuthIntentCookieName, oauthIntentLogin))
+	req.AddCookie(encodedCookie(oauthPendingBrowserCookieName, "browser-"+slug))
+	c.Request = req
+	handler.OIDCOAuthCallback(c)
+	require.Equal(t, http.StatusFound, rec.Code)
+	sessCookie := findCookie(rec.Result().Cookies(), oauthPendingSessionCookieName)
+	require.NotNil(t, sessCookie)
+	return sessCookie
+}
+
+func TestOnboardOIDCOAuthAccountCreatesUserWithVerifiedEmail(t *testing.T) {
+	cfg, cleanup := newOIDCTestProvider(t, oidcProviderFixture{
+		Subject:           "oidc-onboard-subject",
+		PreferredUsername: "oidc_onboard",
+		DisplayName:       "OIDC Onboard",
+		AvatarURL:         "https://cdn.example/oidc-onboard.png",
+		Email:             "onboard@example.com",
+		EmailVerified:     true,
+	})
+	defer cleanup()
+	handler, client := newOIDCOAuthHandlerAndClient(t, false, cfg) // 邀请码开关关
+	t.Cleanup(func() { _ = client.Close() })
+
+	sessCookie := driveOIDCCallbackToRegistrationPending(t, handler, "oidc-onboard-subject", "onboard")
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/onboard", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(encodedCookie(oauthPendingSessionCookieName, decodeCookieValueForTest(t, sessCookie.Value)))
+	req.AddCookie(encodedCookie(oauthPendingBrowserCookieName, "browser-onboard"))
+	c.Request = req
+
+	handler.OnboardOIDCOAuthAccount(c)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	ctx := context.Background()
+	user, err := client.User.Query().Where(dbuser.EmailEQ("onboard@example.com")).Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "oidc", user.SignupSource)
+
+	identity, err := client.AuthIdentity.Query().Where(
+		authidentity.ProviderTypeEQ("oidc"),
+		authidentity.ProviderSubjectEQ("oidc-onboard-subject"),
+		authidentity.UserIDEQ(user.ID),
+	).Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "onboard@example.com", identity.Metadata["email"])
+
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.NotEmpty(t, resp["access_token"])
+	require.Equal(t, "Bearer", resp["token_type"])
+
+	pendingCount, err := client.PendingAuthSession.Query().Where(pendingauthsession.ConsumedAtIsNil()).Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, pendingCount) // session 已消费
+}
+
+func TestOnboardOIDCOAuthAccountRequiresInviteWhenSwitchOn(t *testing.T) {
+	cfg, cleanup := newOIDCTestProvider(t, oidcProviderFixture{
+		Subject:           "oidc-onboard-invite-subject",
+		PreferredUsername: "oidc_onboard_invite",
+		Email:             "onboard-invite@example.com",
+		EmailVerified:     true,
+	})
+	defer cleanup()
+	handler, client := newOIDCOAuthHandlerAndClient(t, true, cfg) // 邀请码开关开
+	t.Cleanup(func() { _ = client.Close() })
+
+	sessCookie := driveOIDCCallbackToRegistrationPending(t, handler, "oidc-onboard-invite-subject", "onboard-invite")
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/onboard", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(encodedCookie(oauthPendingSessionCookieName, decodeCookieValueForTest(t, sessCookie.Value)))
+	req.AddCookie(encodedCookie(oauthPendingBrowserCookieName, "browser-onboard-invite"))
+	c.Request = req
+
+	handler.OnboardOIDCOAuthAccount(c)
+
+	require.NotEqual(t, http.StatusOK, rec.Code) // 缺邀请码被拒
+	ctx := context.Background()
+	count, err := client.User.Query().Where(dbuser.EmailEQ("onboard-invite@example.com")).Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, count)
+}
+
+func TestOnboardOIDCOAuthAccountRejectsUnverifiedEmail(t *testing.T) {
+	cfg, cleanup := newOIDCTestProvider(t, oidcProviderFixture{
+		Subject:           "oidc-onboard-unverified-subject",
+		PreferredUsername: "oidc_onboard_unverified",
+		Email:             "onboard-unverified@example.com",
+		EmailVerified:     false, // 未验证；不设 cfg.RequireEmailVerified，使回调不在验证门槛处提前拦截
+	})
+	defer cleanup()
+	handler, client := newOIDCOAuthHandlerAndClient(t, false, cfg)
+	t.Cleanup(func() { _ = client.Close() })
+
+	sessCookie := driveOIDCCallbackToRegistrationPending(t, handler, "oidc-onboard-unverified-subject", "onboard-unverified")
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/onboard", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(encodedCookie(oauthPendingSessionCookieName, decodeCookieValueForTest(t, sessCookie.Value)))
+	req.AddCookie(encodedCookie(oauthPendingBrowserCookieName, "browser-onboard-unverified"))
+	c.Request = req
+
+	handler.OnboardOIDCOAuthAccount(c)
+
+	require.NotEqual(t, http.StatusOK, rec.Code) // 未验证被拒（安全红线）
+	ctx := context.Background()
+	count, err := client.User.Query().Where(dbuser.EmailEQ("onboard-unverified@example.com")).Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, count)
+}

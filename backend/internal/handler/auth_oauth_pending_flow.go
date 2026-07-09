@@ -1990,6 +1990,9 @@ func (h *AuthHandler) ExchangePendingOAuthCompletion(c *gin.Context) {
 	if !adoptionDecision.hasDecision() {
 		adoptionRequired, _ := payload["adoption_required"].(bool)
 		if adoptionRequired {
+			if promo := pendingOAuthPromoCode(session); promo != "" {
+				payload["promo_code"] = promo
+			}
 			response.Success(c, payload)
 			return
 		}

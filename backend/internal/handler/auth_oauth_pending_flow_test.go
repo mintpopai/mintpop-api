@@ -188,6 +188,58 @@ func TestExchangePendingOAuthCompletionPreviewThenFinalizeAppliesAdoptionDecisio
 	require.NotNil(t, consumed.ConsumedAt)
 }
 
+// exchange 在新用户仍处于 adoption_required 短路分支时，把 session 预透传的优惠码带回 payload，
+// 供前端 complete-registration 开户表单回填（前端有输入则以前端为准，见 auth_oidc_oauth.go promoCode 优先级）。
+func TestExchangePendingOAuthCompletionAdoptionRequiredIncludesPromoCodeFromSession(t *testing.T) {
+	handler, client := newOAuthPendingFlowTestHandler(t, false)
+	ctx := context.Background()
+
+	session, err := client.PendingAuthSession.Create().
+		SetSessionToken("pending-promo-exchange-token").
+		SetIntent(oauthIntentLogin).
+		SetProviderType("oidc").
+		SetProviderKey("https://issuer.example.com").
+		SetProviderSubject("oidc-promo-exchange-subject").
+		SetResolvedEmail("oidc-promo-exchange@oidc-connect.invalid").
+		SetBrowserSessionKey("promo-exchange-browser-key").
+		SetUpstreamIdentityClaims(map[string]any{
+			"username": "oidc_promo_exchange",
+		}).
+		SetLocalFlowState(map[string]any{
+			oauthCompletionResponseKey: map[string]any{
+				"step":                   oauthPendingChoiceStep,
+				"adoption_required":      true,
+				"registration_required":  true,
+				"create_account_allowed": true,
+			},
+			oauthPromoCodeStateKey: "WELCOME2024",
+		}).
+		SetExpiresAt(time.Now().UTC().Add(10 * time.Minute)).
+		Save(ctx)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/exchange", nil)
+	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
+	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("promo-exchange-browser-key")})
+	c.Request = req
+
+	handler.ExchangePendingOAuthCompletion(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	data := decodeJSONResponseData(t, recorder)
+	require.Equal(t, true, data["adoption_required"])
+	require.Equal(t, "WELCOME2024", data["promo_code"])
+
+	// 短路分支不应消费 session
+	stored, err := client.PendingAuthSession.Query().
+		Where(pendingauthsession.IDEQ(session.ID)).
+		Only(ctx)
+	require.NoError(t, err)
+	require.Nil(t, stored.ConsumedAt)
+}
+
 func TestExchangePendingOAuthCompletionSkipsInvalidAvatarAdoptionWithoutBlockingCompletion(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandler(t, false)
 	ctx := context.Background()

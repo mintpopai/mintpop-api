@@ -54,6 +54,11 @@ onMounted(async () => {
       state.value = 'TOTP'
       return
     }
+    if (resp.registration_required) {
+      const redirect = resp.redirect || '/dashboard'
+      router.replace({ path: '/onboarding', query: { redirect } })
+      return
+    }
     if (resp.access_token) {
       await authStore.fetchUser()
       router.replace(resp.redirect || '/dashboard')

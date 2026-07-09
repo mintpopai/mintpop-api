@@ -38,6 +38,7 @@ function makeRouter(): Router {
       { path: '/dashboard', component: { template: '<div/>' } },
       { path: '/keys', component: { template: '<div/>' } },
       { path: '/login', component: { template: '<div/>' } },
+      { path: '/onboarding', component: { template: '<div/>' } },
       { path: '/:pathMatch(.*)*', component: { template: '<div/>' } }
     ]
   })
@@ -119,6 +120,21 @@ describe('OidcCallbackView', () => {
     await flushPromises()
     expect(mockLogin2FA).toHaveBeenLastCalledWith('tmp', '222222')
     expect(router.currentRoute.value.path).toBe('/dashboard')
+  })
+
+  it('交换返回 registration_required：跳转开户屏并透传 redirect', async () => {
+    mockExchange.mockResolvedValue({ registration_required: true, redirect: '/dashboard' })
+    const { router } = await mountView()
+    expect(mockGetProfile).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.path).toBe('/onboarding')
+    expect(router.currentRoute.value.query.redirect).toBe('/dashboard')
+  })
+
+  it('交换返回 registration_required 但无 redirect：回退 /dashboard 作为 query', async () => {
+    mockExchange.mockResolvedValue({ registration_required: true })
+    const { router } = await mountView()
+    expect(router.currentRoute.value.path).toBe('/onboarding')
+    expect(router.currentRoute.value.query.redirect).toBe('/dashboard')
   })
 
   it('同邮箱待绑定等 pending：展示引导文案与返回登录', async () => {

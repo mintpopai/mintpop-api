@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import i18n from '@/i18n'
+import { useI18n } from 'vue-i18n'
 import { IS_APPLICATION_MODE } from '@/config/portal'
 
-// 认证页（登录/开户/忘记密码/重置密码）共用的双栏骨架：
+// 四个认证页（登录/注册/忘记密码/重置密码）共用的双栏骨架：
 // 左侧品牌区（点阵晕染 + 字标 + 编辑式文案 + 底部插槽），右侧表单插槽（含移动端字标）。
 defineProps<{
   /** 左栏 kicker 小标（已翻译） */
@@ -15,10 +15,7 @@ defineProps<{
   desc: string
 }>()
 
-// 不用 useI18n()：它要求 i18n 插件已 app.use() 安装到当前 app 实例，而本组件也会在
-// 未安装插件的宿主中被挂载（如 OnboardingView 的测试）。直接取全局 composer 的 t 与
-// useI18n({ useScope: 'global' }) 拿到的是同一个实例，效果等价（与 utils/composables 同惯例）。
-const t = i18n.global.t
+const { t } = useI18n()
 
 // brand-footer 插槽缺省内容：模型/能力标签行，随分发模式切换（注册页用「三步骤」覆盖）
 const brandTags = IS_APPLICATION_MODE ? ['Text', 'Vision', 'Voice'] : ['Claude', 'GPT', 'Gemini']

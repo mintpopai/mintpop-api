@@ -2,7 +2,6 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as authApi from '@/api/auth'
-import { onboardOidcAccount } from '@/api/auth'
 import { getPublicSettings } from '@/api/settings'
 import { useAuthStore } from '@/stores/auth'
 import type { PublicSettings } from '@/api/types'
@@ -200,7 +199,7 @@ async function onSubmit() {
   try {
     // 回填已前移到进页时（watch + onMounted），此处以输入框内容为准：用户清空即视为不带返利码
     const aff = affCode.value.trim() || loadAffiliateReferralCode()
-    const res = await onboardOidcAccount({
+    const res = await authApi.onboardOidcAccount({
       invitation_code: invitation.value.trim() || undefined,
       promo_code: promo.value.trim() || undefined,
       aff_code: aff || undefined
@@ -405,12 +404,11 @@ async function onSubmit() {
       </p>
 
       <button
-        type="button"
+        type="submit"
         data-test="onboarding-submit"
         :disabled="submitting"
         class="flex w-full items-center justify-center gap-2 rounded-xl2 bg-accent py-[15px] text-[15px] font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         style="box-shadow: 0 4px 14px rgba(20, 194, 138, 0.32)"
-        @click="onSubmit"
       >
         <LoadingSpinner
           v-if="submitting"

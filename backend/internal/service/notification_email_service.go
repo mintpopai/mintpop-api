@@ -1384,7 +1384,8 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 }
 
 // notificationEmailCard 组装所有通知邮件的统一外壳，风格对齐用户门户「Mint 设计系统」：
-// 暖白背景、薄荷绿主调（#14c28a）、圆角卡片 + 发丝描边与微光影、Space Grotesk / Fredoka / Newsreader 字体族。
+// 暖白背景、薄荷绿主调（#14c28a）、圆角卡片 + 发丝描边与微光影、Space Grotesk / Fredoka / Newsreader 字体族
+//（仅作 font-family 首选项，不外链加载 web 字体——第三方字体 CDN 在部分目标地区不可达，收件端未装即降级系统字体）。
 // 入参 accent 为各事件的语义强调色（验证＝靛蓝、充值＝绿、风控＝红等），在这里仅用于顶部细条与标题左侧的强调竖线，
 // 而所有 CTA 按钮/链接统一采用品牌薄荷绿，保证跨事件的品牌一致性。邮件客户端兼容性：table 布局 + 头部 <style>
 // 承载注入内容的类样式，并附 prefers-color-scheme 深色适配（对齐门户 .dark 主题）。
@@ -1397,7 +1398,6 @@ func notificationEmailCard(accent, title, content string) string {
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
     body { margin: 0; padding: 0; background: #f1efe9; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     .wrap { width: 100%; background: #f1efe9; padding: 32px 16px; }
     .card { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #eceae3; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 26px rgba(26,26,26,0.06); font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1a1a1a; }

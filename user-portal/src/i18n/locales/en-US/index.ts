@@ -15,7 +15,6 @@ import payment from './payment'
 import pricing from './pricing'
 import ui from './ui'
 import legal from './legal'
-import contact from './contact'
 import invite from './invite'
 import docs from './docs'
 
@@ -33,7 +32,6 @@ const enUS: MessageSchema = {
   pricing,
   ui,
   legal,
-  contact,
   invite,
   docs
 }

@@ -1,4 +1,6 @@
 import type { PublicSettings } from '@/api/types'
+import type { AppLocale } from '@/i18n'
+import { CONTACT_PAGE_URLS } from '@/config/portal'
 // md 以 ?raw 原文加载，Vite 不会处理其中的相对图片路径（构建后不产出、线上裂图），
 // 故图片在此 import 成带 hash 的资源 URL，经占位符注入文档。
 import useClaudeCodeApiKeyImg from './use-claude-code-api-key.png'
@@ -9,7 +11,10 @@ import useCodexCliApiKeyImg from './use-codex-cli-api-key.png'
  * BASE_URL 因部署环境而异（由后端公开设置下发），无法在构建期写死，故走运行时替换；
  * 新增占位符时在 docPlaceholderValues 里补一项即可（守护测试会拦截文档里出现未知占位符）。
  */
-export function docPlaceholderValues(settings: PublicSettings | null): Record<string, string> {
+export function docPlaceholderValues(
+  settings: PublicSettings | null,
+  locale: AppLocale = 'zh-CN'
+): Record<string, string> {
   // 与 UseKeyModal 的取值口径一致：设置缺 api_base_url 时回退当前站点 origin
   const baseUrl = settings?.api_base_url || window.location.origin
   return {
@@ -17,10 +22,11 @@ export function docPlaceholderValues(settings: PublicSettings | null): Record<st
     // 自由填写的字符串（非受控输入），直接拼进原文会被当 HTML 解析，故先 encodeURI 无害化。
     // encodeURI 只转义 <>"{}|\^` 与空白等危险字符，保留 : / ? # 等 URL 合法字符，不破坏正常地址。
     BASE_URL: encodeURI(baseUrl),
-    // 本站内页地址：注册 / 创建密钥（带引导参数）/ 联系我们
+    // 本站内页地址：注册 / 创建密钥（带引导参数）
     SIGNUP_URL: `${window.location.origin}/register`,
     APIKEY_CREATE_URL: `${window.location.origin}/keys?guide=create`,
-    CONTACT_URL: `${window.location.origin}/contact`,
+    // 联系我们：站内联系方式页已移除，改为按文档语言外链官网联系页
+    CONTACT_URL: CONTACT_PAGE_URLS[locale],
     // 文档内嵌图片（构建期 hash 资源 URL）
     USE_CLAUDE_CODE_API_KEY_IMG: useClaudeCodeApiKeyImg,
     USE_CODEX_CLI_API_KEY_IMG: useCodexCliApiKeyImg

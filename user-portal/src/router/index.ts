@@ -83,12 +83,8 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/DocsView.vue'),
     meta: { requiresAuth: true, title: 'nav.docs' }
   },
-  {
-    path: '/contact',
-    name: 'Contact',
-    component: () => import('@/views/ContactView.vue'),
-    meta: { requiresAuth: true, title: 'nav.contact' }
-  },
+  // 站内联系方式页已移除，联系入口改为外链官网联系页（见 PortalLayout / LoginView）；
+  // 旧 /contact 深链由兜底路由送回仪表盘。
   {
     // 统一登录（OIDC）回调落点：后端处理完成后 302 到此（成功不带 token；失败 fragment 带 error/message）
     path: '/auth/oidc/callback',

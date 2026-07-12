@@ -118,7 +118,7 @@ watch(
       await settingsStore.ensureLoaded()
       const src = await loadDoc(slug, locale)
       if (seq !== loadSeq) return
-      const rendered = renderMarkdown(resolveDocPlaceholders(src, docPlaceholderValues(settingsStore.settings)))
+      const rendered = renderMarkdown(resolveDocPlaceholders(src, docPlaceholderValues(settingsStore.settings, locale)))
       const extracted = extractToc(rendered)
       html.value = extracted.html
       toc.value = extracted.toc

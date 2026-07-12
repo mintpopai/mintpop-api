@@ -7,6 +7,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useLocaleStore } from '@/stores/locale'
 import { LOCALE_LABELS, type AppLocale } from '@/i18n'
 import { formatBalance } from '@/utils/format'
+import { CONTACT_PAGE_URLS } from '@/config/portal'
 
 // fluid：内容区占满全宽（供文档中心这类「侧栏贴左 + 正文自行限宽」的页面用），默认仍居中限宽
 defineProps<{ fluid?: boolean }>()
@@ -42,6 +43,8 @@ const isDark = computed(() => themeStore.mode === 'dark')
 const otherLocaleLabel = computed(
   () => LOCALE_LABELS[(localeStore.current === 'zh-CN' ? 'en-US' : 'zh-CN') as AppLocale]
 )
+// 官网联系页入口：与登录页一致，外链新开页、语言跟随门户当前语言
+const contactUrl = computed(() => CONTACT_PAGE_URLS[localeStore.current])
 
 function go(path: string) {
   closeMenu()
@@ -154,14 +157,15 @@ onMounted(() => {
           >
             {{ t('nav.docs') }}
           </router-link>
-          <router-link
-            to="/contact"
+          <a
+            :href="contactUrl"
+            target="_blank"
+            rel="noopener"
             class="tab"
-            active-class="tab-on"
             @click="closeNav"
           >
-            {{ t('nav.contact') }}
-          </router-link>
+            {{ t('nav.contact') }} <span aria-hidden="true">↗</span>
+          </a>
         </nav>
       </template>
 
@@ -174,13 +178,14 @@ onMounted(() => {
         >
           {{ t('nav.docs') }}
         </router-link>
-        <router-link
-          to="/contact"
+        <a
+          :href="contactUrl"
+          target="_blank"
+          rel="noopener"
           class="doc-link hidden md:inline-block"
-          active-class="doc-link-on"
         >
-          {{ t('nav.contact') }}
-        </router-link>
+          {{ t('nav.contact') }} <span aria-hidden="true">↗</span>
+        </a>
 
         <!-- 用户菜单 -->
         <div class="relative">

@@ -114,4 +114,7 @@ func registerRoutes(
 	routes.RegisterPaymentRoutes(v1, h.Payment, h.PaymentWebhook, h.Admin.Payment, jwtAuth, adminAuth, settingService)
 
 	handler.RegisterPageRoutes(v1, cfg.Pricing.DataDir, gin.HandlerFunc(jwtAuth), gin.HandlerFunc(adminAuth), settingService)
+
+	// —— MintPop fork 新增（上游没有这一行；合并冲突时保留本行即可）——
+	routes.RegisterModelPricingRoutes(v1, h, jwtAuth) // 模型定价批量查询，实现见 routes/model_pricing.go
 }

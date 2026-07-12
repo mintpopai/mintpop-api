@@ -67,7 +67,8 @@ const otherLocaleLabel = computed(
           {{ kicker }}
         </div>
         <h2 class="font-serif text-[42px] font-medium leading-[1.12] tracking-tight text-text">
-          {{ headlinePre }}<span class="relative whitespace-nowrap">{{ headlineMark }}<span
+          <!-- isolate 为 -z-10 色条建立独立层叠上下文，否则色条会掉到带背景的定位祖先之后而不可见 -->
+          {{ headlinePre }}<span class="relative isolate whitespace-nowrap">{{ headlineMark }}<span
             class="absolute inset-x-0 bottom-0.5 -z-10 h-[9px] rounded-xs bg-accent opacity-[0.28]"
           /></span>{{ headlineEnd }}
         </h2>

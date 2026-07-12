@@ -14,6 +14,8 @@ export default {
   loginSubtitle: '登录您的账户以继续使用控制台。',
   loginUnifiedSubtitle: '使用统一账号登录以继续使用控制台。',
   unifiedAccountHint: '注册、修改密码等均在统一账号中完成。',
+  contactPrompt: '遇到问题？',
+  contactUs: '联系我们',
   emailLabel: '邮箱',
   passwordLabel: '密码',
   passwordPlaceholder: '请输入密码',

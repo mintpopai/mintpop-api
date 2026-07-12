@@ -14,6 +14,8 @@ export default {
   loginSubtitle: 'Sign in to your account to continue.',
   loginUnifiedSubtitle: 'Sign in with your unified account to continue.',
   unifiedAccountHint: 'Sign-up and password changes are all handled in your unified account.',
+  contactPrompt: 'Need help?',
+  contactUs: 'Contact us',
   emailLabel: 'Email',
   passwordLabel: 'Password',
   passwordPlaceholder: 'Enter your password',

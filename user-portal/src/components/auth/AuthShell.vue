@@ -50,12 +50,12 @@ const otherLocaleLabel = computed(
       <!-- 字标 -->
       <div class="relative flex items-center">
         <img
-          src="/wordmark-dark.png"
+          src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-dark.png"
           alt="MintPop API"
           class="block h-8 w-auto dark:hidden"
         >
         <img
-          src="/wordmark-light.png"
+          src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-light.png"
           alt="MintPop API"
           class="hidden h-8 w-auto dark:block"
         >
@@ -108,12 +108,12 @@ const otherLocaleLabel = computed(
         <!-- 移动端字标 -->
         <div class="mb-8 flex items-center lg:hidden">
           <img
-            src="/wordmark-dark.png"
+            src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-dark.png"
             alt="MintPop API"
             class="block h-7 w-auto dark:hidden"
           >
           <img
-            src="/wordmark-light.png"
+            src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-light.png"
             alt="MintPop API"
             class="hidden h-7 w-auto dark:block"
           >

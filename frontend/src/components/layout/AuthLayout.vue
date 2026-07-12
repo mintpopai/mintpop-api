@@ -43,8 +43,8 @@
           </template>
           <!-- 默认 mintpop 品牌：wordmark 图（随明暗主题切换） -->
           <template v-else>
-            <img src="/wordmark-dark.png" alt="mintpop" class="mx-auto mb-4 block h-12 w-auto dark:hidden" />
-            <img src="/wordmark-light.png" alt="mintpop" class="mx-auto mb-4 hidden h-12 w-auto dark:block" />
+            <img src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-dark.png" alt="mintpop" class="mx-auto mb-4 block h-12 w-auto dark:hidden" />
+            <img src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-light.png" alt="mintpop" class="mx-auto mb-4 hidden h-12 w-auto dark:block" />
           </template>
           <p class="text-sm text-gray-500 dark:text-dark-400">
             {{ siteSubtitle }}

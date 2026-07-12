@@ -493,8 +493,8 @@ func (s *NotificationEmailService) sampleVariables(ctx context.Context, event, l
 		variables[key] = value
 	}
 	variables["site_name"] = s.siteName(ctx)
-	variables["logo_url"] = s.logoURL(ctx)
-	variables["logo_dark_url"] = s.logoDarkURL(ctx)
+	variables["logo_url"] = s.logoURL()
+	variables["logo_dark_url"] = s.logoDarkURL()
 	if variables["unsubscribe_url"] == "" && info.Optional {
 		variables["unsubscribe_url"] = "https://example.com/unsubscribe"
 	}
@@ -507,8 +507,8 @@ func (s *NotificationEmailService) runtimeVariables(ctx context.Context, event, 
 		variables[key] = value
 	}
 	variables["site_name"] = s.siteName(ctx)
-	variables["logo_url"] = s.logoURL(ctx)
-	variables["logo_dark_url"] = s.logoDarkURL(ctx)
+	variables["logo_url"] = s.logoURL()
+	variables["logo_dark_url"] = s.logoDarkURL()
 	variables["recipient_email"] = input.RecipientEmail
 	if strings.TrimSpace(input.RecipientName) != "" {
 		variables["recipient_name"] = input.RecipientName
@@ -545,25 +545,21 @@ func (s *NotificationEmailService) baseURL(ctx context.Context) string {
 	return ""
 }
 
-// logoURL 返回浅色模式头部字标（wordmark）的绝对地址：后端在 /wordmark-dark.png 内嵌托管，
-// 为深色字样 + 透明底，适配浅色卡片背景。依赖已配置的站点基础地址；未配置时返回空串，
-// 头部 <img> 会通过 alt 回退为站点名文字。
-func (s *NotificationEmailService) logoURL(ctx context.Context) string {
-	baseURL := s.baseURL(ctx)
-	if baseURL == "" {
-		return ""
-	}
-	return baseURL + "/wordmark-dark.png"
+// 品牌字标统一引用 standards.mintpop.ai 的在线品牌资源（各产品共用同一份，不随部署站点变化）。
+const (
+	brandWordmarkDarkURL  = "https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-dark.png"
+	brandWordmarkLightURL = "https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-light.png"
+)
+
+// logoURL 返回浅色模式头部字标（wordmark）的地址：深色字样 + 透明底，适配浅色卡片背景。
+func (s *NotificationEmailService) logoURL() string {
+	return brandWordmarkDarkURL
 }
 
-// logoDarkURL 返回深色模式头部字标的绝对地址：后端在 /wordmark-light.png 内嵌托管，
-// 为浅色字样 + 透明底，适配深色卡片背景。与 logoURL 配合做「双图切换」。
-func (s *NotificationEmailService) logoDarkURL(ctx context.Context) string {
-	baseURL := s.baseURL(ctx)
-	if baseURL == "" {
-		return ""
-	}
-	return baseURL + "/wordmark-light.png"
+// logoDarkURL 返回深色模式头部字标的地址：浅色字样 + 透明底，适配深色卡片背景。
+// 与 logoURL 配合做「双图切换」。
+func (s *NotificationEmailService) logoDarkURL() string {
+	return brandWordmarkLightURL
 }
 
 func (s *NotificationEmailService) buildUnsubscribeURL(ctx context.Context, email, event string) (string, error) {

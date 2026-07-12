@@ -13,8 +13,8 @@
           </template>
           <!-- 默认 mintpop 品牌：wordmark 图（随明暗主题切换） -->
           <template v-else>
-            <img src="/wordmark-dark.png" alt="mintpop" class="block h-7 w-auto dark:hidden" />
-            <img src="/wordmark-light.png" alt="mintpop" class="hidden h-7 w-auto dark:block" />
+            <img src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-dark.png" alt="mintpop" class="block h-7 w-auto dark:hidden" />
+            <img src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-light.png" alt="mintpop" class="hidden h-7 w-auto dark:block" />
           </template>
         </router-link>
         <div class="flex items-center gap-3">

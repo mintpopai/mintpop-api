@@ -117,12 +117,12 @@ onBeforeUnmount(() => observer?.disconnect())
         </button>
 
         <img
-          src="/wordmark-dark.png"
+          src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-dark.png"
           alt="MintPop API"
           class="block h-7 w-auto dark:hidden"
         >
         <img
-          src="/wordmark-light.png"
+          src="https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-light.png"
           alt="MintPop API"
           class="hidden h-7 w-auto dark:block"
         >

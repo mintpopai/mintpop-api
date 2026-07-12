@@ -108,7 +108,7 @@ onMounted(() => {
       <!-- logo -->
       <div class="flex shrink-0 items-center">
         <img
-          :src="isDark ? '/wordmark-light.png' : '/wordmark-dark.png'"
+          :src="isDark ? 'https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-light.png' : 'https://standards.mintpop.ai/assets/brand/wordmark/mintpop-wordmark-dark.png'"
           alt="mintpop"
           class="h-[26px] w-auto"
         >

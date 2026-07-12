@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLocaleStore } from '@/stores/locale'
+import { LOCALE_LABELS, type AppLocale } from '@/i18n'
 import { IS_APPLICATION_MODE } from '@/config/portal'
 
 // 四个认证页（登录/注册/忘记密码/重置密码）共用的双栏骨架：
@@ -19,6 +22,13 @@ const { t } = useI18n()
 
 // brand-footer 插槽缺省内容：模型/能力标签行，随分发模式切换（注册页用「三步骤」覆盖）
 const brandTags = IS_APPLICATION_MODE ? ['Text', 'Vision', 'Voice'] : ['Claude', 'GPT', 'Gemini']
+
+// 登录前的语言切换入口（登录后的入口在 PortalLayout 用户菜单里）：
+// 按钮文案直接用对方语言的原生名（LOCALE_LABELS），两种语言下都无需翻译
+const localeStore = useLocaleStore()
+const otherLocaleLabel = computed(
+  () => LOCALE_LABELS[(localeStore.current === 'zh-CN' ? 'en-US' : 'zh-CN') as AppLocale]
+)
 </script>
 
 <template>
@@ -83,7 +93,16 @@ const brandTags = IS_APPLICATION_MODE ? ['Text', 'Vision', 'Voice'] : ['Claude',
     </div>
 
     <!-- ============ 右侧表单 ============ -->
-    <div class="flex min-w-0 flex-1 items-center justify-center bg-bg px-10 py-12">
+    <div class="relative flex min-w-0 flex-1 items-center justify-center bg-bg px-10 py-12">
+      <!-- 语言切换（构建时锁定单语言则不渲染，与 PortalLayout 一致） -->
+      <button
+        v-if="!localeStore.locked"
+        type="button"
+        class="absolute right-6 top-6 rounded-full border border-border bg-card px-3.5 py-[7px] text-xs font-medium text-text2 transition hover:bg-hover lg:right-10"
+        @click="localeStore.toggle()"
+      >
+        {{ otherLocaleLabel }} ⇄
+      </button>
       <div class="w-full max-w-[392px]">
         <!-- 移动端字标 -->
         <div class="mb-8 flex items-center lg:hidden">

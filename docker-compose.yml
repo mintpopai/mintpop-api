@@ -10,7 +10,7 @@
 
 services:
   backend:
-    image: ghcr.io/yuebai-blast/mintpop-api-backend:${BACKEND_TAG:-latest}   # 版本参数化
+    image: ghcr.io/mintpopai/mintpop-api-backend:${BACKEND_TAG:-latest}   # 版本参数化
     container_name: mintpop-api-backend
     restart: unless-stopped
     env_file:
@@ -30,7 +30,7 @@ services:
       start_period: 10s
 
   user-portal:
-    image: ghcr.io/yuebai-blast/mintpop-api-user-portal:${USER_PORTAL_TAG:-latest}   # 版本参数化
+    image: ghcr.io/mintpopai/mintpop-api-user-portal:${USER_PORTAL_TAG:-latest}   # 版本参数化
     container_name: mintpop-api-user-portal
     restart: unless-stopped
     depends_on:

@@ -87,7 +87,6 @@ export const PRICING_CHANNELS: PricingChannel[] = [
       { id: 'gpt-5.6-terra', label: 'GPT-5.6 Terra', fallbackInput: 2.5, fallbackOutput: 15 },
       { id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', fallbackInput: 1, fallbackOutput: 6 },
       { id: 'gpt-5.5', label: 'GPT-5.5', fallbackInput: 5, fallbackOutput: 30 },
-      { id: 'gpt-5.5-pro', label: 'GPT-5.5 Pro', fallbackInput: 30, fallbackOutput: 180 },
       { id: 'gpt-5', label: 'GPT-5', fallbackInput: 1.25, fallbackOutput: 10 },
       { id: 'gpt-5-mini', label: 'GPT-5 Mini', fallbackInput: 0.25, fallbackOutput: 2 }
     ]

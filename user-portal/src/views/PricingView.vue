@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PortalLayout from '@/layouts/PortalLayout.vue'
-import { PRICING_CHANNELS } from '@/config/pricing'
+import { PRICING_CHANNELS, type PricingModel } from '@/config/pricing'
+import { queryModelPricing, type ModelPricePerMillion } from '@/api/pricing'
 
 const { t } = useI18n()
 
-// 每渠道卡片配色（纯展示层，价格等事实数据在 config/pricing.ts 单独维护）
+// 每渠道卡片配色（纯展示层，价格等事实数据在 config/pricing.ts + 后端定价接口维护）
 interface ChannelPalette {
   bg: string
   nameColor: string
@@ -20,6 +22,8 @@ interface ChannelPalette {
   multColor: string
   dotColor: string
   dotOpacity: number
+  /** 模型选择按钮底色（半透明叠加层） */
+  btnBg: string
 }
 
 const palettes: Record<string, ChannelPalette> = {
@@ -36,7 +40,8 @@ const palettes: Record<string, ChannelPalette> = {
     footColor: '#6E6A60',
     multColor: '#A29E92',
     dotColor: '#1A1A1A',
-    dotOpacity: 0.07
+    dotOpacity: 0.07,
+    btnBg: 'rgba(26,26,26,.06)'
   },
   claudeApi: {
     bg: '#C67C5B',
@@ -51,7 +56,8 @@ const palettes: Record<string, ChannelPalette> = {
     footColor: 'rgba(53,25,14,.72)',
     multColor: 'rgba(53,25,14,.55)',
     dotColor: '#35190E',
-    dotOpacity: 0.1
+    dotOpacity: 0.1,
+    btnBg: 'rgba(255,255,255,.20)'
   },
   chatgpt: {
     bg: '#14C28A',
@@ -66,7 +72,8 @@ const palettes: Record<string, ChannelPalette> = {
     footColor: 'rgba(6,58,43,.78)',
     multColor: 'rgba(6,58,43,.6)',
     dotColor: '#0A4A38',
-    dotOpacity: 0.16
+    dotOpacity: 0.16,
+    btnBg: 'rgba(255,255,255,.22)'
   },
   gemini: {
     bg: '#0E8F66',
@@ -81,11 +88,68 @@ const palettes: Record<string, ChannelPalette> = {
     footColor: 'rgba(255,255,255,.82)',
     multColor: 'rgba(255,255,255,.6)',
     dotColor: '#063A2B',
-    dotOpacity: 0.16
+    dotOpacity: 0.16,
+    btnBg: 'rgba(255,255,255,.16)'
   }
 }
 
 const channels = PRICING_CHANNELS.map((ch) => ({ ...ch, ...palettes[ch.key] }))
+
+// 实时官方原价（modelId → 美元/百万 tokens）；接口失败时保持为空，回退到配置兜底价
+const livePrices = ref<Map<string, ModelPricePerMillion>>(new Map())
+
+// 各渠道模型下拉框开合状态与选中下标（默认 0 = 最常用主模型）
+const open = reactive<Record<string, boolean>>({})
+const selected = reactive<Record<string, number>>({})
+
+function selectedIdx(key: string): number {
+  return selected[key] ?? 0
+}
+
+function selectedModel(key: string, models: PricingModel[]): PricingModel {
+  return models[selectedIdx(key)]
+}
+
+/** 选中某模型：切换卡片数据展示并收起下拉 */
+function pick(key: string, idx: number): void {
+  selected[key] = idx
+  open[key] = false
+}
+
+// 点击下拉区域以外时收起所有下拉框
+function onDocClick(e: MouseEvent): void {
+  const el = e.target as HTMLElement | null
+  if (el && el.closest('[data-model-select]')) return
+  for (const k of Object.keys(open)) open[k] = false
+}
+
+onMounted(async () => {
+  document.addEventListener('click', onDocClick)
+  const ids = [...new Set(PRICING_CHANNELS.flatMap((ch) => ch.models.map((m) => m.id)))]
+  try {
+    livePrices.value = await queryModelPricing(ids)
+  } catch {
+    // 静默回退：定价接口不可用时用配置里的兜底价展示，不打断页面
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+})
+
+/** 某模型的官方原价（优先实时价，回退兜底价），美元/百万 tokens */
+function origOf(m: PricingModel): ModelPricePerMillion {
+  return livePrices.value.get(m.id) ?? { input: m.fallbackInput, output: m.fallbackOutput }
+}
+
+/** 按渠道立减折算现价 */
+function discounted(price: number, discount: number): number {
+  return price * (1 - discount / 100)
+}
+
+function fmt(price: number): string {
+  return `$${price.toFixed(2)}`
+}
 
 // 倍率说明行：文案存在才渲染（en-US 侧为空串 → 不展示），语言差异由词条驱动而非模板判断
 function multiplierNote(multiplier: number): string {
@@ -113,8 +177,8 @@ function multiplierNote(multiplier: number): string {
       </RouterLink>
     </div>
 
-    <!-- 渠道价格卡片（2×2） -->
-    <div class="grid grid-cols-1 gap-[22px] md:grid-cols-2">
+    <!-- 渠道价格卡片（2×2）：正面展示当前选中模型，下拉框切换模型后同步刷新价格 -->
+    <div class="grid grid-cols-1 items-start gap-[22px] md:grid-cols-2">
       <div
         v-for="ch in channels"
         :key="ch.key"
@@ -132,7 +196,7 @@ function multiplierNote(multiplier: number): string {
           }"
         />
 
-        <!-- 渠道名 + 型号 / 折扣标签 -->
+        <!-- 渠道名 + 当前模型（主模型带「最常用」前缀）/ 折扣标签 -->
         <div class="relative flex items-start justify-between gap-3">
           <div class="min-w-0">
             <div
@@ -145,7 +209,10 @@ function multiplierNote(multiplier: number): string {
               class="mt-1 text-xs font-medium"
               :style="{ color: ch.modelColor }"
             >
-              {{ ch.model }}
+              <template v-if="selectedIdx(ch.key) === 0">
+                {{ $t('pricing.mostUsed') }} ·
+              </template>
+              {{ selectedModel(ch.key, ch.models).label }}
             </div>
           </div>
           <div
@@ -156,60 +223,110 @@ function multiplierNote(multiplier: number): string {
           </div>
         </div>
 
-        <!-- 输入 / 输出价格（原价划线 + 现价大字） -->
+        <!-- 当前模型输入 / 输出价格（原价划线 + 现价大字） -->
         <div class="relative mt-7 grid grid-cols-2 gap-4">
-          <div>
+          <div
+            v-for="side in (['input', 'output'] as const)"
+            :key="side"
+          >
             <div
               class="mb-1.5 text-xs font-medium"
               :style="{ color: ch.labelColor }"
             >
-              {{ $t('pricing.input') }}
+              {{ $t(`pricing.${side}`) }}
             </div>
             <div
               class="num text-sm font-medium line-through"
               :style="{ color: ch.origColor }"
             >
-              ${{ ch.origInput.toFixed(2) }}
+              {{ fmt(origOf(selectedModel(ch.key, ch.models))[side]) }}
             </div>
             <div
               class="num text-[40px] font-medium leading-none"
               :style="{ color: ch.priceColor }"
             >
-              ${{ ch.input.toFixed(2) }}
-            </div>
-          </div>
-          <div>
-            <div
-              class="mb-1.5 text-xs font-medium"
-              :style="{ color: ch.labelColor }"
-            >
-              {{ $t('pricing.output') }}
-            </div>
-            <div
-              class="num text-sm font-medium line-through"
-              :style="{ color: ch.origColor }"
-            >
-              ${{ ch.origOutput.toFixed(2) }}
-            </div>
-            <div
-              class="num text-[40px] font-medium leading-none"
-              :style="{ color: ch.priceColor }"
-            >
-              ${{ ch.output.toFixed(2) }}
+              {{ fmt(discounted(origOf(selectedModel(ch.key, ch.models))[side], ch.discount)) }}
             </div>
           </div>
         </div>
 
-        <!-- 计价单位 + 倍率说明（倍率行仅中文展示） -->
+        <!-- 模型选择下拉框：默认文案「查看全部 N 个模型」，选择后显示所选型号并切换上方价格 -->
         <div
-          class="relative mt-7 border-t pt-3.5"
+          class="relative mt-7 border-t pt-5"
           :style="{ borderColor: ch.dividerColor }"
+          data-model-select
         >
+          <button
+            type="button"
+            class="flex w-full cursor-pointer items-center justify-between rounded-xl px-5 py-3.5 text-sm font-semibold"
+            :style="{ background: ch.btnBg, color: ch.nameColor }"
+            :aria-expanded="!!open[ch.key]"
+            aria-haspopup="listbox"
+            @click="open[ch.key] = !open[ch.key]"
+          >
+            <span>{{
+              selectedIdx(ch.key) === 0
+                ? $t('pricing.viewAll', { count: ch.models.length })
+                : selectedModel(ch.key, ch.models).label
+            }}</span>
+            <span
+              class="text-xs transition-transform duration-200"
+              :class="{ 'rotate-180': open[ch.key] }"
+            >▾</span>
+          </button>
+
+          <!-- 下拉选项：型号 + 折后价摘要，选中项打勾 -->
+          <div
+            v-if="open[ch.key]"
+            role="listbox"
+            class="mt-2 overflow-hidden rounded-xl border shadow-card"
+            :style="{ background: ch.bg, borderColor: ch.dividerColor }"
+          >
+            <button
+              v-for="(m, idx) in ch.models"
+              :key="m.id"
+              type="button"
+              role="option"
+              :aria-selected="idx === selectedIdx(ch.key)"
+              class="flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm"
+              :style="idx === selectedIdx(ch.key) ? { background: ch.btnBg } : {}"
+              @click="pick(ch.key, idx)"
+            >
+              <span
+                class="flex min-w-0 items-center gap-2 font-medium"
+                :style="{ color: ch.nameColor }"
+              >
+                <span class="truncate">{{ m.label }}</span>
+                <span
+                  v-if="idx === 0"
+                  class="shrink-0 text-[10px] font-normal"
+                  :style="{ color: ch.modelColor }"
+                >{{ $t('pricing.mostUsed') }}</span>
+              </span>
+              <span class="flex shrink-0 items-center gap-2">
+                <span
+                  class="num text-xs"
+                  :style="{ color: ch.footColor }"
+                >
+                  {{ fmt(discounted(origOf(m).input, ch.discount)) }} /
+                  {{ fmt(discounted(origOf(m).output, ch.discount)) }}
+                </span>
+                <span
+                  class="w-3 text-xs"
+                  :style="{ color: ch.nameColor }"
+                >{{ idx === selectedIdx(ch.key) ? '✓' : '' }}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 计价单位 + 倍率说明（倍率行仅中文展示） -->
+        <div class="relative mt-6">
           <div
             class="text-xs font-medium"
             :style="{ color: ch.footColor }"
           >
-            {{ $t('pricing.unit') }}
+            {{ $t('pricing.unitAll', { count: ch.models.length }) }}
           </div>
           <div
             v-if="multiplierNote(ch.multiplier)"

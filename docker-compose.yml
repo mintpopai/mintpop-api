@@ -2,8 +2,11 @@
 #
 # 网络说明：服务端口仅绑定 127.0.0.1（见下方 ports），需自备反向代理对外暴露。
 #          反代须加入本 compose 网络，才能通过服务名（backend:8080、user-portal:80）通信。
-#          路由约定：/api /v1 /v1beta /backend-api /antigravity /setup /responses /images /health
+#          路由约定：/api /v1 /v1beta /backend-api /antigravity /setup /responses /alpha
+#          /chat /embeddings /images /videos /health（前缀清单以
+#          backend/internal/server/routes/gateway.go 顶层注册为准）
 #          及内嵌 admin 前端 → backend:8080；用户门户 → user-portal:80。
+#          用户门户域名上的网关前缀转发已内置在 user-portal 镜像的 nginx.conf 中，外层反代无需重复配置。
 #
 # 数据库/缓存：PostgreSQL 与 Redis 为外部独立服务（不在本 compose 中），
 #              通过 .env 文件配置其主机地址。

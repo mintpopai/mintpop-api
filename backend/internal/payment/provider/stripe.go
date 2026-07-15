@@ -16,6 +16,13 @@ import (
 const (
 	stripeEventPaymentSuccess = "payment_intent.succeeded"
 	stripeEventPaymentFailed  = "payment_intent.payment_failed"
+
+	// stripeProductCode 是本业务线在「单 Stripe 账户多业务线共存」约定下的认领标记：
+	// 创建 PaymentIntent 时写入 Metadata["product"]，webhook 只处理标记一致的事件。
+	// 与订单号前缀 mintpopapi_、卡账单后缀 API 语义一致。
+	stripeProductCode = "api"
+	// stripeStatementDescriptorSuffix 是卡账单描述符后缀，账单显示为 MINTPOP* API。
+	stripeStatementDescriptorSuffix = "API"
 )
 
 // Stripe implements the payment.CancelableProvider interface for Stripe payments.
@@ -91,14 +98,13 @@ var stripePaymentMethodTypes = map[string][]string{
 	payment.TypeLink:   {"link"},
 }
 
-// CreatePayment creates a Stripe PaymentIntent.
-func (s *Stripe) CreatePayment(ctx context.Context, req payment.CreatePaymentRequest) (*payment.CreatePaymentResponse, error) {
-	s.ensureInit()
-
+// buildPaymentIntentParams assembles the PaymentIntent creation params,
+// including the multi-product claim metadata and statement descriptor suffix.
+func (s *Stripe) buildPaymentIntentParams(req payment.CreatePaymentRequest) (*stripe.PaymentIntentCreateParams, error) {
 	currency := s.currency()
 	amountInMinorUnit, err := payment.AmountToMinorUnit(req.Amount, currency)
 	if err != nil {
-		return nil, fmt.Errorf("stripe create payment: %w", err)
+		return nil, err
 	}
 
 	// Collect all Stripe payment_method_types from the instance's configured sub-methods
@@ -114,7 +120,13 @@ func (s *Stripe) CreatePayment(ctx context.Context, req payment.CreatePaymentReq
 		Currency:           stripe.String(strings.ToLower(currency)),
 		PaymentMethodTypes: pmTypes,
 		Description:        stripe.String(req.Subject),
-		Metadata:           map[string]string{"orderId": req.OrderID},
+		// product 是单账户多业务线共存的认领标记，webhook 侧据此过滤事件
+		Metadata: map[string]string{
+			"orderId": req.OrderID,
+			"product": stripeProductCode,
+		},
+		// 卡账单显示为 <账户缩短描述符>* <后缀>，便于人眼区分业务线
+		StatementDescriptorSuffix: stripe.String(stripeStatementDescriptorSuffix),
 	}
 
 	// WeChat Pay requires payment_method_options with client type
@@ -127,6 +139,17 @@ func (s *Stripe) CreatePayment(ctx context.Context, req payment.CreatePaymentReq
 	}
 
 	params.SetIdempotencyKey(fmt.Sprintf("pi-%s", req.OrderID))
+	return params, nil
+}
+
+// CreatePayment creates a Stripe PaymentIntent.
+func (s *Stripe) CreatePayment(ctx context.Context, req payment.CreatePaymentRequest) (*payment.CreatePaymentResponse, error) {
+	s.ensureInit()
+
+	params, err := s.buildPaymentIntentParams(req)
+	if err != nil {
+		return nil, fmt.Errorf("stripe create payment: %w", err)
+	}
 	params.Context = ctx
 
 	pi, err := s.sc.V1PaymentIntents.Create(ctx, params)
@@ -137,7 +160,7 @@ func (s *Stripe) CreatePayment(ctx context.Context, req payment.CreatePaymentReq
 	return &payment.CreatePaymentResponse{
 		TradeNo:      pi.ID,
 		ClientSecret: pi.ClientSecret,
-		Currency:     currency,
+		Currency:     s.currency(),
 	}, nil
 }
 
@@ -190,18 +213,24 @@ func (s *Stripe) VerifyNotification(_ context.Context, rawBody string, headers m
 
 	switch event.Type {
 	case stripeEventPaymentSuccess:
-		return parseStripePaymentIntent(&event, payment.ProviderStatusSuccess, rawBody)
+		return s.parseStripePaymentIntent(&event, payment.ProviderStatusSuccess, rawBody)
 	case stripeEventPaymentFailed:
-		return parseStripePaymentIntent(&event, payment.ProviderStatusFailed, rawBody)
+		return s.parseStripePaymentIntent(&event, payment.ProviderStatusFailed, rawBody)
 	}
 
 	return nil, nil
 }
 
-func parseStripePaymentIntent(event *stripe.Event, status string, rawBody string) (*payment.PaymentNotification, error) {
+func (s *Stripe) parseStripePaymentIntent(event *stripe.Event, status string, rawBody string) (*payment.PaymentNotification, error) {
 	var pi stripe.PaymentIntent
 	if err := json.Unmarshal(event.Data.Raw, &pi); err != nil {
 		return nil, fmt.Errorf("stripe parse payment_intent: %w", err)
+	}
+	// 认领：Stripe webhook 是账户级广播，别的业务线的支付事件也会投递到本端点。
+	// 验签通过后先看业务线标记，不是本业务的静默跳过（返回 nil → 上层回 2xx）；
+	// 未打标的事件（打标约定之前创建的旧意图）放行，走查单兜底。
+	if eventProduct := pi.Metadata["product"]; eventProduct != "" && eventProduct != stripeProductCode {
+		return nil, nil
 	}
 	currency := stripeIntentCurrency(pi.Currency, payment.DefaultPaymentCurrency)
 	return &payment.PaymentNotification{

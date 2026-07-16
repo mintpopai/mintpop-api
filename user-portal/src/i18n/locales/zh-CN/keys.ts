@@ -39,7 +39,6 @@ export default {
   },
   created: {
     title: '密钥已创建',
-    warning: '请立即保存，关闭后不可再查看',
     keyLabel: '您的 API 密钥'
   },
   edit: {

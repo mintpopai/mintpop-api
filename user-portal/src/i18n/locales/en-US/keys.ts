@@ -39,7 +39,6 @@ export default {
   },
   created: {
     title: 'Key Created',
-    warning: 'Save it now — it cannot be viewed again after closing',
     keyLabel: 'Your API Key'
   },
   edit: {

@@ -177,14 +177,11 @@ function copyKey() {
     <!-- 步骤二：展示明文密钥 -->
     <template v-else>
       <div class="flex flex-col gap-4">
-        <div class="rounded-xl2 border border-[#F59E0B]/40 bg-[#F59E0B]/[0.07] px-4 py-3 text-sm text-[#C77800]">
-          {{ $t('keys.created.warning') }}
-        </div>
         <div>
           <label class="mb-1.5 block text-xs font-medium text-text2">{{ $t('keys.created.keyLabel') }}</label>
           <div class="flex items-center gap-2">
             <code
-              class="flex-1 select-all overflow-x-auto whitespace-nowrap rounded-xl2 border-[1.5px] border-border2 bg-muted px-4 py-3 text-xs font-medium text-text"
+              class="flex-1 select-all break-all rounded-xl2 border-[1.5px] border-border2 bg-muted px-4 py-3 text-xs font-medium text-text"
             >{{ createdKey.key }}</code>
             <button
               class="shrink-0 rounded-xl2 border-[1.5px] border-border2 bg-card px-4 py-3 text-xs font-medium text-text2 transition-colors hover:border-accent hover:text-accent"

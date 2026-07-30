@@ -2,8 +2,6 @@
 import { ref, computed, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
-import { officialValueOf } from '@/config/pricing'
-import { formatNumber } from '@/utils/format'
 
 const { t } = useI18n()
 
@@ -12,7 +10,7 @@ const props = defineProps<{
   presets: number[]
   /** 标记为「热门」的档位（该卡展示热门徽标） */
   popular?: number
-  /** 充值倍率（1 = 无赠送；1.1 = 赠 10%） */
+  /** 充值倍率（1 = 到账等于实付；7 = 实付 $1 到账 7 额度） */
   multiplier: number
   /** 最低充值额 */
   min: number
@@ -38,10 +36,10 @@ const customNum = computed(() => {
 // 是否处于自定义模式（输入框有合法数字时）
 const isCustom = computed(() => customNum.value !== null)
 
-// 计算单个预设的赠送金额
-function bonusFor(v: number): number {
-  if (props.multiplier <= 1) return 0
-  return Math.round(v * (props.multiplier - 1) * 100) / 100
+// 单个预设的到账额度 = 实付金额 × 倍率。倍率为 1 时与实付金额相同，
+// 此时档位卡不再重复展示（由模板的 multiplier > 1 判定）
+function creditedFor(v: number): number {
+  return Math.round(v * props.multiplier * 100) / 100
 }
 
 // 选中预设
@@ -156,15 +154,11 @@ const validationMsg = computed(() => {
         <div class="font-serif text-[26px] font-medium leading-none text-text">
           ${{ v }}
         </div>
-        <!-- 官方价值比对（口径见 config/pricing 的 OFFICIAL_VALUE_MULTIPLIER）；有赠送时再叠加赠送行 -->
-        <div class="mt-[7px] text-[11px] text-pos">
-          {{ $t('recharge.officialValueApprox', { value: formatNumber(officialValueOf(v)) }) }}
-        </div>
         <div
-          v-if="bonusFor(v) > 0"
-          class="mt-[3px] text-[11px] text-pos"
+          v-if="multiplier > 1"
+          class="mt-[7px] text-[11px] text-pos"
         >
-          {{ $t('recharge.bonus', { amount: bonusFor(v).toFixed(2) }) }}
+          {{ $t('recharge.credited', { amount: creditedFor(v).toFixed(2) }) }}
         </div>
       </div>
     </div>

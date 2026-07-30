@@ -28,9 +28,7 @@ export default {
   // —— AmountPicker ——
   selectRechargeAmount: '选择充值金额',
   unitNote: '单位 USD · 实时汇率结算',
-  bonus: '赠 ${amount}',
-  // 官方价值比对（口径见 config/pricing 的 OFFICIAL_VALUE_MULTIPLIER）
-  officialValueApprox: '官方价值 ≈ ${value}',
+  credited: '到账 ${amount}',
   popular: '热门',
   customAmount: '自定义金额',
   amountPlaceholder: '输入金额（最低 ${min}）',
@@ -41,10 +39,7 @@ export default {
   // —— OrderSummary ——
   orderDetails: '订单明细',
   rechargeAmount: '充值金额',
-  bonusCredit: '赠送额度',
-  officialApiLine: '按官方 API 价，等值用量',
-  youSaved: '你已省下',
-  savedValue: '${amount} · 省 {percent}%',
+  creditedAmount: '到账额度',
   balanceAfter: '到账后余额',
   amountDue: '应付金额',
   amountDueNote: '实际应付以下单结果为准',

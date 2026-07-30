@@ -33,21 +33,6 @@ export interface PricingChannel {
   models: PricingModel[]
 }
 
-/**
- * 充值页官方价值比对口径（营销展示用，单一来源）：
- * 平台充值 $1 可获得官方 API 价约 $5 的等值用量（即平台价为官方价的 2 折，省 80%）。
- * 充值档位卡的「官方价值 ≈ $X」与订单明细的「你已省下」均按此换算。
- */
-export const OFFICIAL_VALUE_MULTIPLIER = 5
-
-/** 相对官方 API 价节省的百分比（整数，如 80 表示省 80%） */
-export const OFFICIAL_SAVING_PERCENT = Math.round((1 - 1 / OFFICIAL_VALUE_MULTIPLIER) * 100)
-
-/** 充值金额 → 官方 API 价等值用量 */
-export function officialValueOf(amount: number): number {
-  return amount * OFFICIAL_VALUE_MULTIPLIER
-}
-
 // Claude 系模型两个渠道共用同一份清单（折扣不同）
 const CLAUDE_MODELS: PricingModel[] = [
   { id: 'claude-opus-4-8', label: 'Opus 4.8', fallbackInput: 5, fallbackOutput: 25 },

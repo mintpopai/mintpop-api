@@ -28,9 +28,7 @@ export default {
   // —— AmountPicker ——
   selectRechargeAmount: 'Select recharge amount',
   unitNote: 'In USD · settled at live exchange rate',
-  bonus: 'Bonus ${amount}',
-  // 官方价值比对（口径见 config/pricing 的 OFFICIAL_VALUE_MULTIPLIER）
-  officialValueApprox: 'Official value ≈ ${value}',
+  credited: 'You get ${amount}',
   popular: 'Popular',
   customAmount: 'Custom amount',
   amountPlaceholder: 'Enter amount (min ${min})',
@@ -41,10 +39,7 @@ export default {
   // —— OrderSummary ——
   orderDetails: 'Order summary',
   rechargeAmount: 'Recharge amount',
-  bonusCredit: 'Bonus credit',
-  officialApiLine: 'Equivalent usage at official API price',
-  youSaved: 'You saved',
-  savedValue: '${amount} · {percent}% off',
+  creditedAmount: 'Credited amount',
   balanceAfter: 'Balance after top-up',
   amountDue: 'Amount due',
   amountDueNote: 'Final amount is subject to the order result',

@@ -182,12 +182,13 @@ function multiplierNote(multiplier: number): string {
       <div
         v-for="ch in channels"
         :key="ch.key"
-        class="relative overflow-hidden rounded-xl3 px-7 py-8 shadow-card"
+        class="relative rounded-xl3 px-7 py-8 shadow-card"
+        :class="{ 'z-20': open[ch.key] }"
         :style="{ background: ch.bg }"
       >
-        <!-- 点阵装饰 -->
+        <!-- 点阵装饰（卡片不再 overflow-hidden，故自带圆角避免直角溢出） -->
         <div
-          class="pointer-events-none absolute inset-0"
+          class="pointer-events-none absolute inset-0 rounded-xl3"
           :style="{
             color: ch.dotColor,
             backgroundImage: 'radial-gradient(currentColor 1.6px, transparent 1.8px)',
@@ -275,11 +276,12 @@ function multiplierNote(multiplier: number): string {
             >▾</span>
           </button>
 
-          <!-- 下拉选项：型号 + 折后价摘要，选中项打勾 -->
+          <!-- 下拉选项：型号 + 折后价摘要，选中项打勾。
+               绝对定位浮层（不占文档流），否则展开会把卡片整体撑高、打乱 2×2 网格 -->
           <div
             v-if="open[ch.key]"
             role="listbox"
-            class="mt-2 overflow-hidden rounded-xl border shadow-card"
+            class="absolute inset-x-0 top-full z-20 mt-2 max-h-[320px] overflow-y-auto rounded-xl border shadow-card"
             :style="{ background: ch.bg, borderColor: ch.dividerColor }"
           >
             <button

@@ -75,19 +75,19 @@ const palettes: Record<string, ChannelPalette> = {
     dotOpacity: 0.16,
     btnBg: 'rgba(255,255,255,.22)'
   },
-  gemini: {
-    bg: '#0E8F66',
+  kiro: {
+    bg: '#517FA9',
     nameColor: '#ffffff',
     modelColor: 'rgba(255,255,255,.72)',
     labelColor: 'rgba(255,255,255,.85)',
     origColor: 'rgba(255,255,255,.45)',
     priceColor: '#ffffff',
-    pillBg: '#063A2B',
+    pillBg: '#152F49',
     pillText: 'rgba(255,255,255,.92)',
     dividerColor: 'rgba(255,255,255,.22)',
     footColor: 'rgba(255,255,255,.82)',
     multColor: 'rgba(255,255,255,.6)',
-    dotColor: '#063A2B',
+    dotColor: '#152F49',
     dotOpacity: 0.16,
     btnBg: 'rgba(255,255,255,.16)'
   }

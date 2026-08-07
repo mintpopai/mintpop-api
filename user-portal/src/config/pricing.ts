@@ -33,7 +33,7 @@ export interface PricingChannel {
   models: PricingModel[]
 }
 
-// Claude 系模型两个渠道共用同一份清单（折扣不同）
+// Claude 系模型三个渠道（Claude Code / Claude API / KIRO）共用同一份清单，只是折扣不同
 const CLAUDE_MODELS: PricingModel[] = [
   { id: 'claude-opus-4-8', label: 'Opus 4.8', fallbackInput: 5, fallbackOutput: 25 },
   { id: 'claude-fable-5', label: 'Fable 5', fallbackInput: 10, fallbackOutput: 50 },
@@ -77,14 +77,10 @@ export const PRICING_CHANNELS: PricingChannel[] = [
     ]
   },
   {
-    key: 'gemini',
-    name: 'Gemini',
-    discount: 80,
-    multiplier: 0.9,
-    models: [
-      { id: 'gemini-3.1-pro-preview', label: '3.1 Pro', fallbackInput: 2, fallbackOutput: 12 },
-      { id: 'gemini-3.5-flash', label: '3.5 Flash', fallbackInput: 1.5, fallbackOutput: 9 },
-      { id: 'gemini-3.1-flash-lite', label: '3.1 Flash Lite', fallbackInput: 0.25, fallbackOutput: 1.5 }
-    ]
+    key: 'kiro',
+    name: 'KIRO',
+    discount: 95,
+    multiplier: 0.35,
+    models: CLAUDE_MODELS
   }
 ]

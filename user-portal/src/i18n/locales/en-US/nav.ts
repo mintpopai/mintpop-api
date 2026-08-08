@@ -13,6 +13,7 @@ export default {
   menu: 'Menu',
   docs: 'Docs',
   contact: 'Contact',
+  shop: 'MintPop Shop',
   lightMode: 'Light mode',
   darkMode: 'Dark mode',
   language: 'Language',

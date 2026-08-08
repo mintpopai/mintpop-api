@@ -13,6 +13,7 @@ export default {
   menu: '菜单',
   docs: '使用文档',
   contact: '联系方式',
+  shop: 'MintPop Shop',
   lightMode: '浅色模式',
   darkMode: '深色模式',
   language: '语言',

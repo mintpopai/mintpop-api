@@ -57,6 +57,8 @@ export default {
   quickActions: {
     createKey: { title: 'Create API Key', desc: 'Generate a new key' },
     viewUsage: { title: 'View Usage', desc: 'Detailed usage logs' },
-    redeem: { title: 'Redeem Code', desc: 'Use a redeem code' }
+    redeem: { title: 'Redeem Code', desc: 'Use a redeem code' },
+    // 外链：MintPop Shop 成品账号商店
+    shop: { title: 'MintPop Shop', desc: 'Need a ready-made Claude / ChatGPT account?' }
   }
 }

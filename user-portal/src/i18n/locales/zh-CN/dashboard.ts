@@ -57,6 +57,8 @@ export default {
   quickActions: {
     createKey: { title: '创建 API 密钥', desc: '生成新的密钥' },
     viewUsage: { title: '查看使用记录', desc: '详细使用日志' },
-    redeem: { title: '兑换码充值', desc: '使用兑换码' }
+    redeem: { title: '兑换码充值', desc: '使用兑换码' },
+    // 外链：MintPop Shop 成品账号商店
+    shop: { title: 'MintPop Shop', desc: '需要成品的 Claude / ChatGPT 账号？点此购买' }
   }
 }

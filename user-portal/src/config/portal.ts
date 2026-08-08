@@ -16,3 +16,9 @@ export const CONTACT_PAGE_URLS: Record<AppLocale, string> = {
   'zh-CN': 'https://mintpop.ai/zh/contact',
   'en-US': 'https://mintpop.ai/contact'
 }
+
+/**
+ * MintPop Shop（成品 Claude / ChatGPT 账号商店）入口。
+ * 与联系页不同，这里不按门户语言分流——店铺站点自行处理多语言，门户侧只给一个地址。
+ */
+export const SHOP_PAGE_URL = 'https://shop.mintpop.ai'

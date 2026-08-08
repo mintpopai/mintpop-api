@@ -13,7 +13,9 @@ export default {
   menu: 'Menu',
   docs: 'Docs',
   contact: 'Contact',
-  shop: 'MintPop Shop',
+  // Top bar shows the function name (space is tight); the full pitch lives in shopHint's tooltip
+  shop: 'Account Shop',
+  shopHint: 'MintPop Shop: buy ready-made Claude / ChatGPT accounts',
   lightMode: 'Light mode',
   darkMode: 'Dark mode',
   language: 'Language',

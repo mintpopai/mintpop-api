@@ -13,7 +13,9 @@ export default {
   menu: '菜单',
   docs: '使用文档',
   contact: '联系方式',
-  shop: 'MintPop Shop',
+  // 顶栏用功能名（空间有限），完整说明放 shopHint 的悬停提示里
+  shop: '成品账号',
+  shopHint: 'MintPop Shop：购买成品的 Claude / ChatGPT 账号',
   lightMode: '浅色模式',
   darkMode: '深色模式',
   language: '语言',

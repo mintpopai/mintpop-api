@@ -168,14 +168,16 @@ onMounted(() => {
           >
             {{ t('nav.contact') }} <span aria-hidden="true">↗</span>
           </a>
+          <!-- 抽屉里没有 hover，说明直接作为第二行常驻展示 -->
           <a
             :href="shopUrl"
             target="_blank"
             rel="noopener"
-            class="tab"
+            class="tab flex flex-col items-start gap-0.5 whitespace-normal"
             @click="closeNav"
           >
-            {{ t('nav.shop') }} <span aria-hidden="true">↗</span>
+            <span>{{ t('nav.shop') }} <span aria-hidden="true">↗</span></span>
+            <span class="text-[11px] font-normal leading-snug text-subtle">{{ t('nav.shopHint') }}</span>
           </a>
         </nav>
       </template>
@@ -197,14 +199,26 @@ onMounted(() => {
         >
           {{ t('nav.contact') }} <span aria-hidden="true">↗</span>
         </a>
-        <a
-          :href="shopUrl"
-          target="_blank"
-          rel="noopener"
-          class="doc-link hidden md:inline-block"
-        >
-          {{ t('nav.shop') }} <span aria-hidden="true">↗</span>
-        </a>
+        <!-- MintPop Shop：顶栏只放功能名，完整说明用页面内自绘 tooltip 即时展示
+             （不用原生 title：Chrome 要悬停 1 秒以上才弹、由浏览器层绘制无法定制、触屏还完全不触发） -->
+        <span class="group relative hidden md:inline-block">
+          <a
+            :href="shopUrl"
+            target="_blank"
+            rel="noopener"
+            aria-describedby="shop-hint"
+            class="doc-link inline-block"
+          >
+            {{ t('nav.shop') }} <span aria-hidden="true">↗</span>
+          </a>
+          <span
+            id="shop-hint"
+            role="tooltip"
+            class="pointer-events-none absolute right-0 top-full z-50 mt-1.5 w-max max-w-[260px] rounded-xl border border-border bg-card px-3 py-2 text-xs leading-snug text-text2 opacity-0 shadow-menu transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+          >
+            {{ t('nav.shopHint') }}
+          </span>
+        </span>
 
         <!-- 用户菜单 -->
         <div class="relative">

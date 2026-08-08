@@ -123,4 +123,25 @@ describe('PricingView', () => {
     // 故这里断言按钮文案变为所选型号，而非默认的「查看全部」）
     expect(button!.text()).toContain(picked.label)
   })
+
+  it('同一时刻只允许一个渠道的下拉展开', async () => {
+    const wrapper = await mountView()
+
+    const toggles = wrapper.findAll('button[aria-haspopup="listbox"]')
+    expect(toggles.length).toBe(PRICING_CHANNELS.length)
+
+    await toggles[0].trigger('click')
+    expect(wrapper.findAll('[role="listbox"]').length).toBe(1)
+    expect(toggles[0].attributes('aria-expanded')).toBe('true')
+
+    // 点另一张卡的下拉：前一个必须收起，否则两个浮层会互相遮挡、看着像布局错乱
+    await toggles[1].trigger('click')
+    expect(wrapper.findAll('[role="listbox"]').length).toBe(1)
+    expect(toggles[0].attributes('aria-expanded')).toBe('false')
+    expect(toggles[1].attributes('aria-expanded')).toBe('true')
+
+    // 再点自己：收起，不残留展开态
+    await toggles[1].trigger('click')
+    expect(wrapper.findAll('[role="listbox"]').length).toBe(0)
+  })
 })

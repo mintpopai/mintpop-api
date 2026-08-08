@@ -110,6 +110,16 @@ function selectedModel(key: string, models: PricingModel[]): PricingModel {
   return models[selectedIdx(key)]
 }
 
+/**
+ * 切换某渠道下拉：同一时刻只允许一个展开。
+ * 浮层靠卡片的 z-20 压住相邻卡片，两个同时展开时后一张卡会盖掉前一张的浮层。
+ */
+function toggle(key: string): void {
+  const next = !open[key]
+  for (const k of Object.keys(open)) open[k] = false
+  open[key] = next
+}
+
 /** 选中某模型：切换卡片数据展示并收起下拉 */
 function pick(key: string, idx: number): void {
   selected[key] = idx
@@ -263,7 +273,7 @@ function multiplierNote(multiplier: number): string {
             :style="{ background: ch.btnBg, color: ch.nameColor }"
             :aria-expanded="!!open[ch.key]"
             aria-haspopup="listbox"
-            @click="open[ch.key] = !open[ch.key]"
+            @click="toggle(ch.key)"
           >
             <span>{{
               selectedIdx(ch.key) === 0

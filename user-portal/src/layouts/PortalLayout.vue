@@ -19,13 +19,24 @@ const themeStore = useThemeStore()
 const localeStore = useLocaleStore()
 
 const menuOpen = ref(false)
-const toggleMenu = () => (menuOpen.value = !menuOpen.value)
+const menuRef = ref<HTMLElement | null>(null)
 const closeMenu = () => (menuOpen.value = false)
 
 // 移动端（<md）导航抽屉：桌面 tabs 收进汉堡菜单
 const navOpen = ref(false)
-const toggleNav = () => (navOpen.value = !navOpen.value)
+const navBtnRef = ref<HTMLElement | null>(null)
+const navPanelRef = ref<HTMLElement | null>(null)
 const closeNav = () => (navOpen.value = false)
+
+// 两个弹层互斥，开一个就收起另一个
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value
+  if (menuOpen.value) closeNav()
+}
+const toggleNav = () => {
+  navOpen.value = !navOpen.value
+  if (navOpen.value) closeMenu()
+}
 
 // 「定价」tab 无条件展示（不再受分布模式 VITE_PORTAL_DISTRIBUTION_MODE 约束）
 const tabs = computed(() => [
@@ -65,8 +76,31 @@ function onKeydown(e: KeyboardEvent) {
     closeNav()
   }
 }
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+
+// 点弹层外部即关闭。注意不能用「fixed inset-0 全屏遮罩」那套：顶栏带 backdrop-filter，
+// 而 backdrop-filter 会使该元素成为 fixed 定位后代的包含块，遮罩只会铺满顶栏那一条，
+// 点正文区根本收不到事件。故改为文档级监听 + contains 判定。
+function onPointerDown(e: PointerEvent) {
+  const target = e.target as Node | null
+  if (!target) return
+  if (menuOpen.value && !menuRef.value?.contains(target)) closeMenu()
+  if (
+    navOpen.value &&
+    !navBtnRef.value?.contains(target) &&
+    !navPanelRef.value?.contains(target)
+  ) {
+    closeNav()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  document.addEventListener('pointerdown', onPointerDown)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  document.removeEventListener('pointerdown', onPointerDown)
+})
 
 onMounted(() => {
   if (!authStore.user) authStore.fetchUser()
@@ -85,6 +119,7 @@ onMounted(() => {
     >
       <!-- 移动端汉堡按钮 -->
       <button
+        ref="navBtnRef"
         class="flex h-9 w-9 items-center justify-center rounded-[10px] text-text2 transition-colors hover:bg-muted md:hidden"
         :aria-label="t('nav.menu')"
         :aria-expanded="navOpen"
@@ -133,13 +168,11 @@ onMounted(() => {
       </nav>
 
       <!-- 移动端导航抽屉（汉堡展开；文档 / 联系方式入口一并收入） -->
-      <template v-if="navOpen">
-        <div
-          class="fixed inset-0 z-40 md:hidden"
-          @click="closeNav"
-        />
+      <Transition name="pop-down">
         <nav
-          class="absolute inset-x-3 top-[60px] z-50 flex flex-col gap-0.5 rounded-2xl border border-border bg-card p-2 shadow-menu md:hidden"
+          v-if="navOpen"
+          ref="navPanelRef"
+          class="pop-origin-top absolute inset-x-3 top-[60px] z-50 flex flex-col gap-0.5 rounded-2xl border border-border bg-card p-2 shadow-menu md:hidden"
         >
           <router-link
             v-for="tab in tabs"
@@ -180,7 +213,7 @@ onMounted(() => {
             <span class="text-[11px] font-normal leading-snug text-subtle">{{ t('nav.shopHint') }}</span>
           </a>
         </nav>
-      </template>
+      </Transition>
 
       <!-- 右侧：使用文档 / 联系方式 / MintPop Shop 入口 + 用户菜单（彼此平级） -->
       <div class="ml-auto flex items-center gap-3">
@@ -221,9 +254,12 @@ onMounted(() => {
         </span>
 
         <!-- 用户菜单 -->
-        <div class="relative">
+        <div
+          ref="menuRef"
+          class="relative"
+        >
           <button
-            class="flex items-center gap-2.5 rounded-full border border-border bg-card py-[5px] pl-3.5 pr-1.5 shadow-pill"
+            class="flex items-center gap-2.5 rounded-full border border-border bg-card py-[5px] pl-3.5 pr-1.5 shadow-pill transition-colors hover:bg-muted"
             aria-haspopup="menu"
             :aria-expanded="menuOpen"
             @click="toggleMenu"
@@ -236,14 +272,11 @@ onMounted(() => {
             </span>
           </button>
 
-          <template v-if="menuOpen">
+          <Transition name="pop-down">
             <div
-              class="fixed inset-0 z-40"
-              @click="closeMenu"
-            />
-            <div
+              v-if="menuOpen"
               role="menu"
-              class="absolute right-0 top-[54px] z-50 w-[268px] rounded-2xl border border-border bg-card p-2 shadow-menu"
+              class="pop-origin-right absolute right-0 top-[54px] z-50 w-[268px] rounded-2xl border border-border bg-card p-2 shadow-menu"
             >
               <!-- 用户信息 -->
               <div class="flex items-center gap-3 px-3 pb-3.5 pt-3">
@@ -323,7 +356,7 @@ onMounted(() => {
                 {{ t('nav.logout') }}<span class="text-neg">↪</span>
               </button>
             </div>
-          </template>
+          </Transition>
         </div>
       </div>
     </header>
@@ -338,6 +371,40 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 弹层展开/收起：从触发点方向轻微缩放下落，出场比入场快一点，手感更利落 */
+.pop-origin-right {
+  transform-origin: top right;
+}
+.pop-origin-top {
+  transform-origin: top center;
+}
+.pop-down-enter-active {
+  transition:
+    opacity 0.16s ease-out,
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pop-down-leave-active {
+  /* 收起期间还在 DOM 里，别再吃点击 */
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease-in,
+    transform 0.12s ease-in;
+}
+.pop-down-enter-from,
+.pop-down-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop-down-enter-active,
+  .pop-down-leave-active {
+    transition: opacity 0.1s linear;
+  }
+  .pop-down-enter-from,
+  .pop-down-leave-to {
+    transform: none;
+  }
+}
 .tab {
   font: 500 14px 'Space Grotesk', sans-serif;
   padding: 8px 14px;

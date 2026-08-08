@@ -9,7 +9,9 @@ export default {
     todayCost: "Today's spend ${cost}",
     recharge: 'Recharge',
     // Referral badge on the balance card (rate is a 0-100 percentage)
-    inviteBadge: 'Refer & earn {rate}%'
+    inviteBadge: 'Refer & earn {rate}%',
+    // MintPop Shop 角标：促销位用疑问句抓注意力（顶栏那处是导航位，仍用名词 nav.shop）
+    shopBadge: 'Need a ready-made account?'
   },
   // KPI cards
   kpi: {
@@ -57,8 +59,6 @@ export default {
   quickActions: {
     createKey: { title: 'Create API Key', desc: 'Generate a new key' },
     viewUsage: { title: 'View Usage', desc: 'Detailed usage logs' },
-    redeem: { title: 'Redeem Code', desc: 'Use a redeem code' },
-    // 外链：MintPop Shop 成品账号商店
-    shop: { title: 'MintPop Shop', desc: 'Need a ready-made Claude / ChatGPT account?' }
+    redeem: { title: 'Redeem Code', desc: 'Use a redeem code' }
   }
 }

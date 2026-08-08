@@ -1,4 +1,4 @@
-/** 顶栏导航与用户菜单（PortalLayout） */
+/** 导航与入口文案（顶栏 / 用户菜单 PortalLayout；shop* 由仪表盘 Hero 角标共用） */
 export default {
   dashboard: '仪表盘',
   usage: '使用记录',

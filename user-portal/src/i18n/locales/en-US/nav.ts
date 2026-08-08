@@ -1,4 +1,4 @@
-/** Top bar navigation and user menu (PortalLayout) */
+/** Navigation and entry-point labels (top bar / user menu in PortalLayout; shop* shared by the dashboard hero badge) */
 export default {
   dashboard: 'Dashboard',
   usage: 'Usage',

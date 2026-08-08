@@ -9,7 +9,9 @@ export default {
     todayCost: '今日消费 ${cost}',
     recharge: '充值',
     // 邀请返利角标（点击进入邀请页；rate 为 0-100 的百分数）
-    inviteBadge: '邀请返 {rate}%'
+    inviteBadge: '邀请返 {rate}%',
+    // MintPop Shop 角标：促销位用疑问句抓注意力（顶栏那处是导航位，仍用名词 nav.shop）
+    shopBadge: '需要成品账号？'
   },
   // 关键指标卡片
   kpi: {
@@ -57,8 +59,6 @@ export default {
   quickActions: {
     createKey: { title: '创建 API 密钥', desc: '生成新的密钥' },
     viewUsage: { title: '查看使用记录', desc: '详细使用日志' },
-    redeem: { title: '兑换码充值', desc: '使用兑换码' },
-    // 外链：MintPop Shop 成品账号商店
-    shop: { title: 'MintPop Shop', desc: '需要成品的 Claude / ChatGPT 账号？点此购买' }
+    redeem: { title: '兑换码充值', desc: '使用兑换码' }
   }
 }

@@ -68,21 +68,21 @@ describe('PricingView', () => {
   it('接口失败时按兜底价 × 折扣展示主模型现价', async () => {
     const wrapper = await mountView()
 
-    // claudeCode：Opus 4.8 兜底原价 $5/$25，立减 70% → $1.50/$7.50
+    // claudeCode：Opus 4.8 兜底原价 $5/$25，立减 75% → $1.25/$6.25
     expect(wrapper.text()).toContain('$5.00')
-    expect(wrapper.text()).toContain('$1.50')
-    expect(wrapper.text()).toContain('$7.50')
+    expect(wrapper.text()).toContain('$1.25')
+    expect(wrapper.text()).toContain('$6.25')
   })
 
   it('接口成功时用实时原价折算现价', async () => {
-    // 模拟后端返回 Opus 4.8 原价 $10/$50（每百万 tokens）
-    mockedQuery.mockResolvedValue(new Map([['claude-opus-4-8', { input: 10, output: 50 }]]))
+    // 模拟后端返回主模型 Opus 5 原价 $10/$50（每百万 tokens）
+    mockedQuery.mockResolvedValue(new Map([['claude-opus-5', { input: 10, output: 50 }]]))
     const wrapper = await mountView()
 
-    // claudeCode 立减 70% → $3.00/$15.00
+    // claudeCode 立减 75% → $2.50/$12.50
     expect(wrapper.text()).toContain('$10.00')
-    expect(wrapper.text()).toContain('$3.00')
-    expect(wrapper.text()).toContain('$15.00')
+    expect(wrapper.text()).toContain('$2.50')
+    expect(wrapper.text()).toContain('$12.50')
     // 未返回实时价的模型（如 gpt-5.5）仍走兜底价：$5 × 20% = $1.00
     expect(wrapper.text()).toContain('$1.00')
   })
@@ -105,7 +105,7 @@ describe('PricingView', () => {
       expect(wrapper.text()).toContain(m.label)
     }
 
-    // 选择 Sonnet 5（价格区别于主模型：兜底原价 $2/$10，立减 70% → $0.60/$3.00）
+    // 选择 Sonnet 5（价格区别于主模型：兜底原价 $2/$10，立减 75% → $0.50/$2.50）
     const picked = first.models.find((m) => m.label === 'Sonnet 5')!
     const option = wrapper
       .findAll('button[role="option"]')
@@ -117,7 +117,7 @@ describe('PricingView', () => {
     expect(wrapper.text()).not.toContain(first.models[1].label)
     expect(wrapper.text()).toContain(picked.label)
     expect(wrapper.text()).toContain('$2.00')
-    expect(wrapper.text()).toContain('$0.60')
+    expect(wrapper.text()).toContain('$0.50')
 
     // 「最常用」前缀只属于主模型，切换后卡片副标题不再带它…（但其它三张卡仍是主模型，全文含前缀，
     // 故这里断言按钮文案变为所选型号，而非默认的「查看全部」）

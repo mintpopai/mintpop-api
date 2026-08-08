@@ -35,6 +35,7 @@ export interface PricingChannel {
 
 // Claude 系模型三个渠道（Claude Code / Claude API / KIRO）共用同一份清单，只是折扣不同
 const CLAUDE_MODELS: PricingModel[] = [
+  { id: 'claude-opus-5', label: 'Opus 5', fallbackInput: 5, fallbackOutput: 25 },
   { id: 'claude-opus-4-8', label: 'Opus 4.8', fallbackInput: 5, fallbackOutput: 25 },
   { id: 'claude-fable-5', label: 'Fable 5', fallbackInput: 10, fallbackOutput: 50 },
   { id: 'claude-opus-4-7', label: 'Opus 4.7', fallbackInput: 5, fallbackOutput: 25 },
@@ -49,22 +50,22 @@ export const PRICING_CHANNELS: PricingChannel[] = [
   {
     key: 'claudeCode',
     name: 'Claude (Claude Code / Desktop)',
-    discount: 70,
+    discount: 75,
     multiplier: 1.9,
     models: CLAUDE_MODELS
   },
   {
     key: 'claudeApi',
     name: 'Claude (API)',
-    discount: 55,
-    multiplier: 2.9,
+    discount: 65,
+    multiplier: 2.4,
     models: CLAUDE_MODELS
   },
   {
     key: 'chatgpt',
     name: 'ChatGPT',
     discount: 80,
-    multiplier: 0.9,
+    multiplier: 1.4,
     models: [
       // GPT-5.6 为最新一代系列（含 Sol/Luna/Terra 三个变体）
       { id: 'gpt-5.6', label: 'GPT-5.6', fallbackInput: 5, fallbackOutput: 30 },
@@ -79,8 +80,8 @@ export const PRICING_CHANNELS: PricingChannel[] = [
   {
     key: 'kiro',
     name: 'KIRO',
-    discount: 95,
-    multiplier: 0.35,
+    discount: 90,
+    multiplier: 0.9,
     models: CLAUDE_MODELS
   }
 ]

@@ -18,6 +18,7 @@ import legal from './legal'
 import invite from './invite'
 import docs from './docs'
 import announcements from './announcements'
+import subscriptions from './subscriptions'
 
 const zhCN = {
   common,
@@ -27,6 +28,7 @@ const zhCN = {
   keys,
   usage,
   recharge,
+  subscriptions,
   orders,
   profile,
   payment,

@@ -1,6 +1,7 @@
 /** 导航与入口文案（顶栏 / 用户菜单 PortalLayout；shop* 由仪表盘 Hero 角标共用） */
 export default {
   dashboard: '仪表盘',
+  subscriptions: '我的套餐',
   usage: '使用记录',
   keys: 'API 密钥',
   pricing: '定价',

@@ -45,6 +45,7 @@ const toggleNav = () => {
 // 「定价」tab 无条件展示（不再受分布模式 VITE_PORTAL_DISTRIBUTION_MODE 约束）
 const tabs = computed(() => [
   { name: 'Dashboard', label: t('nav.dashboard'), to: '/dashboard' },
+  { name: 'Subscriptions', label: t('nav.subscriptions'), to: '/subscriptions' },
   { name: 'Usage', label: t('nav.usage'), to: '/usage' },
   { name: 'Keys', label: t('nav.keys'), to: '/keys' },
   { name: 'Pricing', label: t('nav.pricing'), to: '/pricing' }

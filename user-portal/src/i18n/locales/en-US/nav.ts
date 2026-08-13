@@ -1,6 +1,7 @@
 /** Navigation and entry-point labels (top bar / user menu in PortalLayout; shop* shared by the dashboard hero badge) */
 export default {
   dashboard: 'Dashboard',
+  subscriptions: 'My Plans',
   usage: 'Usage',
   keys: 'API Keys',
   pricing: 'Pricing',

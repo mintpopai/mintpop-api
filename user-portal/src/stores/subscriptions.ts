@@ -28,6 +28,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   // 进行中的请求，用于并发去重；不需要响应式
   let inflight: Promise<void> | null = null
 
+  // 请求代次：只有最后发出的那次可以写回状态。refresh(force) 会在旧请求未回时另发一次，
+  // 若不加这道守卫，先发（数据更旧）的响应后到就会把新数据盖掉——正是刚下单完那一刻的场景。
+  let generation = 0
+
   const sorted = computed(() => sortSubscriptions(items.value))
   const activeItems = computed(() => items.value.filter((s) => isActive(s)))
   const expiringSoon = computed(() =>
@@ -37,27 +41,40 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   )
 
   async function fetchAll(): Promise<void> {
+    const gen = ++generation
     loading.value = true
     error.value = ''
     try {
-      items.value = await getMySubscriptions()
+      const data = await getMySubscriptions()
+      if (gen !== generation) return // 已被更新的请求取代，丢弃这份过期响应
+      items.value = data
       loaded.value = true
       lastFetchedAt.value = Date.now()
     } catch (e) {
+      if (gen !== generation) return
       // 不写 lastFetchedAt：下次调用不会被缓存挡住，可立即重试
       error.value = errMessage(e, i18n.global.t('subscriptions.loadFailed'))
     } finally {
-      loading.value = false
+      // 过期请求不得把 loading 提前翻回 false（新请求还在飞）
+      if (gen === generation) loading.value = false
     }
   }
 
-  /** 发起（或复用）一次拉取 */
-  function run(): Promise<void> {
-    if (inflight) return inflight
-    inflight = fetchAll().finally(() => {
-      inflight = null
+  /**
+   * 发起一次拉取。默认复用进行中的请求（去重）；force 时必发新请求。
+   *
+   * force 不是可有可无的：订阅下单成功后调 refresh() 时，页面挂载时那次 ensureLoaded()
+   * 可能还没回来——它是在订阅生效**之前**发出的，搭车复用等于把过期结果又缓存 60 秒，
+   * 恰好毁掉「刚买完就能在我的套餐里看到」这个 refresh() 存在的理由。
+   */
+  function run(force = false): Promise<void> {
+    if (inflight && !force) return inflight
+    // 只有「自己仍是当前请求」时才清 inflight：force 覆盖后，旧请求先回来也不能把新的清掉
+    const p: Promise<void> = fetchAll().finally(() => {
+      if (inflight === p) inflight = null
     })
-    return inflight
+    inflight = p
+    return p
   }
 
   /** 缓存有效则直接返回，否则拉取；并发调用共享同一次请求 */
@@ -67,10 +84,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     await run()
   }
 
-  /** 强制刷新（忽略缓存） */
+  /** 强制刷新（忽略缓存，也不搭车复用进行中的请求） */
   async function refresh(): Promise<void> {
     lastFetchedAt.value = 0
-    await run()
+    await run(true)
   }
 
   /**
@@ -85,6 +102,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     error.value = ''
     lastFetchedAt.value = 0
     inflight = null
+    // 作废尚未回来的请求，否则上一个用户的响应会写进下一个用户的界面
+    generation++
   }
 
   return {

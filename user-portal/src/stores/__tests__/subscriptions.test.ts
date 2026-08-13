@@ -81,6 +81,31 @@ describe('refresh', () => {
     await store.refresh()
     expect(mockGet).toHaveBeenCalledTimes(2)
   })
+
+  // 订阅下单成功后会调 refresh()，而页面挂载时那次 ensureLoaded() 可能还没回来。
+  // 那个请求是订阅生效**之前**发出的，若 refresh 搭它的车，等于把过期结果再缓存 60 秒——
+  // 用户点进「我的套餐」看不到刚买的套餐，正是 refresh 要防的事。
+  it('有进行中的请求时也必须另发一次，不搭车复用', async () => {
+    let resolveFirst: (v: UserSubscription[]) => void = () => {}
+    mockGet.mockReturnValueOnce(
+      new Promise<UserSubscription[]>((resolve) => {
+        resolveFirst = resolve
+      })
+    )
+    mockGet.mockResolvedValueOnce([makeSub({ id: 2 })])
+
+    const store = useSubscriptionsStore()
+    const pending = store.ensureLoaded() // 故意不 await，保持 in-flight
+
+    await store.refresh()
+    expect(mockGet).toHaveBeenCalledTimes(2)
+    expect(store.items.map((s) => s.id)).toEqual([2])
+
+    // 先发的请求后回来，不能把新数据盖掉
+    resolveFirst([makeSub({ id: 1 })])
+    await pending
+    expect(store.items.map((s) => s.id)).toEqual([2])
+  })
 })
 
 describe('reset', () => {
@@ -101,6 +126,27 @@ describe('reset', () => {
     await store.ensureLoaded()
     expect(mockGet).toHaveBeenCalledTimes(2)
     expect(store.items.map((s) => s.id)).toEqual([2])
+  })
+
+  // 退出登录时上一个用户的请求可能还在飞。若 reset 不作废它，响应回来照样写进 items，
+  // 下一个用户就会在自己的界面上看到上一个用户的套餐——这正是 reset 要堵的洞。
+  it('作废进行中的请求，其响应不得在 reset 后写回', async () => {
+    let resolvePending: (v: UserSubscription[]) => void = () => {}
+    mockGet.mockReturnValueOnce(
+      new Promise<UserSubscription[]>((resolve) => {
+        resolvePending = resolve
+      })
+    )
+
+    const store = useSubscriptionsStore()
+    const pending = store.ensureLoaded()
+
+    store.reset()
+    resolvePending([makeSub({ id: 1 })])
+    await pending
+
+    expect(store.items).toEqual([])
+    expect(store.loaded).toBe(false)
   })
 
   it('清空 error，退出后重新登录不残留上一个会话的错误态', async () => {

@@ -515,3 +515,44 @@ export interface UserAnnouncement {
   created_at: string
   updated_at: string
 }
+
+// ==================== 订阅 ====================
+
+/** 订阅所属分组：额度上限来自分组配置（字段对齐后端 dto.Group 中订阅页用到的子集） */
+export interface SubscriptionGroup {
+  id: number
+  name: string
+  description?: string
+  platform?: string
+  rate_multiplier?: number
+  daily_limit_usd?: number | null
+  weekly_limit_usd?: number | null
+  monthly_limit_usd?: number | null
+}
+
+/**
+ * 订阅状态。取值沿用后端既有契约的小写形式（backend/internal/domain/constants.go），
+ * 与「枚举取值 SCREAMING_SNAKE_CASE」的全局规范冲突，但该契约由 backend + frontend + DB 共用，
+ * 改动超出本次范围，故前端按现状对齐。
+ */
+export type SubscriptionStatus = 'active' | 'expired' | 'suspended' | 'revoked'
+
+/** 用户订阅。字段对齐后端 backend/internal/handler/dto/types.go 的 UserSubscription */
+export interface UserSubscription {
+  id: number
+  user_id: number
+  group_id: number
+  starts_at: string
+  expires_at: string
+  status: SubscriptionStatus
+  daily_window_start: string | null
+  weekly_window_start: string | null
+  monthly_window_start: string | null
+  daily_usage_usd: number
+  weekly_usage_usd: number
+  monthly_usage_usd: number
+  created_at: string
+  updated_at: string
+  revoked_at?: string | null
+  group?: SubscriptionGroup
+}

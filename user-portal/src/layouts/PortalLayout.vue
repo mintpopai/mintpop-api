@@ -108,7 +108,8 @@ onBeforeUnmount(() => {
 
 onMounted(() => {
   if (!authStore.user) authStore.fetchUser()
-  // 本布局随每次路由切换重新挂载，靠 store 内的 20 分钟节流避免频繁请求
+  // 兜底 + 保鲜：进站那次 force 拉取在 App.vue / 登录成功时已发生，这里只是长时间停留期间
+  // 随路由切换顺带刷新（受 store 内 20 分钟节流约束，正常导航基本是 no-op）
   announcementStore.fetchAnnouncements()
 })
 </script>

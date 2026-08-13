@@ -13,14 +13,21 @@ vi.mock('@/api/auth', () => ({
 vi.mock('@/api/user', () => ({
   getProfile: vi.fn()
 }))
+// 登录/登出会联动公告 store（拉取 / 重置），挡掉真实请求
+vi.mock('@/api/announcements', () => ({
+  list: vi.fn(),
+  markRead: vi.fn()
+}))
 
 import * as authApi from '@/api/auth'
+import * as announcementsApi from '@/api/announcements'
 import { getProfile } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 
 const mockLogin = vi.mocked(authApi.login)
 const mockLogin2FA = vi.mocked(authApi.login2FA)
 const mockGetProfile = vi.mocked(getProfile)
+const mockListAnnouncements = vi.mocked(announcementsApi.list)
 
 const USER: User = { id: 1, username: 'u', email: 'u@x.com', balance: 3 }
 
@@ -29,6 +36,8 @@ beforeEach(() => {
   mockLogin.mockReset()
   mockLogin2FA.mockReset()
   mockGetProfile.mockReset()
+  mockListAnnouncements.mockReset()
+  mockListAnnouncements.mockResolvedValue([])
 })
 
 describe('authStore.login', () => {
@@ -46,6 +55,22 @@ describe('authStore.login', () => {
     const outcome = await store.login('u@x.com', 'pw')
     expect(outcome).toEqual({ requires2FA: true, tempToken: 'tmp-1', emailMasked: 'u***@x.com' })
     expect(store.user).toBeNull()
+  })
+
+  // SPA 登录不刷新页面，App.vue 的「进站拉公告」在没 token 时已跳过，
+  // 登录成功必须自己补一次，否则刚登录看不到未读的强提醒公告。
+  it('登录成功后立即拉取公告，且不受节流影响', async () => {
+    mockLogin.mockResolvedValue({ access_token: 't', user: USER })
+    const store = useAuthStore()
+    await store.login('u@x.com', 'pw')
+    expect(mockListAnnouncements).toHaveBeenCalledTimes(1)
+  })
+
+  it('2FA 第一步未真正登录，不拉公告', async () => {
+    mockLogin.mockResolvedValue({ requires_2fa: true, temp_token: 'tmp-1' })
+    const store = useAuthStore()
+    await store.login('u@x.com', 'pw')
+    expect(mockListAnnouncements).not.toHaveBeenCalled()
   })
 
   it('透传 Turnstile token（站点开启人机验证时后端强制校验）', async () => {

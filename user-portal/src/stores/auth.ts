@@ -54,6 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     } else {
       await fetchUser()
     }
+    onSignedIn()
     return { requires2FA: false }
   }
 
@@ -65,6 +66,15 @@ export const useAuthStore = defineStore('auth', () => {
     } else {
       await fetchUser()
     }
+    onSignedIn()
+  }
+
+  /**
+   * 登录成功后的统一副作用。SPA 登录不刷新页面，App.vue 的「进站拉公告」早已跑过（那时还没 token），
+   * 故这里补一次 force 拉取，保证刚登录就能看到未读的强提醒公告。
+   */
+  function onSignedIn(): void {
+    void useAnnouncementStore().fetchAnnouncements(true)
   }
 
   async function logout(): Promise<void> {

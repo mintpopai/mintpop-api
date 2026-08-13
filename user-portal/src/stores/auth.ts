@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import type { User } from '@/api/types'
 import { getProfile } from '@/api/user'
 import * as authApi from '@/api/auth'
+import { useAnnouncementStore } from './announcements'
 
 /** 登录第一步的结果：requires2FA 为真时视图须进入 TOTP 验证码步骤（此时尚无 token） */
 export interface LoginOutcome {
@@ -69,6 +70,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     await authApi.logout()
     user.value = null
+    // 清空公告缓存与「本会话已弹过」记录，避免换账号后看到上一个用户的公告
+    useAnnouncementStore().reset()
   }
 
   return { user, loading, balance, fetchUser, login, loginWith2FA, logout }

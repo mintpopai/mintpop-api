@@ -5,9 +5,12 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useLocaleStore } from '@/stores/locale'
+import { useAnnouncementStore } from '@/stores/announcements'
 import { LOCALE_LABELS, type AppLocale } from '@/i18n'
 import { formatBalance } from '@/utils/format'
 import { CONTACT_PAGE_URLS, SHOP_PAGE_URL } from '@/config/portal'
+import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
+import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
 
 // fluid：内容区占满全宽（供文档中心这类「侧栏贴左 + 正文自行限宽」的页面用），默认仍居中限宽
 defineProps<{ fluid?: boolean }>()
@@ -17,6 +20,7 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const localeStore = useLocaleStore()
+const announcementStore = useAnnouncementStore()
 
 const menuOpen = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
@@ -104,6 +108,8 @@ onBeforeUnmount(() => {
 
 onMounted(() => {
   if (!authStore.user) authStore.fetchUser()
+  // 本布局随每次路由切换重新挂载，靠 store 内的 20 分钟节流避免频繁请求
+  announcementStore.fetchAnnouncements()
 })
 </script>
 
@@ -215,8 +221,9 @@ onMounted(() => {
         </nav>
       </Transition>
 
-      <!-- 右侧：使用文档 / 联系方式 / MintPop Shop 入口 + 用户菜单（彼此平级） -->
+      <!-- 右侧：公告铃铛 + 使用文档 / 联系方式 / MintPop Shop 入口 + 用户菜单（彼此平级） -->
       <div class="ml-auto flex items-center gap-3">
+        <AnnouncementBell />
         <router-link
           to="/docs"
           class="doc-link hidden md:inline-block"
@@ -367,6 +374,9 @@ onMounted(() => {
         <slot />
       </div>
     </main>
+
+    <!-- 强提醒公告：登录后自动弹出，必须确认 -->
+    <AnnouncementPopup />
   </div>
 </template>
 

@@ -10,8 +10,10 @@ const props = withDefaults(
     title?: string
     /** 面板宽度：md=460px（默认）/ lg=640px / xl=720px */
     size?: 'md' | 'lg' | 'xl'
+    /** 强确认弹窗：Esc 与点击遮罩都不关闭，必须点面板内的按钮（如强提醒公告） */
+    persistent?: boolean
   }>(),
-  { title: undefined, size: 'md' }
+  { title: undefined, size: 'md', persistent: false }
 )
 const emit = defineEmits<{ close: [] }>()
 
@@ -27,7 +29,8 @@ const FOCUSABLE =
 
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    emit('close')
+    // persistent 时吞掉 Esc，但下面的 Tab 圈禁照常生效
+    if (!props.persistent) emit('close')
     return
   }
   if (e.key !== 'Tab' || !panel.value) return
@@ -88,7 +91,7 @@ onBeforeUnmount(() => {
     >
       <div
         class="absolute inset-0 bg-black/40"
-        @click="emit('close')"
+        @click="persistent || emit('close')"
       />
       <div
         ref="panel"

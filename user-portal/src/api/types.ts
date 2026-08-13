@@ -492,3 +492,26 @@ export interface PaginatedResponse<T> {
   page_size: number
   pages?: number
 }
+
+// ==================== 公告 ====================
+
+/**
+ * 提醒方式。取值与后端 domain.AnnouncementNotifyMode* 逐字一致（小写字面量，
+ * 已是既有接口契约，勿改成 SCREAMING_SNAKE_CASE，否则与后端/admin 前端不通）：
+ * - silent：静默，只进铃铛列表
+ * - popup：登录后强制弹窗，需用户确认
+ */
+export type AnnouncementNotifyMode = 'silent' | 'popup'
+
+/** 面向普通用户的公告（GET /announcements），read_at 为空即未读 */
+export interface UserAnnouncement {
+  id: number
+  title: string
+  content: string
+  notify_mode: AnnouncementNotifyMode
+  starts_at?: string
+  ends_at?: string
+  read_at?: string
+  created_at: string
+  updated_at: string
+}

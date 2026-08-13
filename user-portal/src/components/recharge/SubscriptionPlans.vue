@@ -3,12 +3,20 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { SubscriptionPlan } from '@/api/types'
 import { formatBalance } from '@/utils/format'
+import { platformMeta, type PlatformMeta } from '@/utils/platform'
 
 const { t } = useI18n()
 
-const props = defineProps<{
-  plans: SubscriptionPlan[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    plans: SubscriptionPlan[]
+    /** 用户当前生效订阅的分组 ID：命中则该套餐按钮显示为「续费」 */
+    activeGroupIds?: number[]
+    /** 需要高亮的分组 ID（续费深链跳转定位用），null 表示不高亮 */
+    highlightGroupId?: number | null
+  }>(),
+  { activeGroupIds: () => [], highlightGroupId: null }
+)
 
 const emit = defineEmits<{
   subscribe: [plan: SubscriptionPlan]
@@ -23,8 +31,16 @@ interface PlanCard {
   plan: SubscriptionPlan
   /** 原价 > 现价时显示划线 */
   hasDiscount: boolean
+  /** 折扣百分比（整数，>0 才展示徽章） */
+  discountPercent: number
   /** 仅含后端有值的额度限制行（每张卡只计算一次） */
   limitLines: LimitLine[]
+  /** 三个额度上限皆无：展示「不限额度」而非整块消失 */
+  unlimited: boolean
+  /** 平台标签与圆点色 */
+  platform: PlatformMeta
+  /** 用户已有该分组的生效订阅 → 按钮文案变「续费」 */
+  isRenewal: boolean
 }
 
 /** 额度限制行：只展示后端有值的那几行 */
@@ -42,13 +58,27 @@ function buildLimitLines(plan: SubscriptionPlan): LimitLine[] {
   return lines
 }
 
+/** 折扣百分比：四舍五入取整，非正数视为无折扣 */
+function buildDiscountPercent(plan: SubscriptionPlan): number {
+  if (typeof plan.original_price !== 'number' || plan.original_price <= plan.price) return 0
+  const pct = Math.round((1 - plan.price / plan.original_price) * 100)
+  return pct > 0 ? pct : 0
+}
+
 // 每张卡的派生数据预计算一次，模板只读不再重复计算
 const cards = computed<PlanCard[]>(() =>
-  props.plans.map((plan) => ({
-    plan,
-    hasDiscount: typeof plan.original_price === 'number' && plan.original_price > plan.price,
-    limitLines: buildLimitLines(plan)
-  }))
+  props.plans.map((plan) => {
+    const limitLines = buildLimitLines(plan)
+    return {
+      plan,
+      hasDiscount: typeof plan.original_price === 'number' && plan.original_price > plan.price,
+      discountPercent: buildDiscountPercent(plan),
+      limitLines,
+      unlimited: limitLines.length === 0,
+      platform: platformMeta(plan.group_platform),
+      isRenewal: props.activeGroupIds.includes(plan.group_id)
+    }
+  })
 )
 
 const isEmpty = computed(() => props.plans.length === 0)
@@ -101,13 +131,20 @@ const isEmpty = computed(() => props.plans.length === 0)
     class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
   >
     <div
-      v-for="{ plan, hasDiscount, limitLines } in cards"
+      v-for="{ plan, hasDiscount, discountPercent, limitLines, unlimited, platform, isRenewal } in cards"
       :key="plan.id"
+      :data-plan-group="plan.group_id"
       class="flex flex-col rounded-[20px] bg-card p-[24px_26px] shadow-card transition-shadow duration-150 hover:shadow-[0_6px_24px_rgba(0,0,0,0.10)]"
+      :class="{ 'ring-2 ring-accent': plan.group_id === highlightGroupId }"
     >
-      <!-- 套餐名 -->
-      <div class="mb-1 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
-        {{ plan.group_name ?? $t('recharge.planFallback') }}
+      <!-- 套餐名：平台圆点 + 分组名 + 平台标签 -->
+      <div class="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
+        <span
+          class="h-1.5 w-1.5 shrink-0 rounded-full"
+          :style="{ backgroundColor: platform.color }"
+        />
+        <span class="truncate">{{ plan.group_name ?? $t('recharge.planFallback') }}</span>
+        <span class="shrink-0 text-faint/70">{{ platform.label }}</span>
       </div>
       <h3 class="mb-4 font-serif text-[22px] font-medium leading-snug text-text">
         {{ plan.name }}
@@ -131,6 +168,13 @@ const isEmpty = computed(() => props.plans.length === 0)
           class="text-sm text-faint line-through"
         >
           ${{ formatBalance(plan.original_price!) }}
+        </span>
+        <span
+          v-if="discountPercent > 0"
+          class="rounded px-1.5 py-0.5 text-[11px] font-semibold text-neg"
+          :title="$t('recharge.discountOff', { percent: discountPercent })"
+        >
+          -{{ discountPercent }}%
         </span>
       </div>
 
@@ -165,6 +209,13 @@ const isEmpty = computed(() => props.plans.length === 0)
           <span class="text-subtle">{{ line.label }}</span>
           <span class="font-medium text-accent">{{ line.value }}</span>
         </div>
+      </div>
+      <div
+        v-else-if="unlimited"
+        class="mb-4 flex items-center justify-between rounded-xl border border-dashed border-border2 px-3 py-1.5 text-[13px]"
+      >
+        <span class="text-subtle">{{ $t('recharge.quotaLabel') }}</span>
+        <span class="font-medium text-accent">{{ $t('recharge.unlimitedQuota') }}</span>
       </div>
 
       <!-- 特性列表 -->
@@ -204,7 +255,7 @@ const isEmpty = computed(() => props.plans.length === 0)
         class="w-full cursor-pointer rounded-xl2 bg-accent py-[13px] text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,0.28)] transition-[background,box-shadow,opacity] duration-150 hover:bg-accent/90"
         @click="emit('subscribe', plan)"
       >
-        {{ $t('recharge.selectPlan') }}
+        {{ isRenewal ? $t('recharge.renewPlan') : $t('recharge.selectPlan') }}
       </button>
     </div>
   </div>

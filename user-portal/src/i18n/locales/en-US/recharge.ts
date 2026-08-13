@@ -70,5 +70,9 @@ export default {
   noPlans: 'No subscription plans available',
   validity: 'Validity',
   rateMultiplier: 'Rate multiplier',
-  selectPlan: 'Choose this plan'
+  selectPlan: 'Choose this plan',
+  renewPlan: 'Renew this plan',
+  discountOff: '{percent}% off',
+  quotaLabel: 'Quota',
+  unlimitedQuota: 'Unlimited'
 }

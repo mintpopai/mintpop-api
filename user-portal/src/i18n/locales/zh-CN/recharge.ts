@@ -70,5 +70,9 @@ export default {
   noPlans: '暂无可用订阅套餐',
   validity: '有效期',
   rateMultiplier: '倍率',
-  selectPlan: '选择此套餐'
+  selectPlan: '选择此套餐',
+  renewPlan: '续费此套餐',
+  discountOff: '立减 {percent}%',
+  quotaLabel: '额度',
+  unlimitedQuota: '不限额度'
 }

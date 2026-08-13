@@ -16,6 +16,7 @@ import { useRecharge } from '@/composables/useRecharge'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
+import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { getPlans } from '@/api/payment'
 import { formatBalance } from '@/utils/format'
 import { pollOrderUntilSettled } from '@/utils/orderPolling'
@@ -28,6 +29,13 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
+const subscriptionsStore = useSubscriptionsStore()
+
+// 已生效订阅的分组集合：套餐卡片据此把「选择此套餐」显示为「续费」
+const activeGroupIds = computed(() => subscriptionsStore.activeItems.map((s) => s.group_id))
+
+// 从「我的套餐」「到期横幅」跳来时高亮的分组（约 2 秒后自动淡出）
+const highlightGroupId = ref<number | null>(null)
 
 const { checkout, loading, error, loaded, amount, method, payOptions, activePayOption, presets, popular, load, submitRecharge, submitSubscription } = useRecharge()
 
@@ -133,6 +141,27 @@ async function ensurePlans() {
   }
 }
 
+/** 处理 ?tab=subscription&group=<id>：切到订阅 tab 并滚动/高亮对应分组的套餐卡 */
+async function applyPlanDeepLink(): Promise<void> {
+  if (route.query.tab !== 'subscription' || !showSubscription.value) return
+  activeTab.value = 1
+  await ensurePlans()
+
+  const groupId = Number(route.query.group)
+  if (!Number.isFinite(groupId) || groupId <= 0) return
+  // 该分组当前没有在售套餐时静默忽略（只切 tab），不给用户一个指向空处的高亮
+  if (!plans.value.some((p) => p.group_id === groupId)) return
+
+  highlightGroupId.value = groupId
+  await nextTick()
+  document
+    .querySelector(`[data-plan-group="${groupId}"]`)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  setTimeout(() => {
+    highlightGroupId.value = null
+  }, 2000)
+}
+
 // 订阅确认弹窗
 const confirmOpen = ref(false)
 const selectedPlan = ref<SubscriptionPlan | null>(null)
@@ -217,12 +246,15 @@ async function resumeRedirectPayment(outTradeNo: string) {
 // ============ 生命周期 ============
 
 onMounted(async () => {
+  // 拉一次订阅数据用于续费文案（哪些分组已生效），失败不影响主流程
+  void subscriptionsStore.ensureLoaded()
   await settingsStore.ensureLoaded()
   await load()
   // 订阅 tab 显示时才预加载
   if (showSubscription.value) {
     await ensurePlans()
   }
+  await applyPlanDeepLink()
   // 带 #redeem 锚点进入时（如仪表盘「兑换码充值」），切到充值 tab 并滚动到兑换码区
   if (route.hash === '#redeem') {
     activeTab.value = 0
@@ -398,6 +430,8 @@ onMounted(async () => {
         <!-- 套餐卡片（点击选择后在确认弹窗内选支付方式） -->
         <SubscriptionPlans
           :plans="plans"
+          :active-group-ids="activeGroupIds"
+          :highlight-group-id="highlightGroupId"
           @subscribe="onSubscribe"
         />
       </template>

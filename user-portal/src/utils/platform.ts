@@ -12,7 +12,8 @@ const MAP: Record<string, PlatformMeta> = {
   openai: { label: 'gpt', color: '#14C28A' },
   gpt: { label: 'gpt', color: '#14C28A' },
   gemini: { label: 'gemini', color: '#2A6FDB' },
-  google: { label: 'gemini', color: '#2A6FDB' }
+  google: { label: 'gemini', color: '#2A6FDB' },
+  antigravity: { label: 'antigravity', color: '#7C4DFF' }
 }
 
 export function platformMeta(platform?: string | null): PlatformMeta {

@@ -1,16 +1,24 @@
-// 到期横幅的三条契约：
+// 到期横幅的五条契约：
 // 1. 没有临期订阅就不能渲染——空横幅会白占仪表盘顶部；
 // 2. 多条临期时展示最紧急的那条 + 「另有 N 个」；
-// 3. 关闭后本次会话不再出现（写 sessionStorage），否则每次切页都被打断。
+// 3. 关闭后本次会话不再出现（写 sessionStorage），否则每次切页都被打断；
+// 4. 站点关闭订阅购买时横幅照常显示（到期信息本身有用）但不给「立即续费」按钮——点过去是死链；
+// 5. 英文文案在 n=1 时必须是单数（横幅只在最后 7 天出现，n=1 恰恰是最常见的渲染）。
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { setActivePinia, createPinia } from 'pinia'
-import type { UserSubscription } from '@/api/types'
+import type { UserSubscription, PublicSettings } from '@/api/types'
 import zhCN from '@/i18n/locales/zh-CN'
+import enUS from '@/i18n/locales/en-US'
 
 vi.mock('@/api/subscriptions', () => ({
   getMySubscriptions: vi.fn()
+}))
+
+// 横幅要按 settings.purchase_subscription_enabled 决定是否给续费 CTA，挡掉真实请求
+vi.mock('@/api/settings', () => ({
+  getPublicSettings: vi.fn()
 }))
 
 vi.mock('vue-router', () => ({
@@ -18,9 +26,11 @@ vi.mock('vue-router', () => ({
 }))
 
 import { getMySubscriptions } from '@/api/subscriptions'
+import { getPublicSettings } from '@/api/settings'
 import ExpiryBanner from '../ExpiryBanner.vue'
 
 const mockGet = vi.mocked(getMySubscriptions)
+const mockSettings = vi.mocked(getPublicSettings)
 const i18n = createI18n({
   legacy: false,
   locale: 'zh-CN',
@@ -28,6 +38,14 @@ const i18n = createI18n({
   missingWarn: false,
   fallbackWarn: false,
   messages: { 'zh-CN': zhCN }
+})
+const enI18n = createI18n({
+  legacy: false,
+  locale: 'en-US',
+  fallbackLocale: false,
+  missingWarn: false,
+  fallbackWarn: false,
+  messages: { 'en-US': enUS }
 })
 const DAY = 86_400_000
 
@@ -52,16 +70,23 @@ function makeSub(over: Partial<UserSubscription> = {}): UserSubscription {
   }
 }
 
-async function mountBanner() {
-  const wrapper = mount(ExpiryBanner, { global: { plugins: [i18n] } })
+async function mountBanner(plugin: typeof i18n | typeof enI18n = i18n) {
+  const wrapper = mount(ExpiryBanner, { global: { plugins: [plugin] } })
   await new Promise((r) => setTimeout(r, 0))
   await wrapper.vm.$nextTick()
   return wrapper
 }
 
+/** 续费 CTA（横幅右侧的主按钮）；关闭按钮只带 aria-label，不含文案 */
+function renewButton(wrapper: Awaited<ReturnType<typeof mountBanner>>, label: string) {
+  return wrapper.findAll('button').find((b) => b.text().includes(label))
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   mockGet.mockReset()
+  mockSettings.mockReset()
+  mockSettings.mockResolvedValue({ purchase_subscription_enabled: true } as PublicSettings)
   sessionStorage.clear()
 })
 
@@ -102,5 +127,53 @@ describe('ExpiryBanner', () => {
     ])
     const wrapper = await mountBanner()
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
+  })
+})
+
+describe('ExpiryBanner：购买开关门禁', () => {
+  it('站点开放订阅购买时给「立即续费」按钮', async () => {
+    mockGet.mockResolvedValue([
+      makeSub({ expires_at: new Date(Date.now() + 2 * DAY).toISOString() })
+    ])
+    const wrapper = await mountBanner()
+    expect(renewButton(wrapper, zhCN.subscriptions.expiryBannerAction)).toBeDefined()
+  })
+
+  it('站点关闭订阅购买时横幅仍渲染，但不给「立即续费」按钮（否则是死链）', async () => {
+    mockSettings.mockResolvedValue({ purchase_subscription_enabled: false } as PublicSettings)
+    mockGet.mockResolvedValue([
+      makeSub({ expires_at: new Date(Date.now() + 2 * DAY).toISOString() })
+    ])
+    const wrapper = await mountBanner()
+    expect(wrapper.find('[role="status"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Claude Pro')
+    expect(renewButton(wrapper, zhCN.subscriptions.expiryBannerAction)).toBeUndefined()
+  })
+})
+
+describe('ExpiryBanner：英文单复数', () => {
+  it('n=1 时用单数（不是 "1 days" / "1 more plans"）', async () => {
+    mockGet.mockResolvedValue([
+      // 当天到期：组件把剩余天数下限钳到 1，正是最常见的 n=1 渲染
+      makeSub({ id: 1, group_id: 1, group: { id: 1, name: 'Plan A' }, expires_at: new Date(Date.now() + 3600_000).toISOString() }),
+      makeSub({ id: 2, group_id: 2, group: { id: 2, name: 'Plan B' }, expires_at: new Date(Date.now() + 5 * DAY).toISOString() })
+    ])
+    const wrapper = await mountBanner(enI18n)
+    const text = wrapper.text()
+    expect(text).toContain('expires in 1 day')
+    expect(text).not.toContain('expires in 1 days')
+    expect(text).toContain('1 more plan expiring soon')
+    expect(text).not.toContain('1 more plans')
+  })
+
+  it('n>1 时用复数', async () => {
+    mockGet.mockResolvedValue([
+      makeSub({ id: 1, group_id: 1, group: { id: 1, name: 'Plan A' }, expires_at: new Date(Date.now() + 3 * DAY).toISOString() }),
+      makeSub({ id: 2, group_id: 2, group: { id: 2, name: 'Plan B' }, expires_at: new Date(Date.now() + 5 * DAY).toISOString() }),
+      makeSub({ id: 3, group_id: 3, group: { id: 3, name: 'Plan C' }, expires_at: new Date(Date.now() + 6 * DAY).toISOString() })
+    ])
+    const wrapper = await mountBanner(enI18n)
+    expect(wrapper.text()).toContain('expires in 3 days')
+    expect(wrapper.text()).toContain('2 more plans expiring soon')
   })
 })

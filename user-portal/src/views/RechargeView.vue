@@ -198,6 +198,9 @@ async function handleConfirmSubscribe() {
 async function handleSubPaid() {
   payModalOpen.value = false
   await authStore.fetchUser()
+  // 让订阅缓存失效：否则用户看到「订阅成功」后点进「我的套餐」会命中 60 秒缓存，
+  // 刚买的套餐不在列表里。fire-and-forget，不阻塞成功提示
+  void subscriptionsStore.refresh()
   successNote.value = t('recharge.subscribeSuccess')
 }
 
@@ -232,10 +235,12 @@ async function resumeRedirectPayment(outTradeNo: string) {
   if (outcome.kind === 'ABORTED') return
   if (outcome.kind === 'SETTLED') {
     await authStore.fetchUser()
-    successNote.value =
-      outcome.order.order_type === 'subscription'
-        ? t('recharge.subscribeSuccess')
-        : t('recharge.rechargeSuccess')
+    const isSubscription = outcome.order.order_type === 'subscription'
+    // 订阅订单同样要让订阅缓存失效（同 handleSubPaid），fire-and-forget
+    if (isSubscription) void subscriptionsStore.refresh()
+    successNote.value = isSubscription
+      ? t('recharge.subscribeSuccess')
+      : t('recharge.rechargeSuccess')
   } else {
     // TIMEOUT / TERMINAL：用户可能已付款，不能静默结束，引导去订单页核实
     toast.error(t('recharge.resumeUnknown'))

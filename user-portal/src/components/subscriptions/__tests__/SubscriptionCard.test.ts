@@ -1,7 +1,8 @@
-// 订阅卡片的三条契约：
+// 订阅卡片的四条契约：
 // 1. 只渲染「配置了上限」的额度条——多渲染一条空进度条会让用户以为有额度限制；
 // 2. 三个上限皆空时必须显示「不限额度」块，而不是整块消失（消失会让人以为卡片渲染坏了）；
-// 3. 续费按钮只在生效中出现，且带对的 group_id——按钮带错 id 会跳到别人的套餐。
+// 3. 续费按钮只在生效中出现，且带对的 group_id——按钮带错 id 会跳到别人的套餐；
+// 4. 站点关闭订阅购买（canRenew=false）时不给续费按钮——充值页没有订阅 tab，点过去是死链。
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
@@ -41,8 +42,11 @@ function makeSub(over: Partial<UserSubscription> = {}): UserSubscription {
   }
 }
 
-function mountCard(sub: UserSubscription) {
-  return mount(SubscriptionCard, { props: { sub }, global: { plugins: [i18n] } })
+function mountCard(sub: UserSubscription, canRenew?: boolean) {
+  return mount(SubscriptionCard, {
+    props: canRenew === undefined ? { sub } : { sub, canRenew },
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('SubscriptionCard：额度渲染', () => {
@@ -96,5 +100,27 @@ describe('SubscriptionCard：状态与续费', () => {
   it('已撤销显示「已撤销」文案', () => {
     const wrapper = mountCard(makeSub({ status: 'revoked' }))
     expect(wrapper.text()).toContain(zhCN.subscriptions.status.revoked)
+  })
+
+  // 站点关闭订阅购买时充值页不渲染订阅 tab、深链也直接 bail，留着按钮就是死链
+  it('canRenew 为 false 时，即便生效中也不给续费按钮（卡片其余内容照常）', () => {
+    const wrapper = mountCard(makeSub(), false)
+    expect(wrapper.find('button').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Claude Pro')
+    expect(wrapper.text()).toContain(zhCN.subscriptions.status.active)
+  })
+})
+
+// 后端 dto.Group.RateMultiplier 是 float64 且无 omitempty，恒有值：
+// 只判 typeof 等于不过滤，默认倍率会渲染成「倍率：1×」这种噪声
+describe('SubscriptionCard：倍率展示', () => {
+  it('倍率为默认值 1 时不展示倍率行', () => {
+    const wrapper = mountCard(makeSub({ group: { id: 42, name: 'g', rate_multiplier: 1 } }))
+    expect(wrapper.text()).not.toContain(zhCN.subscriptions.rate)
+  })
+
+  it('倍率非 1 时展示倍率行', () => {
+    const wrapper = mountCard(makeSub({ group: { id: 42, name: 'g', rate_multiplier: 1.5 } }))
+    expect(wrapper.text()).toContain(`${zhCN.subscriptions.rate}：1.5×`)
   })
 })

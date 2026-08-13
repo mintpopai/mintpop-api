@@ -7,10 +7,12 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import SubscriptionCard from '@/components/subscriptions/SubscriptionCard.vue'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useSettingsStore } from '@/stores/settings'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const store = useSubscriptionsStore()
 const settingsStore = useSettingsStore()
+const toast = useToast()
 
 // 站点未开放订阅购买时不给「去订阅」按钮（点进去也是空的），
 // 但页面本身照常展示——管理员分配的订阅同样要能看到。
@@ -19,6 +21,15 @@ const canPurchase = computed(() => settingsStore.settings?.purchase_subscription
 /** 续费：跳到充值页订阅 tab 并定位到该分组的套餐 */
 function goRenew(groupId: number) {
   router.push({ path: '/recharge', query: { tab: 'subscription', group: String(groupId) } })
+}
+
+/**
+ * 刷新。首次加载失败走整页错误块（条件含 !store.loaded），但已加载过之后错误块不再出现，
+ * 刷新失败就毫无反馈——刷新是本页唯一动作，静默失败比没有按钮更糟，故补一条错误 toast。
+ */
+async function handleRefresh() {
+  await store.refresh()
+  if (store.error && store.loaded) toast.error(store.error)
 }
 
 onMounted(async () => {
@@ -37,7 +48,7 @@ onMounted(async () => {
         <button
           class="rounded-full bg-card px-4 py-2.5 text-[13px] font-medium text-text2 shadow-pill hover:text-text"
           :disabled="store.loading"
-          @click="store.refresh()"
+          @click="handleRefresh"
         >
           {{ $t('common.refresh') }}
         </button>
@@ -97,6 +108,7 @@ onMounted(async () => {
         v-for="sub in store.sorted"
         :key="sub.id"
         :sub="sub"
+        :can-renew="canPurchase"
         @renew="goRenew"
       />
     </div>

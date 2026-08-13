@@ -3,7 +3,7 @@
 // 「登录成功→守卫发现无 token→弹回登录页」的死循环且无任何提示。
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import type { User } from '@/api/types'
+import type { User, UserSubscription } from '@/api/types'
 
 vi.mock('@/api/auth', () => ({
   login: vi.fn(),
@@ -19,17 +19,43 @@ vi.mock('@/api/announcements', () => ({
   markRead: vi.fn()
 }))
 
+// 登出还会重置订阅 store（换账号不能看到上一个用户的套餐），同样挡掉真实请求
+vi.mock('@/api/subscriptions', () => ({
+  getMySubscriptions: vi.fn()
+}))
+
 import * as authApi from '@/api/auth'
 import * as announcementsApi from '@/api/announcements'
 import { getProfile } from '@/api/user'
+import { getMySubscriptions } from '@/api/subscriptions'
 import { useAuthStore } from '@/stores/auth'
+import { useSubscriptionsStore } from '@/stores/subscriptions'
 
 const mockLogin = vi.mocked(authApi.login)
 const mockLogin2FA = vi.mocked(authApi.login2FA)
 const mockGetProfile = vi.mocked(getProfile)
 const mockListAnnouncements = vi.mocked(announcementsApi.list)
+const mockGetSubscriptions = vi.mocked(getMySubscriptions)
 
 const USER: User = { id: 1, username: 'u', email: 'u@x.com', balance: 3 }
+
+const SUB: UserSubscription = {
+  id: 1,
+  user_id: 1,
+  group_id: 42,
+  starts_at: '2026-08-01T00:00:00Z',
+  expires_at: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+  status: 'active',
+  daily_window_start: null,
+  weekly_window_start: null,
+  monthly_window_start: null,
+  daily_usage_usd: 0,
+  weekly_usage_usd: 0,
+  monthly_usage_usd: 0,
+  created_at: '2026-08-01T00:00:00Z',
+  updated_at: '2026-08-01T00:00:00Z',
+  group: { id: 42, name: '用户A的套餐' }
+}
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -38,6 +64,8 @@ beforeEach(() => {
   mockGetProfile.mockReset()
   mockListAnnouncements.mockReset()
   mockListAnnouncements.mockResolvedValue([])
+  mockGetSubscriptions.mockReset()
+  mockGetSubscriptions.mockResolvedValue([])
 })
 
 describe('authStore.login', () => {
@@ -78,6 +106,27 @@ describe('authStore.login', () => {
     const store = useAuthStore()
     await store.login('u@x.com', 'pw', 'ts-token')
     expect(mockLogin).toHaveBeenCalledWith({ email: 'u@x.com', password: 'pw', turnstile_token: 'ts-token' })
+  })
+})
+
+// SPA 退出登录只是 router.push('/login')，页面不刷新、Pinia 状态存活。
+// 不重置订阅 store 的话，用户 B 登录后仪表盘与「我的套餐」会先渲染用户 A 的数据，
+// 且在 60 秒缓存窗口内根本不会发请求——这是跨用户数据泄露。
+describe('authStore.logout', () => {
+  it('清空订阅缓存，且之后的 ensureLoaded 会真的重新拉取', async () => {
+    mockGetSubscriptions.mockResolvedValue([SUB])
+    const subs = useSubscriptionsStore()
+    await subs.ensureLoaded()
+    expect(subs.items).toHaveLength(1)
+
+    await useAuthStore().logout()
+    expect(subs.items).toEqual([])
+    expect(subs.loaded).toBe(false)
+
+    mockGetSubscriptions.mockResolvedValue([])
+    await subs.ensureLoaded()
+    expect(mockGetSubscriptions).toHaveBeenCalledTimes(2)
+    expect(subs.items).toEqual([])
   })
 })
 

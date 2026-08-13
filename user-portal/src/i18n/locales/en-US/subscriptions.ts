@@ -13,7 +13,8 @@ export default {
     revoked: 'Revoked'
   },
   expiresAt: 'Expires',
-  daysRemaining: '{days} days left',
+  // 「|」是 vue-i18n 的单复数分隔符：左单数、右复数（横幅只在最后 7 天出现，n=1 是最常见的渲染）
+  daysRemaining: '{days} day left | {days} days left',
   expiredAlready: 'Expired',
   renew: 'Renew',
   quota: {
@@ -28,8 +29,8 @@ export default {
   rate: 'Rate',
   overviewTitle: 'Plan quota',
   overviewMore: 'View all →',
-  expiryBanner: '"{name}" expires in {days} days',
-  expiryBannerMore: '{count} more plans expiring soon',
+  expiryBanner: '"{name}" expires in {days} day | "{name}" expires in {days} days',
+  expiryBannerMore: '{count} more plan expiring soon | {count} more plans expiring soon',
   expiryBannerAction: 'Renew now',
   dismiss: 'Dismiss'
 }

@@ -1,8 +1,9 @@
-// 订阅 store 的四条契约：
+// 订阅 store 的五条契约：
 // 1. 60 秒缓存——仪表盘与套餐页会各自 ensureLoaded，没有缓存就是每次导航打一次接口；
 // 2. in-flight 去重——两个组件同帧挂载只能发一次请求，且两边都要等到数据；
 // 3. refresh 必须绕过缓存——页面上的刷新按钮点了要真刷新；
-// 4. 失败不写时间戳且置 error——否则一次网络抖动会让套餐页 60 秒内空着且看不出是失败。
+// 4. 失败不写时间戳且置 error——否则一次网络抖动会让套餐页 60 秒内空着且看不出是失败；
+// 5. reset 必须彻底——退出登录不刷新页面，残留状态 / 残留缓存时间戳会让下一个用户看到上一个用户的套餐。
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import type { UserSubscription } from '@/api/types'
@@ -79,6 +80,37 @@ describe('refresh', () => {
     await store.ensureLoaded()
     await store.refresh()
     expect(mockGet).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('reset', () => {
+  it('清空数据，且之后的 ensureLoaded 必须真的重新发请求（不被 60 秒缓存挡住）', async () => {
+    mockGet.mockResolvedValue([makeSub({ id: 1 })])
+    const store = useSubscriptionsStore()
+    await store.ensureLoaded()
+    expect(store.items).toHaveLength(1)
+
+    store.reset()
+    expect(store.items).toEqual([])
+    expect(store.loaded).toBe(false)
+    expect(store.error).toBe('')
+
+    // 关键：紧接着（远在 60 秒缓存窗口内）再 ensureLoaded 必须重新打接口，
+    // 否则换账号后下一个用户会直接看到上一个用户的套餐
+    mockGet.mockResolvedValue([makeSub({ id: 2 })])
+    await store.ensureLoaded()
+    expect(mockGet).toHaveBeenCalledTimes(2)
+    expect(store.items.map((s) => s.id)).toEqual([2])
+  })
+
+  it('清空 error，退出后重新登录不残留上一个会话的错误态', async () => {
+    mockGet.mockRejectedValueOnce(new Error('boom'))
+    const store = useSubscriptionsStore()
+    await store.ensureLoaded()
+    expect(store.error).not.toBe('')
+
+    store.reset()
+    expect(store.error).toBe('')
   })
 })
 

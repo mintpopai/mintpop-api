@@ -34,9 +34,19 @@ function quotaText(sub: UserSubscription): string {
   return `${t(`subscriptions.quota.${w.key}`)} $${formatBalance(w.used)} / $${formatBalance(w.limit)}`
 }
 
-function barWidth(sub: UserSubscription): string {
+/** 进度百分比：既用于条宽，也用于 aria-valuenow（与 QuotaBar 口径一致） */
+function barPercent(sub: UserSubscription): number {
   const w = quotaOf(sub)
-  return w ? `${progressPercent(w.used, w.limit)}%` : '0%'
+  return w ? progressPercent(w.used, w.limit) : 0
+}
+
+function barWidth(sub: UserSubscription): string {
+  return `${barPercent(sub)}%`
+}
+
+/** 订阅行的展示名（分组名缺失时退化成 #id），同时用作进度条的 aria-label */
+function subName(sub: UserSubscription): string {
+  return sub.group?.name ?? `#${sub.group_id}`
 }
 
 function barClass(sub: UserSubscription): string {
@@ -56,9 +66,9 @@ onMounted(() => {
     class="mb-[22px] rounded-xl3 bg-card p-[22px_24px] shadow-card"
   >
     <div class="mb-4 flex items-center justify-between">
-      <h2 class="font-serif text-[19px] font-medium text-text">
+      <h3 class="font-serif text-xl font-medium text-text">
         {{ $t('subscriptions.overviewTitle') }}
-      </h2>
+      </h3>
       <button
         class="text-[13px] font-medium text-subtle hover:text-text"
         @click="router.push('/subscriptions')"
@@ -75,13 +85,27 @@ onMounted(() => {
       >
         <div class="flex items-center justify-between text-[13px]">
           <span class="truncate font-medium text-text2">
-            {{ sub.group?.name ?? `#${sub.group_id}` }}
+            {{ subName(sub) }}
           </span>
           <span class="shrink-0 text-subtle">
-            {{ $t('subscriptions.daysRemaining', { days: daysRemaining(sub.expires_at) }) }}
+            <!-- 第三个参数是单复数选择值：英文有单/复数两式，中文单形式（不受影响） -->
+            {{
+              $t(
+                'subscriptions.daysRemaining',
+                { days: daysRemaining(sub.expires_at) },
+                daysRemaining(sub.expires_at)
+              )
+            }}
           </span>
         </div>
-        <div class="h-2 overflow-hidden rounded-full bg-track">
+        <div
+          class="h-2 overflow-hidden rounded-full bg-track"
+          role="progressbar"
+          :aria-valuenow="Math.round(barPercent(sub))"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-label="subName(sub)"
+        >
           <div
             class="h-full rounded-full"
             :class="barClass(sub)"

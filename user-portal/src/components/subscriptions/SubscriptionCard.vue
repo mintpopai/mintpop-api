@@ -18,7 +18,17 @@ import { formatDateMinute } from '@/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import QuotaBar from './QuotaBar.vue'
 
-const props = defineProps<{ sub: UserSubscription }>()
+const props = withDefaults(
+  defineProps<{
+    sub: UserSubscription
+    /**
+     * 是否允许续费。站点关闭订阅购买（settings.purchase_subscription_enabled 为假）时传 false：
+     * 此时充值页根本不渲染订阅 tab，留着按钮就是一条死链。默认 true。
+     */
+    canRenew?: boolean
+  }>(),
+  { canRenew: true }
+)
 const emit = defineEmits<{ renew: [groupId: number] }>()
 
 const { t } = useI18n()
@@ -46,7 +56,9 @@ const EXPIRY_CLASS: Record<ExpiryLevel, string> = {
 const expiryText = computed(() => {
   const date = formatDateMinute(props.sub.expires_at)
   if (level.value === 'EXPIRED') return `${date}（${t('subscriptions.expiredAlready')}）`
-  return `${date}（${t('subscriptions.daysRemaining', { days: daysRemaining(props.sub.expires_at) })}）`
+  const days = daysRemaining(props.sub.expires_at)
+  // 第三个参数是单复数选择值：英文有单/复数两式，中文单形式（不受影响）
+  return `${date}（${t('subscriptions.daysRemaining', { days }, days)}）`
 })
 
 function quotaLabel(w: QuotaWindow): string {
@@ -87,8 +99,9 @@ function resetText(w: QuotaWindow): string {
         >
           {{ sub.group.description }}
         </p>
+        <!-- 后端 rate_multiplier 无 omitempty，恒有值；默认倍率 1 是噪声，只在非 1 时展示 -->
         <p
-          v-if="typeof sub.group?.rate_multiplier === 'number'"
+          v-if="typeof sub.group?.rate_multiplier === 'number' && sub.group.rate_multiplier !== 1"
           class="mt-1 text-[11px] text-faint"
         >
           {{ $t('subscriptions.rate') }}：{{ sub.group.rate_multiplier }}×
@@ -100,7 +113,7 @@ function resetText(w: QuotaWindow): string {
           :variant="badgeVariant"
         />
         <button
-          v-if="active"
+          v-if="active && canRenew"
           class="rounded-full bg-accent px-4 py-[7px] text-xs font-semibold text-white transition-opacity hover:opacity-90"
           @click="emit('renew', sub.group_id)"
         >

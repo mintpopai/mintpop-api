@@ -73,5 +73,30 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     await run()
   }
 
-  return { items, loading, loaded, error, sorted, activeItems, expiringSoon, ensureLoaded, refresh }
+  /**
+   * 退出登录时清空，避免换账号后看到上一个用户的分组名 / 额度用量 / 到期日。
+   * 必须一并清 lastFetchedAt 与 inflight：SPA 退出不刷新页面，Pinia 状态存活，
+   * 只清 items 的话下一个用户仍会在 60 秒缓存窗口内被挡住、根本不发请求。
+   */
+  function reset(): void {
+    items.value = []
+    loading.value = false
+    loaded.value = false
+    error.value = ''
+    lastFetchedAt.value = 0
+    inflight = null
+  }
+
+  return {
+    items,
+    loading,
+    loaded,
+    error,
+    sorted,
+    activeItems,
+    expiringSoon,
+    ensureLoaded,
+    refresh,
+    reset
+  }
 })

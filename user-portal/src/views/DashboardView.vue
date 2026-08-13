@@ -9,6 +9,8 @@ import VendorDistribution from '@/components/dashboard/VendorDistribution.vue'
 import TrendChart from '@/components/dashboard/TrendChart.vue'
 import LifetimeStrip from '@/components/dashboard/LifetimeStrip.vue'
 import QuickActions from '@/components/dashboard/QuickActions.vue'
+import ExpiryBanner from '@/components/dashboard/ExpiryBanner.vue'
+import SubscriptionOverview from '@/components/dashboard/SubscriptionOverview.vue'
 import { useDashboard } from '@/composables/useDashboard'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
@@ -62,6 +64,9 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- 订阅到期提醒（独立于仪表盘统计的加载状态） -->
+    <ExpiryBanner />
+
     <!-- 加载态 -->
     <div
       v-if="loading && !stats"
@@ -95,6 +100,8 @@ onMounted(() => {
       />
 
       <KpiRow :stats="stats" />
+
+      <SubscriptionOverview />
 
       <div class="mb-[22px] grid grid-cols-1 gap-[22px] lg:grid-cols-2">
         <ModelDistribution :models="models" />

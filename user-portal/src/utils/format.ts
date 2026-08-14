@@ -168,6 +168,28 @@ export function formatRegMonth(s: string | null | undefined): string {
   return new Intl.DateTimeFormat(i18n.global.locale.value, { month: 'short', year: 'numeric' }).format(d)
 }
 
+// 后端 validity_unit 常配成英文（day/days），中文界面直接拼会出现「30days」这种中英混排
+const DAY_UNIT_ALIASES = new Set(['d', 'day', 'days', '天'])
+
+/**
+ * 有效期展示（如「30 天」/「30 days」）：单位是「天」时归一到当前语言的词条，
+ * 其它单位（后端自定义，如「次」「小时」）原样保留，避免误翻译。
+ */
+export function formatValidity(days: number, unit?: string | null): string {
+  const raw = String(unit ?? '').trim()
+  const label = !raw || DAY_UNIT_ALIASES.has(raw.toLowerCase())
+    ? i18n.global.t('recharge.dayUnit')
+    : raw
+  return `${days}${label}`
+}
+
+/** 折扣百分比（整数）；无原价或原价不高于现价时返回 0，视图据此决定是否展示徽章 */
+export function discountPercent(price: number, originalPrice?: number | null): number {
+  if (typeof originalPrice !== 'number' || originalPrice <= price) return 0
+  const pct = Math.round((1 - price / originalPrice) * 100)
+  return pct > 0 ? pct : 0
+}
+
 /**
  * 预估应付金额（充值额 + 手续费），口径对齐后端 payment.CalculatePayAmountForCurrency：
  * - feeRatePercent 是「百分数」（5 = 5%），不是小数——后端按 amount × rate / 100 计费；

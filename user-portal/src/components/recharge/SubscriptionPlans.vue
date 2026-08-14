@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { SubscriptionPlan } from '@/api/types'
-import { formatBalance } from '@/utils/format'
+import { discountPercent, formatBalance, formatValidity } from '@/utils/format'
 import { platformMeta, type PlatformMeta } from '@/utils/platform'
 
 const { t } = useI18n()
@@ -32,7 +32,7 @@ interface PlanCard {
   /** 原价 > 现价时显示划线 */
   hasDiscount: boolean
   /** 折扣百分比（整数，>0 才展示徽章） */
-  discountPercent: number
+  discount: number
   /** 仅含后端有值的额度限制行（每张卡只计算一次） */
   limitLines: LimitLine[]
   /** 三个额度上限皆无：展示「不限额度」而非整块消失 */
@@ -58,13 +58,6 @@ function buildLimitLines(plan: SubscriptionPlan): LimitLine[] {
   return lines
 }
 
-/** 折扣百分比：四舍五入取整，非正数视为无折扣 */
-function buildDiscountPercent(plan: SubscriptionPlan): number {
-  if (typeof plan.original_price !== 'number' || plan.original_price <= plan.price) return 0
-  const pct = Math.round((1 - plan.price / plan.original_price) * 100)
-  return pct > 0 ? pct : 0
-}
-
 // 每张卡的派生数据预计算一次，模板只读不再重复计算
 const cards = computed<PlanCard[]>(() =>
   props.plans.map((plan) => {
@@ -72,7 +65,7 @@ const cards = computed<PlanCard[]>(() =>
     return {
       plan,
       hasDiscount: typeof plan.original_price === 'number' && plan.original_price > plan.price,
-      discountPercent: buildDiscountPercent(plan),
+      discount: discountPercent(plan.price, plan.original_price),
       limitLines,
       unlimited: limitLines.length === 0,
       platform: platformMeta(plan.group_platform),
@@ -131,7 +124,7 @@ const isEmpty = computed(() => props.plans.length === 0)
     class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
   >
     <div
-      v-for="{ plan, hasDiscount, discountPercent, limitLines, unlimited, platform, isRenewal } in cards"
+      v-for="{ plan, hasDiscount, discount, limitLines, unlimited, platform, isRenewal } in cards"
       :key="plan.id"
       :data-plan-group="plan.group_id"
       class="flex flex-col rounded-[20px] bg-card p-[24px_26px] shadow-card transition-shadow duration-150 hover:shadow-[0_6px_24px_rgba(0,0,0,0.10)]"
@@ -170,11 +163,11 @@ const isEmpty = computed(() => props.plans.length === 0)
           ${{ formatBalance(plan.original_price!) }}
         </span>
         <span
-          v-if="discountPercent > 0"
+          v-if="discount > 0"
           class="rounded px-1.5 py-0.5 text-[11px] font-semibold text-neg"
-          :title="$t('recharge.discountOff', { percent: discountPercent })"
+          :title="$t('recharge.discountOff', { percent: discount })"
         >
-          -{{ discountPercent }}%
+          -{{ discount }}%
         </span>
       </div>
 
@@ -184,7 +177,7 @@ const isEmpty = computed(() => props.plans.length === 0)
           {{ $t('recharge.validity') }}
         </div>
         <div class="font-medium text-text">
-          {{ plan.validity_days }}{{ plan.validity_unit ?? $t('recharge.dayUnit') }}
+          {{ formatValidity(plan.validity_days, plan.validity_unit) }}
         </div>
         <template v-if="typeof plan.rate_multiplier === 'number'">
           <div class="text-subtle">

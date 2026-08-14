@@ -109,7 +109,11 @@ onBeforeUnmount(() => {
           {{ title }}
         </h3>
         <slot />
-        <div class="mt-6 flex justify-end gap-3">
+        <!-- 无 footer 插槽时不渲染：否则空容器的 mt-6 会在内容底部凭空多出一截留白 -->
+        <div
+          v-if="$slots.footer"
+          class="mt-6 flex justify-end gap-3"
+        >
           <slot name="footer" />
         </div>
       </div>

@@ -10,6 +10,7 @@ import PayMethodPicker from '@/components/recharge/PayMethodPicker.vue'
 import OrderSummary from '@/components/recharge/OrderSummary.vue'
 import RedeemCard from '@/components/recharge/RedeemCard.vue'
 import SubscriptionPlans from '@/components/recharge/SubscriptionPlans.vue'
+import SubscribeConfirmModal from '@/components/recharge/SubscribeConfirmModal.vue'
 import PaymentResultModal, { type PaymentModalOrder } from '@/components/payment/PaymentResultModal.vue'
 import Modal from '@/components/ui/Modal.vue'
 import { useRecharge } from '@/composables/useRecharge'
@@ -435,75 +436,16 @@ onMounted(async () => {
     </template>
 
     <!-- 订阅确认弹窗 -->
-    <Modal
+    <SubscribeConfirmModal
+      v-model:method="method"
       :open="confirmOpen"
-      :title="$t('recharge.confirmSubscribe')"
+      :plan="selectedPlan"
+      :pay-options="payOptions"
+      :error="subscribeError"
+      :submitting="subscribing"
       @close="handleConfirmClose"
-    >
-      <template v-if="selectedPlan && checkout">
-        <!-- 套餐摘要 -->
-        <div class="mb-5 rounded-xl2 bg-muted px-5 py-4">
-          <div class="mb-1 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
-            {{ selectedPlan.group_name ?? $t('recharge.planFallback') }}
-          </div>
-          <div class="mb-3 font-serif text-xl font-medium text-text">
-            {{ selectedPlan.name }}
-          </div>
-          <div class="flex items-baseline gap-2">
-            <span class="font-serif text-[28px] font-medium leading-none text-text">
-              ${{ formatBalance(selectedPlan.price) }}
-            </span>
-            <span
-              v-if="typeof selectedPlan.original_price === 'number' && selectedPlan.original_price > selectedPlan.price"
-              class="text-sm text-faint line-through"
-            >
-              ${{ formatBalance(selectedPlan.original_price) }}
-            </span>
-          </div>
-          <div class="mt-2 text-[13px] text-subtle">
-            {{ $t('recharge.validityLine', { days: selectedPlan.validity_days, unit: selectedPlan.validity_unit ?? $t('recharge.dayUnit') }) }}
-          </div>
-        </div>
-
-        <!-- 支付方式选择（弹窗内即可挑选/切换，绑定共享 method） -->
-        <div class="mb-4">
-          <PayMethodPicker
-            v-model="method"
-            :options="payOptions"
-          />
-        </div>
-
-        <!-- 错误提示 -->
-        <p
-          v-if="subscribeError"
-          class="mb-3 text-xs text-neg"
-        >
-          {{ subscribeError }}
-        </p>
-
-        <!-- 操作按钮 -->
-        <div class="flex gap-3">
-          <button
-            class="flex-1 rounded-xl2 border border-border2 py-3 text-sm font-medium text-text2 hover:bg-muted"
-            @click="handleConfirmClose"
-          >
-            {{ $t('common.cancel') }}
-          </button>
-          <button
-            class="flex-1 rounded-xl2 py-3 text-sm font-semibold text-white transition-[background,opacity] duration-150"
-            :class="
-              method && !subscribing
-                ? 'cursor-pointer bg-accent shadow-[0_4px_14px_rgba(20,194,138,0.28)] hover:bg-accent/90'
-                : 'cursor-not-allowed bg-accent/40'
-            "
-            :disabled="!method || subscribing"
-            @click="handleConfirmSubscribe"
-          >
-            {{ subscribing ? $t('recharge.submitting') : $t('recharge.confirmPay') }}
-          </button>
-        </div>
-      </template>
-    </Modal>
+      @confirm="handleConfirmSubscribe"
+    />
 
     <!-- 支付结果弹窗（充值与订阅共用，paid 回调按 activeTab 区分） -->
     <PaymentResultModal

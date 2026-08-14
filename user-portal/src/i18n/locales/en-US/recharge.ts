@@ -23,7 +23,7 @@ export default {
   // —— Subscription confirm modal ——
   confirmSubscribe: 'Confirm subscription',
   planFallback: 'Plan',
-  validityLine: 'Validity: {days}{unit}',
+  payAmount: 'Pay ${amount}',
   dayUnit: ' days',
   // —— AmountPicker ——
   selectRechargeAmount: 'Select recharge amount',

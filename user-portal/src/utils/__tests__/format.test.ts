@@ -7,7 +7,9 @@ import {
   formatDateTime,
   toLocalDate,
   ORDER_SETTLING_STATUSES,
-  formatRegMonth
+  formatRegMonth,
+  formatValidity,
+  discountPercent
 } from '@/utils/format'
 
 // 后端订单状态取值为 SCREAMING_SNAKE_CASE（见 backend payment.OrderStatus*），
@@ -109,5 +111,32 @@ describe('formatRegMonth（跟随门户语言）', () => {
   it('门户语言为 en-US 时仍是英文月份缩写', () => {
     i18n.global.locale.value = 'en-US' as AppLocale
     expect(formatRegMonth('2026-06-15T00:00:00Z')).toMatch(/Jun/i)
+  })
+})
+
+// 后端 validity_unit 常配成英文（days），中文界面直接拼会得到「30days」这种中英混排
+describe('formatValidity（有效期单位本地化）', () => {
+  it('英文 days / 缺省单位都归一到当前语言的「天」', () => {
+    expect(formatValidity(30, 'days')).toBe('30天')
+    expect(formatValidity(30, 'DAY')).toBe('30天')
+    expect(formatValidity(30, null)).toBe('30天')
+  })
+
+  it('非「天」的自定义单位原样保留，不误翻译', () => {
+    expect(formatValidity(100, '次')).toBe('100次')
+    expect(formatValidity(12, '小时')).toBe('12小时')
+  })
+})
+
+describe('discountPercent（折扣百分比）', () => {
+  it('原价高于现价时四舍五入取整', () => {
+    expect(discountPercent(15, 20)).toBe(25)
+    expect(discountPercent(7.5, 40)).toBe(81)
+  })
+
+  it('无原价、原价不高于现价时均视为无折扣', () => {
+    expect(discountPercent(20, null)).toBe(0)
+    expect(discountPercent(20, 20)).toBe(0)
+    expect(discountPercent(20, 10)).toBe(0)
   })
 })

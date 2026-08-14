@@ -3,10 +3,19 @@ import { computed, ref, type ComponentPublicInstance } from 'vue'
 import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
 import type { PayOption } from '@/config/payMethods'
 
-const props = defineProps<{
-  /** 拍平后的可选支付选项（useRecharge.payOptions，Stripe 已展开为微信/支付宝/银行卡） */
-  options: PayOption[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    /** 拍平后的可选支付选项（useRecharge.payOptions，Stripe 已展开为微信/支付宝/银行卡） */
+    options: PayOption[]
+    /**
+     * 展示形态：
+     * - `card`（默认）：独立白卡，自带标题与安全提示，用于充值页整块区域；
+     * - `plain`：无外壳、无标题的紧凑单列，用于弹窗等窄容器（外壳与标题由使用方给，避免卡中卡）。
+     */
+    variant?: 'card' | 'plain'
+  }>(),
+  { variant: 'card' }
+)
 
 // Vue 3.4+ 官方推荐的 v-model 宏（取值为 PayOption.key）
 const model = defineModel<string>({ required: true })
@@ -50,9 +59,13 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
 </script>
 
 <template>
-  <div class="rounded-[20px] bg-card p-[28px_30px] shadow-card">
-    <!-- 标题 -->
-    <div class="mb-[18px] flex items-baseline justify-between">
+  <!-- @container：列数按「本组件实际宽度」而非视口决定，塞进弹窗/侧栏等窄容器也不会把文字挤成竖排 -->
+  <div :class="variant === 'card' ? '@container rounded-[20px] bg-card p-[28px_30px] shadow-card' : '@container'">
+    <!-- 标题（仅 card 形态；plain 由使用方给标题，避免与弹窗标题层级打架） -->
+    <div
+      v-if="variant === 'card'"
+      class="mb-[18px] flex items-baseline justify-between"
+    >
       <h3 class="font-serif text-xl font-medium text-text">
         {{ $t('recharge.paymentMethod') }}
       </h3>
@@ -73,7 +86,8 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
     <div
       role="radiogroup"
       :aria-label="$t('recharge.paymentMethod')"
-      class="grid grid-cols-1 gap-3 sm:grid-cols-3"
+      class="grid grid-cols-1"
+      :class="variant === 'card' ? 'gap-3 @[30rem]:grid-cols-3' : 'gap-2.5'"
     >
       <div
         v-for="(option, i) in options"
@@ -82,12 +96,13 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
         role="radio"
         :aria-checked="model === option.key"
         :tabindex="i === rovingIndex ? 0 : -1"
-        class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] px-[18px] py-4 transition-[border-color,background] duration-140 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        :class="
+        class="flex cursor-pointer items-center gap-3 rounded-xl2 border-[1.5px] transition-[border-color,background] duration-140 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        :class="[
+          variant === 'card' ? 'px-[18px] py-4' : 'px-4 py-[13px]',
           model === option.key
             ? 'border-accent bg-accent/6'
             : 'border-border2 bg-card hover:border-[#9FE6CD]'
-        "
+        ]"
         @click="pick(option.key)"
         @keydown.enter.prevent="pick(option.key)"
         @keydown.space.prevent="pick(option.key)"
@@ -95,7 +110,8 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
       >
         <!-- 品牌图标 -->
         <span
-          class="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-[9px]"
+          class="flex flex-none items-center justify-center rounded-[9px]"
+          :class="variant === 'card' ? 'h-[34px] w-[34px]' : 'h-[30px] w-[30px]'"
           :style="{ background: displayFor(option).color }"
         >
           <!-- 微信 -->
@@ -139,12 +155,22 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
           </svg>
         </span>
 
-        <!-- 文字 -->
-        <div class="min-w-0 flex-1">
-          <div class="text-sm font-semibold text-text">
+        <!-- 文字：card 两行（列窄）；plain 一行（整行可用，名称与说明并排更紧凑） -->
+        <div
+          class="min-w-0 flex-1"
+          :class="variant === 'plain' ? 'flex items-baseline gap-2' : ''"
+        >
+          <div
+            class="text-sm font-semibold text-text"
+            :class="variant === 'plain' ? 'shrink-0 whitespace-nowrap' : ''"
+          >
             {{ $t(displayFor(option).labelKey) }}
           </div>
-          <div class="mt-0.5 text-xs text-subtle">
+          <!-- plain 行里说明是次要信息：容器放不下整句时整块让位，而非留个省略号 -->
+          <div
+            class="truncate text-xs text-subtle"
+            :class="variant === 'card' ? 'mt-0.5' : 'hidden min-w-0 @[22rem]:block'"
+          >
             {{ $t(displayFor(option).descKey) }}
           </div>
         </div>
@@ -161,8 +187,9 @@ function onArrowKeydown(e: KeyboardEvent, i: number) {
       </div>
     </div>
 
-    <!-- 安全提示 -->
+    <!-- 安全提示（仅 card 形态；plain 交由使用方按上下文决定要不要说这句） -->
     <div
+      v-if="variant === 'card'"
       class="mt-4 flex items-center gap-2 border-t border-dashed border-border2 pt-4 text-xs leading-relaxed text-subtle"
     >
       <svg

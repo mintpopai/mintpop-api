@@ -23,7 +23,7 @@ export default {
   // —— 订阅确认弹窗 ——
   confirmSubscribe: '确认订阅',
   planFallback: '套餐',
-  validityLine: '有效期：{days}{unit}',
+  payAmount: '支付 ${amount}',
   dayUnit: '天',
   // —— AmountPicker ——
   selectRechargeAmount: '选择充值金额',

@@ -1,7 +1,7 @@
 {
   "name": "mintpop-api-user-portal",
   "private": true,
-  "version": "0.1.25",
+  "version": "0.1.26",
   "type": "module",
   "dependencies": {
     "@fontsource/newsreader": "^5.2.10",

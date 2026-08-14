@@ -1,22 +1,16 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PortalLayout from '@/layouts/PortalLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import SubscriptionCard from '@/components/subscriptions/SubscriptionCard.vue'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
-import { useSettingsStore } from '@/stores/settings'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const store = useSubscriptionsStore()
-const settingsStore = useSettingsStore()
 const toast = useToast()
-
-// 站点未开放订阅购买时不给「去订阅」按钮（点进去也是空的），
-// 但页面本身照常展示——管理员分配的订阅同样要能看到。
-const canPurchase = computed(() => settingsStore.settings?.purchase_subscription_enabled ?? false)
 
 /** 续费：跳到充值页订阅 tab 并定位到该分组的套餐 */
 function goRenew(groupId: number) {
@@ -33,7 +27,6 @@ async function handleRefresh() {
 }
 
 onMounted(async () => {
-  await settingsStore.ensureLoaded()
   await store.ensureLoaded()
 })
 </script>
@@ -91,7 +84,6 @@ onMounted(async () => {
         {{ $t('subscriptions.emptyDesc') }}
       </p>
       <button
-        v-if="canPurchase"
         class="mt-5 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         @click="router.push({ path: '/recharge', query: { tab: 'subscription' } })"
       >
@@ -108,7 +100,6 @@ onMounted(async () => {
         v-for="sub in store.sorted"
         :key="sub.id"
         :sub="sub"
-        :can-renew="canPurchase"
         @renew="goRenew"
       />
     </div>

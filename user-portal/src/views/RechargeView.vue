@@ -15,7 +15,6 @@ import Modal from '@/components/ui/Modal.vue'
 import { useRecharge } from '@/composables/useRecharge'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
-import { useSettingsStore } from '@/stores/settings'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { getPlans } from '@/api/payment'
 import { formatBalance } from '@/utils/format'
@@ -28,7 +27,6 @@ const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-const settingsStore = useSettingsStore()
 const subscriptionsStore = useSubscriptionsStore()
 
 // 已生效订阅的分组集合：套餐卡片据此把「选择此套餐」显示为「续费」
@@ -39,11 +37,10 @@ const highlightGroupId = ref<number | null>(null)
 
 const { checkout, loading, error, loaded, amount, method, payOptions, activePayOption, presets, popular, load, submitRecharge, submitSubscription } = useRecharge()
 
-// 分 tab：0 = 充值，1 = 订阅
+// 分 tab：0 = 充值，1 = 订阅。订阅 tab 恒显示，有没有在售套餐由 SubscriptionPlans 自己出空态。
+// 曾按 settings.purchase_subscription_enabled 决定是否显示，那是个 legacy 开关（后端语义是
+// 「侧边栏是否展示外链『购买订阅』菜单项」，默认 false 且无管理端入口），导致套餐永远买不到。
 const activeTab = ref<0 | 1>(0)
-
-// 是否显示订阅 tab
-const showSubscription = computed(() => settingsStore.settings?.purchase_subscription_enabled ?? false)
 
 // 下单中
 const submitting = ref(false)
@@ -143,7 +140,7 @@ async function ensurePlans() {
 
 /** 处理 ?tab=subscription&group=<id>：切到订阅 tab 并滚动/高亮对应分组的套餐卡 */
 async function applyPlanDeepLink(): Promise<void> {
-  if (route.query.tab !== 'subscription' || !showSubscription.value) return
+  if (route.query.tab !== 'subscription') return
   activeTab.value = 1
   await ensurePlans()
 
@@ -253,12 +250,8 @@ async function resumeRedirectPayment(outTradeNo: string) {
 onMounted(async () => {
   // 拉一次订阅数据用于续费文案（哪些分组已生效），失败不影响主流程
   void subscriptionsStore.ensureLoaded()
-  await settingsStore.ensureLoaded()
   await load()
-  // 订阅 tab 显示时才预加载
-  if (showSubscription.value) {
-    await ensurePlans()
-  }
+  await ensurePlans()
   await applyPlanDeepLink()
   // 带 #redeem 锚点进入时（如仪表盘「兑换码充值」），切到充值 tab 并滚动到兑换码区
   if (route.hash === '#redeem') {
@@ -330,7 +323,6 @@ onMounted(async () => {
           {{ $t('recharge.tabRecharge') }}
         </button>
         <button
-          v-if="showSubscription"
           class="rounded-full px-6 py-2 text-sm font-medium transition-[background,color,box-shadow] duration-150"
           :class="
             activeTab === 1

@@ -2,16 +2,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
-import { useSettingsStore } from '@/stores/settings'
 import { daysRemaining } from '@/utils/subscription'
 
 const router = useRouter()
 const store = useSubscriptionsStore()
-const settingsStore = useSettingsStore()
-
-// 站点未开放订阅购买时不给「立即续费」按钮：充值页不渲染订阅 tab、深链也会直接 bail，
-// 点过去只会落到余额充值 tab 且没有任何解释。横幅本身照常展示（到期信息仍然有用）。
-const canPurchase = computed(() => settingsStore.settings?.purchase_subscription_enabled ?? false)
 
 // 关闭状态只在本次会话生效：下次打开浏览器还没续费的话，该提醒应该再出现
 const DISMISS_KEY = 'subscriptionExpiryBannerDismissed'
@@ -49,7 +43,6 @@ onMounted(() => {
     dismissed.value = false
   }
   void store.ensureLoaded()
-  void settingsStore.ensureLoaded()
 })
 </script>
 
@@ -74,7 +67,6 @@ onMounted(() => {
     </div>
     <div class="flex shrink-0 items-center gap-2">
       <button
-        v-if="canPurchase"
         class="rounded-full bg-accent px-5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
         @click="goRenew"
       >

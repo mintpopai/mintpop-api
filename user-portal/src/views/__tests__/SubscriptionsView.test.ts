@@ -89,9 +89,30 @@ beforeEach(() => {
   setActivePinia(createPinia())
   mockGet.mockReset()
   mockSettings.mockReset()
-  mockSettings.mockResolvedValue({ purchase_subscription_enabled: true } as PublicSettings)
+  // 线上默认口径：后端 purchase_subscription_enabled 默认 false 且无管理端入口（详见下方购买入口用例）
+  mockSettings.mockResolvedValue({ purchase_subscription_enabled: false } as PublicSettings)
   // toasts 是模块级单例，跨用例会串
   toasts.value.splice(0, toasts.value.length)
+})
+
+// 购买/续费入口曾挂在 settings.purchase_subscription_enabled 上。那是个 legacy 开关：后端语义是
+// 「侧边栏是否展示外链『购买订阅』菜单项」，默认 false、migration 098 迁到自定义菜单后强制置 false，
+// 管理端也没有 UI 能打开它 —— 于是这两个入口恒不显示。门禁已废除，入口恒显示。
+describe('SubscriptionsView：购买入口不受 legacy 购买开关影响', () => {
+  it('空态下照样给「去订阅」按钮', async () => {
+    mockGet.mockResolvedValue([])
+    const wrapper = await mountView()
+
+    expect(wrapper.text()).toContain(i18n.global.t('subscriptions.empty'))
+    expect(wrapper.text()).toContain(i18n.global.t('subscriptions.emptyAction'))
+  })
+
+  it('已有生效套餐时照样给卡片上的「续费」按钮', async () => {
+    mockGet.mockResolvedValue([makeSub()])
+    const wrapper = await mountView()
+
+    expect(wrapper.text()).toContain(i18n.global.t('subscriptions.renew'))
+  })
 })
 
 describe('SubscriptionsView：加载失败的反馈', () => {

@@ -2,7 +2,7 @@
 // 1. 没有临期订阅就不能渲染——空横幅会白占仪表盘顶部；
 // 2. 多条临期时展示最紧急的那条 + 「另有 N 个」；
 // 3. 关闭后本次会话不再出现（写 sessionStorage），否则每次切页都被打断；
-// 4. 站点关闭订阅购买时横幅照常显示（到期信息本身有用）但不给「立即续费」按钮——点过去是死链；
+// 4. 「立即续费」按钮恒显示，不受 legacy 的 purchase_subscription_enabled 开关影响（详见该 describe 的注释）；
 // 5. 英文文案在 n=1 时必须是单数（横幅只在最后 7 天出现，n=1 恰恰是最常见的渲染）。
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -16,7 +16,8 @@ vi.mock('@/api/subscriptions', () => ({
   getMySubscriptions: vi.fn()
 }))
 
-// 横幅要按 settings.purchase_subscription_enabled 决定是否给续费 CTA，挡掉真实请求
+// 横幅曾按 settings.purchase_subscription_enabled 决定是否给续费 CTA（已废除，见下方 describe）。
+// 这里仍 mock 掉，一是挡真实请求，二是让「开关为假也照常给按钮」的回归用例能构造该场景。
 vi.mock('@/api/settings', () => ({
   getPublicSettings: vi.fn()
 }))
@@ -86,7 +87,9 @@ beforeEach(() => {
   setActivePinia(createPinia())
   mockGet.mockReset()
   mockSettings.mockReset()
-  mockSettings.mockResolvedValue({ purchase_subscription_enabled: true } as PublicSettings)
+  // 线上默认口径：后端 purchase_subscription_enabled 默认为 false 且无管理端入口，
+  // 故默认 mock 成 false，保证各用例都在「真实最坏情况」下跑
+  mockSettings.mockResolvedValue({ purchase_subscription_enabled: false } as PublicSettings)
   sessionStorage.clear()
 })
 
@@ -130,24 +133,28 @@ describe('ExpiryBanner', () => {
   })
 })
 
-describe('ExpiryBanner：购买开关门禁', () => {
-  it('站点开放订阅购买时给「立即续费」按钮', async () => {
-    mockGet.mockResolvedValue([
-      makeSub({ expires_at: new Date(Date.now() + 2 * DAY).toISOString() })
-    ])
-    const wrapper = await mountBanner()
-    expect(renewButton(wrapper, zhCN.subscriptions.expiryBannerAction)).toBeDefined()
-  })
-
-  it('站点关闭订阅购买时横幅仍渲染，但不给「立即续费」按钮（否则是死链）', async () => {
-    mockSettings.mockResolvedValue({ purchase_subscription_enabled: false } as PublicSettings)
+// 续费 CTA 曾挂在 settings.purchase_subscription_enabled 上。那是个 legacy 开关：后端语义是
+// 「侧边栏是否展示外链『购买订阅』菜单项」（配 purchase_subscription_url），默认 false、
+// migration 098 迁到自定义菜单后强制置 false，管理端也没有任何 UI 能打开它 —— 于是续费按钮
+// 恒不显示。本门禁已废除：按钮恒显示，与旧版用户中心（frontend PaymentView 无条件给订阅入口）对齐。
+describe('ExpiryBanner：续费 CTA 不受 legacy 购买开关影响', () => {
+  it('purchase_subscription_enabled 为 false（线上默认）时照样给「立即续费」按钮', async () => {
     mockGet.mockResolvedValue([
       makeSub({ expires_at: new Date(Date.now() + 2 * DAY).toISOString() })
     ])
     const wrapper = await mountBanner()
     expect(wrapper.find('[role="status"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Claude Pro')
-    expect(renewButton(wrapper, zhCN.subscriptions.expiryBannerAction)).toBeUndefined()
+    expect(renewButton(wrapper, zhCN.subscriptions.expiryBannerAction)).toBeDefined()
+  })
+
+  it('公开设置整体缺失时也给「立即续费」按钮', async () => {
+    mockSettings.mockResolvedValue({} as PublicSettings)
+    mockGet.mockResolvedValue([
+      makeSub({ expires_at: new Date(Date.now() + 2 * DAY).toISOString() })
+    ])
+    const wrapper = await mountBanner()
+    expect(renewButton(wrapper, zhCN.subscriptions.expiryBannerAction)).toBeDefined()
   })
 })
 

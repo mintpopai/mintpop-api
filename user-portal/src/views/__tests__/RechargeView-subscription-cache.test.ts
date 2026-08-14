@@ -112,7 +112,8 @@ beforeEach(() => {
 
   mockCheckout.mockResolvedValue(CHECKOUT)
   mockGetSubs.mockResolvedValue([])
-  mockSettings.mockResolvedValue({ purchase_subscription_enabled: true } as PublicSettings)
+  // 线上默认口径：后端 purchase_subscription_enabled 默认 false 且无管理端入口（详见文件末尾 describe）
+  mockSettings.mockResolvedValue({ purchase_subscription_enabled: false } as PublicSettings)
   mockProfile.mockResolvedValue({ id: 1, username: 'u', email: 'u@x.com', balance: 1 } as User)
 })
 
@@ -159,5 +160,57 @@ describe('RechargeView：订阅支付成功后失效订阅缓存', () => {
     await flushPromises()
 
     expect(mockGetSubs.mock.calls.length).toBe(callsAfterMount)
+  })
+})
+
+// 订阅 tab 曾挂在 settings.purchase_subscription_enabled 上，导致用户「在购买页看不到套餐」。
+// 那是个 legacy 开关：后端语义是「侧边栏是否展示外链『购买订阅』菜单项」（配 purchase_subscription_url），
+// 默认 false、migration 098 迁到自定义菜单后强制置 false，管理端也没有 UI 能打开它 —— 于是订阅 tab
+// 恒不渲染、深链也直接 bail。门禁已废除：tab 恒显示，有没有套餐由列表自己出空态，
+// 与旧版用户中心（frontend PaymentView 无条件 push 订阅 tab）对齐。
+describe('RechargeView：订阅 tab 不受 legacy 购买开关影响', () => {
+  const PLAN = {
+    id: 7,
+    name: '月度套餐',
+    group_id: 42,
+    group_name: 'Claude Pro',
+    price: 20,
+    validity_days: 30
+  }
+
+  it('purchase_subscription_enabled 为 false（线上默认）时，订阅 tab 仍渲染', async () => {
+    const wrapper = await mountView()
+    const subTab = wrapper
+      .findAll('button')
+      .find((b) => b.text() === i18n.global.t('recharge.tabSubscription'))
+    expect(subTab, '订阅 tab 不该被 legacy 开关挡掉').toBeTruthy()
+  })
+
+  it('开关为 false 时，切到订阅 tab 照样能看到在售套餐', async () => {
+    mockCheckout.mockResolvedValue({
+      ...CHECKOUT,
+      plans: [PLAN]
+    } as unknown as CheckoutInfoResponse)
+
+    const wrapper = await mountView()
+    const subTab = wrapper
+      .findAll('button')
+      .find((b) => b.text() === i18n.global.t('recharge.tabSubscription'))
+    await subTab!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('月度套餐')
+  })
+
+  it('开关为 false 时，?tab=subscription 深链照样落到订阅 tab 并渲染套餐', async () => {
+    mockCheckout.mockResolvedValue({
+      ...CHECKOUT,
+      plans: [PLAN]
+    } as unknown as CheckoutInfoResponse)
+
+    const wrapper = await mountView('?tab=subscription&group=42')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('月度套餐')
   })
 })

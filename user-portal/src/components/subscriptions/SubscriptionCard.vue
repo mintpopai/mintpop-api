@@ -13,6 +13,7 @@ import {
   formatRemaining,
   isActive
 } from '@/utils/subscription'
+import { pickBilingual } from '@/utils/bilingual'
 import { platformMeta } from '@/utils/platform'
 import { formatDateMinute } from '@/utils/format'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
@@ -31,10 +32,12 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ renew: [groupId: number] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const platform = computed(() => platformMeta(props.sub.group?.platform))
 const groupName = computed(() => props.sub.group?.name ?? `#${props.sub.group_id}`)
+// 分组说明后端单字段存双语（空行分隔），按当前语言取块；此处单行截断，块内换行由 truncate 折成空格
+const description = computed(() => pickBilingual(props.sub.group?.description, locale.value))
 const windows = computed(() => quotaWindows(props.sub))
 const unlimited = computed(() => !hasAnyLimit(props.sub))
 const active = computed(() => isActive(props.sub))
@@ -94,10 +97,10 @@ function resetText(w: QuotaWindow): string {
           </span>
         </div>
         <p
-          v-if="sub.group?.description"
+          v-if="description"
           class="mt-1 truncate text-xs text-subtle"
         >
-          {{ sub.group.description }}
+          {{ description }}
         </p>
         <!-- 后端 rate_multiplier 无 omitempty，恒有值；默认倍率 1 是噪声，只在非 1 时展示 -->
         <p

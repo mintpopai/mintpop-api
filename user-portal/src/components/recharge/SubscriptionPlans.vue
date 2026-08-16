@@ -2,10 +2,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { SubscriptionPlan } from '@/api/types'
+import { pickBilingual } from '@/utils/bilingual'
 import { discountPercent, formatBalance, formatValidity } from '@/utils/format'
 import { platformMeta, type PlatformMeta } from '@/utils/platform'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -29,6 +30,8 @@ interface LimitLine {
 
 interface PlanCard {
   plan: SubscriptionPlan
+  /** 按当前语言取到的说明块（后端单字段存双语，空行分隔，见 pickBilingual） */
+  description: string
   /** 原价 > 现价时显示划线 */
   hasDiscount: boolean
   /** 折扣百分比（整数，>0 才展示徽章） */
@@ -64,6 +67,7 @@ const cards = computed<PlanCard[]>(() =>
     const limitLines = buildLimitLines(plan)
     return {
       plan,
+      description: pickBilingual(plan.description, locale.value),
       hasDiscount: typeof plan.original_price === 'number' && plan.original_price > plan.price,
       discount: discountPercent(plan.price, plan.original_price),
       limitLines,
@@ -127,7 +131,16 @@ const isEmpty = computed(() => props.plans.length === 0)
     class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
   >
     <div
-      v-for="{ plan, hasDiscount, discount, limitLines, unlimited, platform, isRenewal } in cards"
+      v-for="{
+        plan,
+        description,
+        hasDiscount,
+        discount,
+        limitLines,
+        unlimited,
+        platform,
+        isRenewal
+      } in cards"
       :key="plan.id"
       :data-plan-group="plan.group_id"
       class="row-span-8 grid grid-rows-subgrid gap-y-0 rounded-[20px] bg-card shadow-card transition-shadow duration-150 [&>*]:px-[26px] hover:shadow-[0_6px_24px_rgba(0,0,0,0.10)]"
@@ -146,13 +159,14 @@ const isEmpty = computed(() => props.plans.length === 0)
         {{ plan.name }}
       </h3>
 
-      <!-- 描述：无描述时也保留空行占位，否则后面的区块会串到上一行轨道 -->
-      <div :class="plan.description ? 'mb-5' : ''">
+      <!-- 描述：无描述时也保留空行占位，否则后面的区块会串到上一行轨道；
+           块内换行（逐条「· xxx」）要原样保留，故 whitespace-pre-line -->
+      <div :class="description ? 'mb-5' : ''">
         <p
-          v-if="plan.description"
-          class="text-sm leading-relaxed text-subtle"
+          v-if="description"
+          class="whitespace-pre-line text-sm leading-relaxed text-subtle"
         >
-          {{ plan.description }}
+          {{ description }}
         </p>
       </div>
 

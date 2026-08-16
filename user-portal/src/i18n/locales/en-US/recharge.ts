@@ -74,5 +74,7 @@ export default {
   renewPlan: 'Renew this plan',
   discountOff: '{percent}% off',
   quotaLabel: 'Quota',
-  unlimitedQuota: 'Unlimited'
+  unlimitedQuota: 'Unlimited',
+  currentPlan: 'Current plan',
+  originalPrice: 'Was ${amount}'
 }

@@ -74,5 +74,7 @@ export default {
   renewPlan: '续费此套餐',
   discountOff: '立减 {percent}%',
   quotaLabel: '额度',
-  unlimitedQuota: '不限额度'
+  unlimitedQuota: '不限额度',
+  currentPlan: '当前套餐',
+  originalPrice: '原价 ${amount}'
 }

@@ -8,5 +8,7 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     /** 浏览器标签标题的 i18n key（setDocumentTitle 消费；空缺时只显示站点名） */
     title?: string
+    /** 内容区占满全宽（PortalLayout 消费；供文档中心这类「侧栏贴左 + 正文自行限宽」的页面用） */
+    fluid?: boolean
   }
 }

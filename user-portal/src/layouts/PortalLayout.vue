@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
+import { useRouter, useRoute, type RouteLocationRaw } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
@@ -9,14 +9,19 @@ import { useAnnouncementStore } from '@/stores/announcements'
 import { LOCALE_LABELS, type AppLocale } from '@/i18n'
 import { formatBalance } from '@/utils/format'
 import { CONTACT_PAGE_URLS, SHOP_PAGE_URL } from '@/config/portal'
-import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
-import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
-
-// fluid：内容区占满全宽（供文档中心这类「侧栏贴左 + 正文自行限宽」的页面用），默认仍居中限宽
-defineProps<{ fluid?: boolean }>()
+// 公告两件套刻意异步：它们经 utils/markdown 依赖 markdown-it（~100KB）。本布局现在是随主 chunk
+// 到位的持久父路由，静态引入会把 markdown-it 一并压进首屏主包；异步后它退回自己的 chunk，
+// 与主包并行下载，铃铛/弹窗都不是首屏关键元素，晚一个 tick 出现无感。
+const AnnouncementBell = defineAsyncComponent(() => import('@/components/common/AnnouncementBell.vue'))
+const AnnouncementPopup = defineAsyncComponent(() => import('@/components/common/AnnouncementPopup.vue'))
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
+
+// fluid 改由目标路由的 meta 声明（本布局是持久父路由，拿不到子视图传的 prop）：
+// 内容区占满全宽，供文档中心这类「侧栏贴左 + 正文自行限宽」的页面用，默认仍居中限宽
+const fluid = computed(() => !!route.meta.fluid)
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 const localeStore = useLocaleStore()
@@ -69,6 +74,54 @@ function go(path: string) {
   router.push(path)
 }
 
+// ============ 切换手感：预取 + 即时高亮 ============
+// 视图组件是懒加载的，点击那一刻要先下该页 chunk；这段时间导航尚未 resolve，
+// router-link 的 active-class 不会变、画面完全静止，手感就是「点了没反应、然后啪一下全换」。
+// 两手一起治：① hover/聚焦/触摸即预取目标 chunk，点击时通常已就位；② 点击后高亮立刻挪过去。
+
+const pendingPath = ref<string | null>(null)
+// 高亮以「正在去的路径」优先，导航结束后（afterEach 在导航失败时同样会触发）回落到当前路径
+const activePath = computed(() => pendingPath.value ?? route.path)
+const isActive = (to: string) => activePath.value === to || activePath.value.startsWith(`${to}/`)
+
+function prefetch(to: RouteLocationRaw) {
+  for (const record of router.resolve(to).matched) {
+    const comp = record.components?.default
+    // 懒加载路由的 component 就是 () => import(...)；重复调用命中模块缓存，不会重复下网
+    if (typeof comp === 'function') void (comp as () => Promise<unknown>)().catch(() => {})
+  }
+}
+
+// 走全局守卫而非逐个 @click：用户菜单里的 go()、公告跳转等所有导航来源一并覆盖
+const stopBeforeEach = router.beforeEach((to) => {
+  pendingPath.value = to.path
+  return true
+})
+const stopAfterEach = router.afterEach(() => {
+  pendingPath.value = null
+})
+onBeforeUnmount(() => {
+  stopBeforeEach()
+  stopAfterEach()
+})
+
+// 内容区滚动容器是下面的 <main>（不是 window），router 的 scrollBehavior 管不到它。
+// 旧结构每次切页整壳重建、天然回到顶部；改持久布局后必须显式重置，否则从长页切到短页会
+// 停在上一页的滚动位置。
+// 刻意监听路由而不是挂在换页过渡的 before-enter 上：过渡并非每次换页都会跑
+//（/docs 内换文档时路由组件不变、Transition 不触发；后台标签页 rAF 被节流时过渡也会停摆），
+// 挂过渡钩子会让这些情况漏掉重置。此刻旧页正在淡出，归零基本无感。
+const mainRef = ref<HTMLElement | null>(null)
+watch(
+  () => route.path,
+  () => {
+    if (route.hash) return // 带锚点的深链交给视图内部的 scrollIntoView
+    // 用 scrollTop 而非 scrollTo()：无需平滑行为，且不依赖元素上有 scrollTo 方法
+    if (mainRef.value) mainRef.value.scrollTop = 0
+  },
+  { flush: 'post' }
+)
+
 async function handleLogout() {
   closeMenu()
   await authStore.logout()
@@ -109,10 +162,24 @@ onBeforeUnmount(() => {
 
 onMounted(() => {
   if (!authStore.user) authStore.fetchUser()
-  // 兜底 + 保鲜：进站那次 force 拉取在 App.vue / 登录成功时已发生，这里只是长时间停留期间
-  // 随路由切换顺带刷新（受 store 内 20 分钟节流约束，正常导航基本是 no-op）
+  // 兜底：进站那次 force 拉取在 App.vue / 登录成功时已发生
   announcementStore.fetchAnnouncements()
+
+  // 空闲时预热各 tab 的 chunk，连「首次点击」都不必等下载
+  const warm = () => {
+    for (const tab of tabs.value) prefetch(tab.to)
+    prefetch('/docs')
+  }
+  if ('requestIdleCallback' in window) window.requestIdleCallback(warm, { timeout: 3000 })
+  else setTimeout(warm, 1500)
 })
+
+// 保鲜：本布局现在只挂载一次，原先「随每次切页重挂顺带刷新」的公告拉取改由路由变化驱动
+// （受 store 内 20 分钟节流约束，正常导航基本是 no-op）
+watch(
+  () => route.name,
+  () => announcementStore.fetchAnnouncements()
+)
 </script>
 
 <template>
@@ -162,14 +229,18 @@ onMounted(() => {
         >
       </div>
 
-      <!-- 导航 tabs（桌面） -->
+      <!-- 导航 tabs（桌面）。高亮不用 active-class：那要等导航 resolve（懒加载 chunk 下完）
+           才生效，点击后会有一段「毫无反馈」的空窗；改用 isActive 跟 pendingPath 立刻响应 -->
       <nav class="hidden items-center gap-1 md:flex">
         <router-link
           v-for="tab in tabs"
           :key="tab.name"
           :to="tab.to"
           class="tab"
-          active-class="tab-on"
+          :class="{ 'tab-on': isActive(tab.to) }"
+          @mouseenter="prefetch(tab.to)"
+          @focus="prefetch(tab.to)"
+          @touchstart.passive="prefetch(tab.to)"
         >
           {{ tab.label }}
         </router-link>
@@ -187,16 +258,18 @@ onMounted(() => {
             :key="tab.name"
             :to="tab.to"
             class="tab"
-            active-class="tab-on"
+            :class="{ 'tab-on': isActive(tab.to) }"
             @click="closeNav"
+            @touchstart.passive="prefetch(tab.to)"
           >
             {{ tab.label }}
           </router-link>
           <router-link
             to="/docs"
             class="tab"
-            active-class="tab-on"
+            :class="{ 'tab-on': isActive('/docs') }"
             @click="closeNav"
+            @touchstart.passive="prefetch('/docs')"
           >
             {{ t('nav.docs') }}
           </router-link>
@@ -229,7 +302,10 @@ onMounted(() => {
         <router-link
           to="/docs"
           class="doc-link hidden md:inline-block"
-          active-class="doc-link-on"
+          :class="{ 'doc-link-on': isActive('/docs') }"
+          @mouseenter="prefetch('/docs')"
+          @focus="prefetch('/docs')"
+          @touchstart.passive="prefetch('/docs')"
         >
           {{ t('nav.docs') }}
         </router-link>
@@ -371,9 +447,21 @@ onMounted(() => {
     </header>
 
     <!-- ============ 主体 ============ -->
-    <main class="min-w-0 flex-1 overflow-y-auto px-5 py-8 [scrollbar-gutter:stable] sm:px-8 lg:px-12 lg:py-11">
+    <main
+      ref="mainRef"
+      class="min-w-0 flex-1 overflow-y-auto px-5 py-8 [scrollbar-gutter:stable] sm:px-8 lg:px-12 lg:py-11"
+    >
       <div :class="fluid ? '' : 'mx-auto max-w-[1240px]'">
-        <slot />
+        <!-- 只有内容区随路由换，顶栏保持不动。out-in 让新旧页不重叠（避免高度抖动），
+             总时长压在 ~250ms 内，够连贯又不拖沓 -->
+        <router-view v-slot="{ Component }">
+          <Transition
+            name="page"
+            mode="out-in"
+          >
+            <component :is="Component" />
+          </Transition>
+        </router-view>
       </div>
     </main>
 
@@ -479,5 +567,35 @@ onMounted(() => {
   background: var(--card);
   color: var(--text);
   font-weight: 600;
+}
+</style>
+
+<!-- 换页过渡刻意不 scoped：过渡类挂在「路由视图组件的根元素」上，不是本布局自己的元素，
+     scoped 的属性选择器依赖子组件根节点继承父 scopeId，太隐晦；这几个类名带 page- 前缀不会撞名 -->
+<style>
+.page-enter-active {
+  transition:
+    opacity 0.16s ease-out,
+    transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.page-leave-active {
+  /* 出场比入场快：out-in 是串行的，两段加起来才是用户感知的总时长 */
+  transition: opacity 0.09s ease-in;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.page-leave-to {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: opacity 0.08s linear;
+  }
+  .page-enter-from {
+    transform: none;
+  }
 }
 </style>

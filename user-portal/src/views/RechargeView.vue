@@ -2,8 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import PortalLayout from '@/layouts/PortalLayout.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import AmountPicker from '@/components/recharge/AmountPicker.vue'
 import PayMethodPicker from '@/components/recharge/PayMethodPicker.vue'
@@ -269,7 +268,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <!-- 页头 -->
     <PageHeader
       :title="$t('recharge.pageTitle')"
@@ -286,12 +285,10 @@ onMounted(async () => {
     </PageHeader>
 
     <!-- 加载态 -->
-    <div
+    <PageSkeleton
       v-if="loading && !loaded"
-      class="flex items-center justify-center py-24"
-    >
-      <LoadingSpinner :size="32" />
-    </div>
+      variant="cards"
+    />
 
     <!-- 错误态 -->
     <div
@@ -492,5 +489,5 @@ onMounted(async () => {
         </button>
       </template>
     </Modal>
-  </PortalLayout>
+  </div>
 </template>

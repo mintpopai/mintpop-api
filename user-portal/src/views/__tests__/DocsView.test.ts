@@ -38,14 +38,10 @@ function makeRouter(): Router {
 // 此处 createI18n 的 locale 仅供组件内 $t/翻译，不影响 useLocaleStore。
 const i18n = createI18n({ legacy: false, locale: 'zh-CN', messages: { 'zh-CN': {}, 'en-US': {} } })
 
-// stub 掉 PortalLayout：只透传默认插槽，隔离 DocsView 与布局的重依赖（auth 网络请求等）
-const PortalLayoutStub = { template: '<div><slot /></div>' }
-
 function mountDocs(router: Router) {
   return mount(DocsView, {
     global: {
-      plugins: [router, i18n],
-      stubs: { PortalLayout: PortalLayoutStub }
+      plugins: [router, i18n]
     }
   })
 }

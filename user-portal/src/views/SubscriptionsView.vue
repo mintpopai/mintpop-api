@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import PortalLayout from '@/layouts/PortalLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import SubscriptionCard from '@/components/subscriptions/SubscriptionCard.vue'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useToast } from '@/composables/useToast'
@@ -32,7 +31,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <PageHeader
       :title="$t('subscriptions.pageTitle')"
       :subtitle="$t('subscriptions.pageSubtitle')"
@@ -49,12 +48,10 @@ onMounted(async () => {
     </PageHeader>
 
     <!-- 加载态 -->
-    <div
+    <PageSkeleton
       v-if="store.loading && !store.loaded"
-      class="flex items-center justify-center py-24"
-    >
-      <LoadingSpinner :size="32" />
-    </div>
+      variant="cards"
+    />
 
     <!-- 错误态：与「没有套餐」区分开，给重试 -->
     <div
@@ -103,5 +100,5 @@ onMounted(async () => {
         @renew="goRenew"
       />
     </div>
-  </PortalLayout>
+  </div>
 </template>

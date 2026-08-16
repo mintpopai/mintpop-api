@@ -30,14 +30,12 @@ function makeRouter(): Router {
   })
 }
 
-const PortalLayoutStub = { template: '<div><slot /></div>' }
-
 async function mountView(query: string) {
   const router = makeRouter()
   router.push(`/payment/result${query}`)
   await router.isReady()
   const wrapper = mount(PaymentReturnView, {
-    global: { plugins: [router, i18n], stubs: { PortalLayout: PortalLayoutStub } }
+    global: { plugins: [router, i18n] }
   })
   await flushPromises()
   return wrapper

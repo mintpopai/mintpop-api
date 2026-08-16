@@ -63,14 +63,12 @@ function makeRouter(): Router {
   })
 }
 
-const PortalLayoutStub = { template: '<div><slot /></div>' }
-
 async function mountView() {
   const router = makeRouter()
   router.push('/subscriptions')
   await router.isReady()
   const wrapper = mount(SubscriptionsView, {
-    global: { plugins: [router, i18n], stubs: { PortalLayout: PortalLayoutStub } }
+    global: { plugins: [router, i18n] }
   })
   await flushPromises()
   return wrapper

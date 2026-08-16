@@ -5,7 +5,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import PortalLayout from '@/layouts/PortalLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useAuthStore } from '@/stores/auth'
 import { pollOrderUntilSettled } from '@/utils/orderPolling'
@@ -54,7 +53,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <div class="mx-auto max-w-[480px] py-16">
       <div class="flex flex-col items-center rounded-[20px] bg-card px-8 py-12 text-center shadow-card">
         <!-- 确认中 -->
@@ -135,5 +134,5 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-  </PortalLayout>
+  </div>
 </template>

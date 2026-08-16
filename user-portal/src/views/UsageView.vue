@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PortalLayout from '@/layouts/PortalLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
 import FilterBar from '@/components/ui/FilterBar.vue'
@@ -120,7 +120,7 @@ function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <!-- 页头 -->
     <PageHeader
       :title="$t('usage.title')"
@@ -151,9 +151,9 @@ function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
     </PageHeader>
 
     <!-- 加载态（首次） -->
-    <LoadingSpinner
+    <PageSkeleton
       v-if="loading && !loaded"
-      :size="32"
+      variant="table"
     />
 
     <!-- 错误态（首次） -->
@@ -296,5 +296,5 @@ function kpiTokenHint(s: NonNullable<typeof stats.value>): string {
         />
       </div>
     </template>
-  </PortalLayout>
+  </div>
 </template>

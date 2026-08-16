@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import PortalLayout from '@/layouts/PortalLayout.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import AccountHero from '@/components/profile/AccountHero.vue'
 import ProfileForm from '@/components/profile/ProfileForm.vue'
@@ -22,19 +21,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <PageHeader
       :title="$t('profile.title')"
       :subtitle="$t('profile.subtitle')"
     />
 
     <!-- 加载态 -->
-    <div
+    <PageSkeleton
       v-if="p.loading.value && !p.user.value"
-      class="flex items-center justify-center py-24"
-    >
-      <LoadingSpinner :size="32" />
-    </div>
+      variant="form"
+    />
 
     <!-- 错误态 -->
     <div
@@ -71,5 +68,5 @@ onMounted(() => {
         @unbind="p.unbind"
       />
     </template>
-  </PortalLayout>
+  </div>
 </template>

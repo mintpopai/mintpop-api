@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import PortalLayout from '@/layouts/PortalLayout.vue'
 import ImageLightbox from '@/components/ui/ImageLightbox.vue'
 import { DOCS, DOC_GROUPS } from '@/docs/_manifest'
 import { loadDoc } from '@/docs/loaders'
@@ -149,7 +148,7 @@ function onProseClick(e: MouseEvent) {
 
 <template>
   <!-- fluid：文档页占满全宽，左侧目录贴页面左缘，正文在剩余空间内自行限宽居中 -->
-  <PortalLayout fluid>
+  <div>
     <div class="flex gap-10">
       <!-- 左侧目录（移动端隐藏，与 LegalView 目录同策略） -->
       <aside class="hidden w-56 shrink-0 lg:block">
@@ -229,7 +228,7 @@ function onProseClick(e: MouseEvent) {
       :alt="lightboxAlt"
       @close="lightboxSrc = null"
     />
-  </PortalLayout>
+  </div>
 </template>
 
 <style scoped>

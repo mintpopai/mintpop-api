@@ -30,14 +30,11 @@ const i18n = createI18n({
   messages: { 'zh-CN': { pricing: zhPricing } }
 })
 
-// PortalLayout 依赖全局导航/store，与本页无关，stub 成透传插槽
-const stubs = { PortalLayout: { template: '<div><slot /></div>' } }
-
 async function mountView() {
   const router = makeRouter()
   router.push('/pricing')
   await router.isReady()
-  const wrapper = mount(PricingView, { global: { plugins: [router, i18n], stubs } })
+  const wrapper = mount(PricingView, { global: { plugins: [router, i18n] } })
   await flushPromises()
   return wrapper
 }

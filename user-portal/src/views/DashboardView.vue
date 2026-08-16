@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import PortalLayout from '@/layouts/PortalLayout.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import HeroBalance from '@/components/dashboard/HeroBalance.vue'
 import KpiRow from '@/components/dashboard/KpiRow.vue'
 import ModelDistribution from '@/components/dashboard/ModelDistribution.vue'
@@ -41,7 +40,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <!-- 页头 -->
     <div class="mb-[34px] flex items-start justify-between">
       <div>
@@ -68,12 +67,10 @@ onMounted(() => {
     <ExpiryBanner />
 
     <!-- 加载态 -->
-    <div
+    <PageSkeleton
       v-if="loading && !stats"
-      class="flex items-center justify-center py-24"
-    >
-      <LoadingSpinner :size="32" />
-    </div>
+      variant="cards"
+    />
 
     <!-- 错误态 -->
     <div
@@ -114,5 +111,5 @@ onMounted(() => {
 
       <QuickActions />
     </template>
-  </PortalLayout>
+  </div>
 </template>

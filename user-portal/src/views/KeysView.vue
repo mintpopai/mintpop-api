@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import PortalLayout from '@/layouts/PortalLayout.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
 import FilterBar from '@/components/ui/FilterBar.vue'
@@ -103,7 +102,7 @@ async function doToggle(key: ApiKey) {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <!-- 页头 -->
     <PageHeader
       :title="$t('keys.title')"
@@ -140,9 +139,9 @@ async function doToggle(key: ApiKey) {
     </PageHeader>
 
     <!-- 加载态 -->
-    <LoadingSpinner
+    <PageSkeleton
       v-if="k.loading.value && !k.loaded.value"
-      :size="32"
+      variant="table"
     />
 
     <!-- 错误态 -->
@@ -303,7 +302,7 @@ async function doToggle(key: ApiKey) {
         </button>
       </template>
     </Modal>
-  </PortalLayout>
+  </div>
 </template>
 
 <style scoped>

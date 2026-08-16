@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PortalLayout from '@/layouts/PortalLayout.vue'
 import { PRICING_CHANNELS, type PricingModel } from '@/config/pricing'
 import { queryModelPricing, type ModelPricePerMillion } from '@/api/pricing'
 
@@ -168,7 +167,7 @@ function multiplierNote(multiplier: number): string {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <!-- 页头（左：标题/副标题，右：跳充值 CTA；窄屏时按钮自动换行到标题下方） -->
     <div class="mb-[34px] flex flex-wrap items-center justify-between gap-4">
       <div>
@@ -350,5 +349,5 @@ function multiplierNote(multiplier: number): string {
         </div>
       </div>
     </div>
-  </PortalLayout>
+  </div>
 </template>

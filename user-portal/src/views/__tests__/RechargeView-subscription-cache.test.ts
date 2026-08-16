@@ -70,7 +70,6 @@ const CHECKOUT = {
   stripe_publishable_key: ''
 } as unknown as CheckoutInfoResponse
 
-const PortalLayoutStub = { template: '<div><slot /></div>' }
 // 弹窗内部会真发起支付请求，替换成只暴露 paid 事件的壳
 const PaymentResultModalStub = {
   name: 'PaymentResultModal',
@@ -95,7 +94,7 @@ async function mountView(query = '') {
   const wrapper = mount(RechargeView, {
     global: {
       plugins: [router, i18n],
-      stubs: { PortalLayout: PortalLayoutStub, PaymentResultModal: PaymentResultModalStub }
+      stubs: { PaymentResultModal: PaymentResultModalStub }
     }
   })
   await flushPromises()

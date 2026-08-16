@@ -2,8 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import PortalLayout from '@/layouts/PortalLayout.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
 import Pagination from '@/components/ui/Pagination.vue'
@@ -122,7 +121,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <PortalLayout>
+  <div>
     <!-- 页头 -->
     <PageHeader
       :title="$t('orders.pageTitle')"
@@ -146,12 +145,10 @@ onMounted(() => {
     </PageHeader>
 
     <!-- 加载态（首次） -->
-    <div
+    <PageSkeleton
       v-if="loading && !loaded"
-      class="flex items-center justify-center py-24"
-    >
-      <LoadingSpinner :size="32" />
-    </div>
+      variant="table"
+    />
 
     <!-- 错误态（首次） -->
     <div
@@ -285,5 +282,5 @@ onMounted(() => {
         </button>
       </template>
     </Modal>
-  </PortalLayout>
+  </div>
 </template>

@@ -50,7 +50,6 @@ const i18n = createI18n({
 })
 
 const stubs = {
-  PortalLayout: { template: '<div><slot /></div>' },
   // 只断言 open prop 的透传，弹窗内部不在本测试范围
   CreateKeyModal: {
     props: ['open', 'groups'],

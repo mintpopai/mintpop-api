@@ -118,20 +118,23 @@ const isEmpty = computed(() => props.plans.length === 0)
     </p>
   </div>
 
-  <!-- 套餐卡片网格 -->
+  <!-- 套餐卡片网格
+       卡片用 grid-template-rows: subgrid 把自己的 8 个区块映射到父网格的行轨道上，
+       同一行的卡片逐行等高（标题换行数、描述长短不同也不会错位）；
+       故卡片自身不能有 padding（会让内部轨道相对父轨道偏移），左右内边距下放到每个直接子元素。 -->
   <div
     v-else
-    class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+    class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
   >
     <div
       v-for="{ plan, hasDiscount, discount, limitLines, unlimited, platform, isRenewal } in cards"
       :key="plan.id"
       :data-plan-group="plan.group_id"
-      class="flex flex-col rounded-[20px] bg-card p-[24px_26px] shadow-card transition-shadow duration-150 hover:shadow-[0_6px_24px_rgba(0,0,0,0.10)]"
+      class="row-span-8 grid grid-rows-subgrid gap-y-0 rounded-[20px] bg-card shadow-card transition-shadow duration-150 [&>*]:px-[26px] hover:shadow-[0_6px_24px_rgba(0,0,0,0.10)]"
       :class="{ 'ring-2 ring-accent': plan.group_id === highlightGroupId }"
     >
       <!-- 套餐名：平台圆点 + 分组名 + 平台标签 -->
-      <div class="mb-1 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
+      <div class="mb-1 flex items-center gap-2 pt-6 text-[11px] font-medium uppercase tracking-[0.12em] text-faint">
         <span
           class="h-1.5 w-1.5 shrink-0 rounded-full"
           :style="{ backgroundColor: platform.color }"
@@ -143,13 +146,15 @@ const isEmpty = computed(() => props.plans.length === 0)
         {{ plan.name }}
       </h3>
 
-      <!-- 描述 -->
-      <p
-        v-if="plan.description"
-        class="mb-5 text-sm leading-relaxed text-subtle"
-      >
-        {{ plan.description }}
-      </p>
+      <!-- 描述：无描述时也保留空行占位，否则后面的区块会串到上一行轨道 -->
+      <div :class="plan.description ? 'mb-5' : ''">
+        <p
+          v-if="plan.description"
+          class="text-sm leading-relaxed text-subtle"
+        >
+          {{ plan.description }}
+        </p>
+      </div>
 
       <!-- 价格区域 -->
       <div class="mb-5 flex items-baseline gap-2">
@@ -171,85 +176,91 @@ const isEmpty = computed(() => props.plans.length === 0)
         </span>
       </div>
 
-      <!-- 元信息网格：有效期 + 倍率 -->
-      <div class="mb-4 grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl2 bg-muted px-4 py-3 text-[13px]">
-        <div class="text-subtle">
-          {{ $t('recharge.validity') }}
-        </div>
-        <div class="font-medium text-text">
-          {{ formatValidity(plan.validity_days, plan.validity_unit) }}
-        </div>
-        <template v-if="typeof plan.rate_multiplier === 'number'">
+      <!-- 元信息网格：有效期 + 倍率（外层只负责占一行轨道，灰底块自己的内边距要独立一层，
+           否则会被卡片的 [&>*]:px-[26px] 覆盖掉） -->
+      <div class="mb-4">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl2 bg-muted px-4 py-3 text-[13px]">
           <div class="text-subtle">
-            {{ $t('recharge.rateMultiplier') }}
+            {{ $t('recharge.validity') }}
           </div>
           <div class="font-medium text-text">
-            {{ plan.rate_multiplier }}×
+            {{ formatValidity(plan.validity_days, plan.validity_unit) }}
           </div>
-        </template>
-      </div>
-
-      <!-- 额度限制 -->
-      <div
-        v-if="limitLines.length"
-        class="mb-4 flex flex-col gap-1.5 text-[13px]"
-      >
-        <div
-          v-for="line in limitLines"
-          :key="line.label"
-          class="flex items-center justify-between rounded-xl border border-dashed border-border2 px-3 py-1.5"
-        >
-          <span class="text-subtle">{{ line.label }}</span>
-          <span class="font-medium text-accent">{{ line.value }}</span>
+          <template v-if="typeof plan.rate_multiplier === 'number'">
+            <div class="text-subtle">
+              {{ $t('recharge.rateMultiplier') }}
+            </div>
+            <div class="font-medium text-text">
+              {{ plan.rate_multiplier }}×
+            </div>
+          </template>
         </div>
       </div>
-      <div
-        v-else-if="unlimited"
-        class="mb-4 flex items-center justify-between rounded-xl border border-dashed border-border2 px-3 py-1.5 text-[13px]"
-      >
-        <span class="text-subtle">{{ $t('recharge.quotaLabel') }}</span>
-        <span class="font-medium text-accent">{{ $t('recharge.unlimitedQuota') }}</span>
+
+      <!-- 额度限制（有上限逐条列出，全空则「不限额度」，两种形态共用同一行轨道） -->
+      <div class="mb-4 text-[13px]">
+        <div
+          v-if="limitLines.length"
+          class="flex flex-col gap-1.5"
+        >
+          <div
+            v-for="line in limitLines"
+            :key="line.label"
+            class="flex items-center justify-between rounded-xl border border-dashed border-border2 px-3 py-1.5"
+          >
+            <span class="text-subtle">{{ line.label }}</span>
+            <span class="font-medium text-accent">{{ line.value }}</span>
+          </div>
+        </div>
+        <div
+          v-else-if="unlimited"
+          class="flex items-center justify-between rounded-xl border border-dashed border-border2 px-3 py-1.5"
+        >
+          <span class="text-subtle">{{ $t('recharge.quotaLabel') }}</span>
+          <span class="font-medium text-accent">{{ $t('recharge.unlimitedQuota') }}</span>
+        </div>
       </div>
 
-      <!-- 特性列表 -->
-      <ul
-        v-if="plan.features && plan.features.length"
-        class="mb-6 flex flex-col gap-1.5"
-      >
-        <li
-          v-for="(feat, idx) in plan.features"
-          :key="idx"
-          class="flex items-start gap-2 text-[13px] text-text2"
+      <!-- 特性列表：无特性时同样保留空行占位 -->
+      <div :class="plan.features && plan.features.length ? 'mb-6' : ''">
+        <ul
+          v-if="plan.features && plan.features.length"
+          class="flex flex-col gap-1.5"
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            class="mt-[2px] flex-none text-accent"
+          <li
+            v-for="(feat, idx) in plan.features"
+            :key="idx"
+            class="flex items-start gap-2 text-[13px] text-text2"
           >
-            <path
-              d="M20 6L9 17l-5-5"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          {{ feat }}
-        </li>
-      </ul>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              class="mt-[2px] flex-none text-accent"
+            >
+              <path
+                d="M20 6L9 17l-5-5"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            {{ feat }}
+          </li>
+        </ul>
+      </div>
 
-      <!-- 弹性占位，让按钮始终在底部 -->
-      <div class="flex-1" />
-
-      <!-- 选择按钮 -->
-      <button
-        class="w-full cursor-pointer rounded-xl2 bg-accent py-[13px] text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,0.28)] transition-[background,box-shadow,opacity] duration-150 hover:bg-accent/90"
-        @click="emit('subscribe', plan)"
-      >
-        {{ isRenewal ? $t('recharge.renewPlan') : $t('recharge.selectPlan') }}
-      </button>
+      <!-- 选择按钮：处在最后一行轨道，同行卡片的按钮天然底部对齐 -->
+      <div class="flex items-end pb-6">
+        <button
+          class="w-full cursor-pointer rounded-xl2 bg-accent py-[13px] text-[14px] font-semibold text-white shadow-[0_4px_14px_rgba(20,194,138,0.28)] transition-[background,box-shadow,opacity] duration-150 hover:bg-accent/90"
+          @click="emit('subscribe', plan)"
+        >
+          {{ isRenewal ? $t('recharge.renewPlan') : $t('recharge.selectPlan') }}
+        </button>
+      </div>
     </div>
   </div>
 </template>

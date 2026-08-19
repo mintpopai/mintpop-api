@@ -468,6 +468,11 @@ func beginGroupUsageRollupTriggerTestTx(t *testing.T, ctx context.Context, schem
 	tx, err := integrationDB.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	require.NoError(t, setGroupUsageRollupTriggerSearchPath(ctx, tx, pq.QuoteIdentifier(schema)))
+	// 触发器按会话时区折算业务日期，而各用例的水位断言写死 Asia/Shanghai；
+	// 连接默认 UTC 时，在 UTC 16:00–24:00（上海已跨天）窗口内两者日期不同会导致假失败，
+	// 故把测试事务的会话时区统一钉到 Asia/Shanghai（个别用例随后自行 SET LOCAL 覆盖）。
+	_, err = tx.ExecContext(ctx, "SET LOCAL TIME ZONE 'Asia/Shanghai'")
+	require.NoError(t, err)
 	return tx
 }
 

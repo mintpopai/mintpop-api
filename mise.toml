@@ -1,6 +1,6 @@
 # 工具链与命令单一来源（统一通过 mise 管理）
 [tools]
-go = "1.26.5"               # 与 backend/go.mod 对齐
+go = "1.26.6"               # 与 backend/go.mod 对齐
 node = "24.18.0"            # 固定具体版本（活跃 LTS；Vite 8 要求 >=22.12，frontend 工具链在 24 下已实测全绿）
 pnpm = "9.15.9"
 golangci-lint = "2.9.0"

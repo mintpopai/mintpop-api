@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import PageSkeleton from '@/components/common/PageSkeleton.vue'
 import SubscriptionCard from '@/components/subscriptions/SubscriptionCard.vue'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useToast } from '@/composables/useToast'
+import { getUserGroupRates } from '@/api/groups'
 
 const router = useRouter()
 const store = useSubscriptionsStore()
@@ -25,7 +26,18 @@ async function handleRefresh() {
   if (store.error && store.loaded) toast.error(store.error)
 }
 
+// 用户专属分组倍率（group_id → 倍率）；非关键数据，失败静默降级为按分组默认倍率展示
+const groupRates = ref<Record<number, number>>({})
+
 onMounted(async () => {
+  // 与订阅列表并行拉取，互不阻塞
+  getUserGroupRates()
+    .then((rates) => {
+      groupRates.value = rates
+    })
+    .catch(() => {
+      groupRates.value = {}
+    })
   await store.ensureLoaded()
 })
 </script>
@@ -97,6 +109,7 @@ onMounted(async () => {
         v-for="sub in store.sorted"
         :key="sub.id"
         :sub="sub"
+        :user-rate="groupRates[sub.group_id] ?? null"
         @renew="goRenew"
       />
     </div>

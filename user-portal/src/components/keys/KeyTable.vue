@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import { maskApiKey, formatCost } from '@/utils/format'
-import type { ApiKey, ApiKeyUsageStat } from '@/api/types'
+import type { ApiKey, ApiKeyUsageStat, Group } from '@/api/types'
 import { useCopy } from '@/composables/useCopy'
 
-defineProps<{
+const props = defineProps<{
   rows: ApiKey[]
   usage: Record<string, ApiKeyUsageStat>
+  /** 用户专属分组倍率（group_id → 倍率），来自 /groups/rates */
+  groupRates?: Record<number, number>
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +23,13 @@ const { copiedKey: copiedId, copy } = useCopy()
 
 function copyKey(row: ApiKey) {
   copy(row.key, row.id)
+}
+
+// 专属倍率且与分组默认不同才展示删除线对比（与 frontend GroupBadge 口径一致）
+function customRate(group: Group): number | null {
+  const rate = props.groupRates?.[group.id]
+  if (typeof rate !== 'number') return null
+  return rate !== (group.rate_multiplier ?? 1) ? rate : null
 }
 
 function platformDot(platform: string | undefined): string {
@@ -127,7 +136,14 @@ function platformDot(platform: string | undefined): string {
           />
           {{ row.group.name }}
           <span class="rounded-[5px] bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-faint">
-            {{ row.group.rate_multiplier ?? 1 }}x
+            <!-- 有专属倍率：原倍率删除线 + 专属倍率高亮（与 frontend GroupBadge 一致） -->
+            <template v-if="customRate(row.group) !== null">
+              <span class="line-through opacity-50">{{ row.group.rate_multiplier ?? 1 }}x</span>
+              <span class="ml-0.5 font-bold text-text">{{ customRate(row.group) }}x</span>
+            </template>
+            <template v-else>
+              {{ row.group.rate_multiplier ?? 1 }}x
+            </template>
           </span>
         </span>
         <span

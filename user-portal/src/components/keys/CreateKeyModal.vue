@@ -13,7 +13,12 @@ const groupFieldId = useId()
 const expiryFieldId = useId()
 const quotaFieldId = useId()
 
-const props = defineProps<{ open: boolean; groups: Group[] }>()
+const props = defineProps<{
+  open: boolean
+  groups: Group[]
+  /** 用户专属分组倍率（group_id → 倍率），来自 /groups/rates */
+  groupRates?: Record<number, number>
+}>()
 const emit = defineEmits<{
   close: []
   submit: [payload: CreateApiKeyRequest, done: (nk: ApiKey | null) => void]
@@ -44,6 +49,12 @@ watch(
     }
   }
 )
+
+// 选项文案带生效倍率（专属倍率 ?? 分组默认倍率），与密钥表徽标口径一致
+function optionLabel(g: Group): string {
+  const rate = props.groupRates?.[g.id] ?? g.rate_multiplier
+  return typeof rate === 'number' ? `${g.name}（${rate}x）` : g.name
+}
 
 function submit() {
   // 与 frontend 语义对齐：分组必填，未选分组不允许提交
@@ -126,7 +137,7 @@ function copyKey() {
               :key="g.id"
               :value="g.id"
             >
-              {{ g.name }}
+              {{ optionLabel(g) }}
             </option>
           </select>
         </div>

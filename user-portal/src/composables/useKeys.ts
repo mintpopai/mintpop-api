@@ -17,6 +17,8 @@ export function useKeys() {
     group_id: ''
   })
   const groups = ref<Group[]>([])
+  // 用户专属分组倍率（group_id → 倍率）；有值且与分组默认不同的分组按专属倍率计费
+  const groupRates = ref<Record<number, number>>({})
   const usage = ref<Record<string, ApiKeyUsageStat>>({})
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -55,11 +57,13 @@ export function useKeys() {
   }
 
   async function loadGroups() {
-    try {
-      groups.value = await groupsApi.listAvailable()
-    } catch {
-      groups.value = []
-    }
+    // 分组与专属倍率并行拉取；两者都是非关键数据，失败各自降级（无分组列表 / 无专属倍率）
+    const [gs, rates] = await Promise.all([
+      groupsApi.listAvailable().catch(() => [] as Group[]),
+      groupsApi.getUserGroupRates().catch(() => ({}) as Record<number, number>)
+    ])
+    groups.value = gs
+    groupRates.value = rates
   }
 
   function setPage(n: number) {
@@ -95,6 +99,7 @@ export function useKeys() {
     pageSize,
     filters,
     groups,
+    groupRates,
     usage,
     loading,
     error,

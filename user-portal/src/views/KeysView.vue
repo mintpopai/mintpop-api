@@ -227,6 +227,7 @@ async function doToggle(key: ApiKey) {
       <KeyTable
         :rows="k.rows.value"
         :usage="k.usage.value"
+        :group-rates="k.groupRates.value"
         @edit="editTarget = $event"
         @toggle="doToggle($event)"
         @remove="removeTarget = $event"
@@ -246,6 +247,7 @@ async function doToggle(key: ApiKey) {
     <CreateKeyModal
       :open="showCreate"
       :groups="k.groups.value"
+      :group-rates="k.groupRates.value"
       @close="showCreate = false"
       @submit="doCreate"
     />
@@ -255,6 +257,7 @@ async function doToggle(key: ApiKey) {
       :open="!!editTarget"
       :target="editTarget"
       :groups="k.groups.value"
+      :group-rates="k.groupRates.value"
       @close="editTarget = null"
       @submit="doEdit"
     />

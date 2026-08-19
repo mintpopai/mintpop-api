@@ -27,8 +27,10 @@ const props = withDefaults(
      * 此时充值页根本不渲染订阅 tab，留着按钮就是一条死链。默认 true。
      */
     canRenew?: boolean
+    /** 用户对该分组的专属倍率（来自 /groups/rates）；null = 未配置，按分组默认倍率计费 */
+    userRate?: number | null
   }>(),
-  { canRenew: true }
+  { canRenew: true, userRate: null }
 )
 const emit = defineEmits<{ renew: [groupId: number] }>()
 
@@ -45,6 +47,21 @@ const active = computed(() => isActive(props.sub))
 // 状态徽标：只有生效中走正向色，过期/暂停/撤销一律灰
 const badgeVariant = computed(() => (active.value ? 'active' : 'muted'))
 const badgeLabel = computed(() => t(`subscriptions.status.${props.sub.status}`))
+
+// 分组默认倍率（后端 rate_multiplier 无 omitempty，正常恒有值；缺分组时为 null）
+const defaultRate = computed(() =>
+  typeof props.sub.group?.rate_multiplier === 'number' ? props.sub.group.rate_multiplier : null
+)
+
+// 有专属倍率且与默认不同才展示删除线对比（与密钥表徽标口径一致）
+const hasCustomRate = computed(
+  () => props.userRate !== null && defaultRate.value !== null && props.userRate !== defaultRate.value
+)
+
+// 默认倍率 1 是噪声只在非 1 时展示；但配了专属倍率时必须展示（哪怕默认是 1）
+const showRate = computed(
+  () => hasCustomRate.value || (defaultRate.value !== null && defaultRate.value !== 1)
+)
 
 const level = computed<ExpiryLevel>(() => expiryLevel(props.sub.expires_at))
 
@@ -102,12 +119,18 @@ function resetText(w: QuotaWindow): string {
         >
           {{ description }}
         </p>
-        <!-- 后端 rate_multiplier 无 omitempty，恒有值；默认倍率 1 是噪声，只在非 1 时展示 -->
         <p
-          v-if="typeof sub.group?.rate_multiplier === 'number' && sub.group.rate_multiplier !== 1"
+          v-if="showRate"
           class="mt-1 text-[11px] text-faint"
         >
-          {{ $t('subscriptions.rate') }}：{{ sub.group.rate_multiplier }}×
+          <!-- 有专属倍率：原倍率删除线 + 专属倍率高亮 -->
+          <template v-if="hasCustomRate">
+            {{ $t('subscriptions.rate') }}：<span class="line-through opacity-60">{{ defaultRate }}×</span>
+            <span class="ml-0.5 font-semibold text-text2">{{ userRate }}×</span>
+          </template>
+          <template v-else>
+            {{ $t('subscriptions.rate') }}：{{ defaultRate }}×
+          </template>
         </p>
       </div>
       <div class="flex shrink-0 items-center gap-2">

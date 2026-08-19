@@ -17,6 +17,7 @@ vi.mock('@/composables/useKeys', () => ({
     pageSize: ref(20),
     filters: reactive({ search: '', status: '', group_id: '' }),
     groups: ref([]),
+    groupRates: ref({}),
     usage: ref({}),
     loading: ref(false),
     error: ref(null),

@@ -123,4 +123,34 @@ describe('SubscriptionCard：倍率展示', () => {
     const wrapper = mountCard(makeSub({ group: { id: 42, name: 'g', rate_multiplier: 1.5 } }))
     expect(wrapper.text()).toContain(`${zhCN.subscriptions.rate}：1.5×`)
   })
+
+  // 专属倍率（管理员按用户配置，/groups/rates）：生效倍率 = 专属 ?? 默认
+  it('有专属倍率且与默认不同：原倍率删除线 + 专属倍率并列展示', () => {
+    const wrapper = mount(SubscriptionCard, {
+      props: { sub: makeSub({ group: { id: 42, name: 'g', rate_multiplier: 1.5 } }), userRate: 0.8 },
+      global: { plugins: [i18n] }
+    })
+    const struck = wrapper.find('.line-through')
+    expect(struck.exists()).toBe(true)
+    expect(struck.text()).toBe('1.5×')
+    expect(wrapper.text()).toContain('0.8×')
+  })
+
+  it('默认倍率为 1 但有专属倍率时也必须展示倍率行（否则用户看不到自己的实际倍率）', () => {
+    const wrapper = mount(SubscriptionCard, {
+      props: { sub: makeSub({ group: { id: 42, name: 'g', rate_multiplier: 1 } }), userRate: 0.5 },
+      global: { plugins: [i18n] }
+    })
+    expect(wrapper.text()).toContain(zhCN.subscriptions.rate)
+    expect(wrapper.text()).toContain('0.5×')
+  })
+
+  it('专属倍率与默认相同：视为无专属，不展示删除线', () => {
+    const wrapper = mount(SubscriptionCard, {
+      props: { sub: makeSub({ group: { id: 42, name: 'g', rate_multiplier: 1.5 } }), userRate: 1.5 },
+      global: { plugins: [i18n] }
+    })
+    expect(wrapper.find('.line-through').exists()).toBe(false)
+    expect(wrapper.text()).toContain(`${zhCN.subscriptions.rate}：1.5×`)
+  })
 })

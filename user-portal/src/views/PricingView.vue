@@ -1,112 +1,76 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PRICING_CHANNELS, type PricingModel } from '@/config/pricing'
+import { nextRadioIndex } from '@/composables/useRadioGroupKeyboard'
+import {
+  PRICING_CHANNELS,
+  type PricingChannel,
+  type PricingModel,
+  type PricingTab
+} from '@/config/pricing'
 import { queryModelPricing, type ModelPricePerMillion } from '@/api/pricing'
+import { discountedPrice, featuredIndex, formatPrice } from '@/utils/pricing'
 
 const { t } = useI18n()
 
-// 每渠道卡片配色（纯展示层，价格等事实数据在 config/pricing.ts + 后端定价接口维护）
-interface ChannelPalette {
-  bg: string
-  nameColor: string
-  modelColor: string
-  labelColor: string
-  origColor: string
-  priceColor: string
-  pillBg: string
-  pillText: string
-  dividerColor: string
-  footColor: string
-  multColor: string
-  dotColor: string
-  dotOpacity: number
-  /** 模型选择按钮底色（半透明叠加层） */
-  btnBg: string
-}
+/** tab 顺序即展示顺序 */
+const TABS: { key: PricingTab; labelKey: string }[] = [
+  { key: 'OVERSEAS', labelKey: 'pricing.tabOverseas' },
+  { key: 'OPEN_SOURCE', labelKey: 'pricing.tabOpenSource' }
+]
 
-const palettes: Record<string, ChannelPalette> = {
-  claudeCode: {
-    bg: '#F0ECE0',
-    nameColor: '#1A1A1A',
-    modelColor: '#6E6A60',
-    labelColor: '#6E6A60',
-    origColor: '#B0AC9E',
-    priceColor: '#1A1A1A',
-    pillBg: '#1F1D1A',
-    pillText: '#F0ECE0',
-    dividerColor: 'rgba(26,26,26,.10)',
-    footColor: '#6E6A60',
-    multColor: '#A29E92',
-    dotColor: '#1A1A1A',
-    dotOpacity: 0.07,
-    btnBg: 'rgba(26,26,26,.06)'
-  },
-  claudeApi: {
-    bg: '#C67C5B',
-    nameColor: '#35190E',
-    modelColor: 'rgba(53,25,14,.72)',
-    labelColor: 'rgba(53,25,14,.78)',
-    origColor: 'rgba(53,25,14,.45)',
-    priceColor: '#ffffff',
-    pillBg: '#35190E',
-    pillText: '#F1E2D9',
-    dividerColor: 'rgba(53,25,14,.22)',
-    footColor: 'rgba(53,25,14,.72)',
-    multColor: 'rgba(53,25,14,.55)',
-    dotColor: '#35190E',
-    dotOpacity: 0.1,
-    btnBg: 'rgba(255,255,255,.20)'
-  },
-  chatgpt: {
-    bg: '#14C28A',
-    nameColor: '#063A2B',
-    modelColor: 'rgba(6,58,43,.72)',
-    labelColor: '#063A2B',
-    origColor: 'rgba(6,58,43,.42)',
-    priceColor: '#ffffff',
-    pillBg: '#063A2B',
-    pillText: 'rgba(255,255,255,.92)',
-    dividerColor: 'rgba(255,255,255,.24)',
-    footColor: 'rgba(6,58,43,.78)',
-    multColor: 'rgba(6,58,43,.6)',
-    dotColor: '#0A4A38',
-    dotOpacity: 0.16,
-    btnBg: 'rgba(255,255,255,.22)'
-  },
-  kiro: {
-    bg: '#517FA9',
-    nameColor: '#ffffff',
-    modelColor: 'rgba(255,255,255,.72)',
-    labelColor: 'rgba(255,255,255,.85)',
-    origColor: 'rgba(255,255,255,.45)',
-    priceColor: '#ffffff',
-    pillBg: '#152F49',
-    pillText: 'rgba(255,255,255,.92)',
-    dividerColor: 'rgba(255,255,255,.22)',
-    footColor: 'rgba(255,255,255,.82)',
-    multColor: 'rgba(255,255,255,.6)',
-    dotColor: '#152F49',
-    dotOpacity: 0.16,
-    btnBg: 'rgba(255,255,255,.16)'
-  }
-}
+const activeTab = ref<PricingTab>('OVERSEAS')
+/** tab 按钮 DOM，方向键切换后把焦点移过去（WAI-ARIA tabs 模式） */
+const tabEls = ref<(HTMLElement | null)[]>([])
 
-const channels = PRICING_CHANNELS.map((ch) => ({ ...ch, ...palettes[ch.key] }))
+const visibleChannels = computed(() => PRICING_CHANNELS.filter((ch) => ch.tab === activeTab.value))
 
-// 实时官方原价（modelId → 美元/百万 tokens）；接口失败时保持为空，回退到配置兜底价
+// 实时官方原价（modelId → 美元/百万 tokens）；接口失败或模型未收录时留空，回退到配置兜底价
 const livePrices = ref<Map<string, ModelPricePerMillion>>(new Map())
 
-// 各渠道模型下拉框开合状态与选中下标（默认 0 = 最常用主模型）
+// 各渠道模型下拉框开合状态与选中下标（未选过时取配置的 featuredId）
 const open = reactive<Record<string, boolean>>({})
 const selected = reactive<Record<string, number>>({})
 
-function selectedIdx(key: string): number {
-  return selected[key] ?? 0
+function closeAllDropdowns(): void {
+  for (const k of Object.keys(open)) open[k] = false
 }
 
-function selectedModel(key: string, models: PricingModel[]): PricingModel {
-  return models[selectedIdx(key)]
+function selectTab(tab: PricingTab): void {
+  activeTab.value = tab
+  // 切 tab 后原卡片已卸载，残留的开合状态会让新 tab 的同名卡片直接展开
+  closeAllDropdowns()
+}
+
+function onTabKeydown(e: KeyboardEvent, idx: number): void {
+  const next = nextRadioIndex(idx, TABS.length, e.key)
+  if (next === null) return
+  e.preventDefault()
+  selectTab(TABS[next].key)
+  tabEls.value[next]?.focus()
+}
+
+/** 卡片正面展示的模型下标：用户选过就用选的，否则用配置指定的主推模型 */
+function selectedIdx(ch: PricingChannel): number {
+  return selected[ch.key] ?? featuredIndex(ch.models, ch.featuredId)
+}
+
+function selectedModel(ch: PricingChannel): PricingModel {
+  return ch.models[selectedIdx(ch)]
+}
+
+function isFeatured(ch: PricingChannel, idx: number): boolean {
+  return idx === featuredIndex(ch.models, ch.featuredId)
+}
+
+/** 主推模型的标记：海外模型标「最常用」，开源模型标「最低价」 */
+function featuredTagText(ch: PricingChannel): string {
+  return ch.featuredTag === 'MOST_USED' ? t('pricing.mostUsed') : t('pricing.lowestPrice')
+}
+
+/** 渠道展示名：品牌 + 版本后缀（品牌名不翻译，后缀走 i18n） */
+function channelName(ch: PricingChannel): string {
+  return ch.edition ? `${ch.name} ${t('pricing.editionOverseas')}` : ch.name
 }
 
 /**
@@ -115,7 +79,7 @@ function selectedModel(key: string, models: PricingModel[]): PricingModel {
  */
 function toggle(key: string): void {
   const next = !open[key]
-  for (const k of Object.keys(open)) open[k] = false
+  closeAllDropdowns()
   open[key] = next
 }
 
@@ -129,7 +93,7 @@ function pick(key: string, idx: number): void {
 function onDocClick(e: MouseEvent): void {
   const el = e.target as HTMLElement | null
   if (el && el.closest('[data-model-select]')) return
-  for (const k of Object.keys(open)) open[k] = false
+  closeAllDropdowns()
 }
 
 onMounted(async () => {
@@ -151,13 +115,9 @@ function origOf(m: PricingModel): ModelPricePerMillion {
   return livePrices.value.get(m.id) ?? { input: m.fallbackInput, output: m.fallbackOutput }
 }
 
-/** 按渠道立减折算现价 */
-function discounted(price: number, discount: number): number {
-  return price * (1 - discount / 100)
-}
-
-function fmt(price: number): string {
-  return `$${price.toFixed(2)}`
+/** 某模型某侧的实付价文案 */
+function payText(m: PricingModel, side: 'input' | 'output', discount: number): string {
+  return formatPrice(discountedPrice(origOf(m)[side], discount))
 }
 
 // 倍率说明行：文案存在才渲染（en-US 侧为空串 → 不展示），语言差异由词条驱动而非模板判断
@@ -169,7 +129,7 @@ function multiplierNote(multiplier: number): string {
 <template>
   <div>
     <!-- 页头（左：标题/副标题，右：跳充值 CTA；窄屏时按钮自动换行到标题下方） -->
-    <div class="mb-[34px] flex flex-wrap items-center justify-between gap-4">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="mb-2 font-serif text-4xl font-medium tracking-tight text-text">
           {{ $t('pricing.title') }}
@@ -186,163 +146,177 @@ function multiplierNote(multiplier: number): string {
       </RouterLink>
     </div>
 
-    <!-- 渠道价格卡片（2×2）：正面展示当前选中模型，下拉框切换模型后同步刷新价格 -->
-    <div class="grid grid-cols-1 items-start gap-[22px] md:grid-cols-2">
-      <div
-        v-for="ch in channels"
-        :key="ch.key"
-        class="relative rounded-xl3 px-7 py-8 shadow-card"
-        :class="{ 'z-20': open[ch.key] }"
-        :style="{ background: ch.bg }"
+    <!-- 模型类别切换（海外模型 / 开源模型）：WAI-ARIA tabs，方向键可切换。
+         选中态用与页面底色反相的实心药丸：深色主题下 --card 比 --muted 还暗，
+         用 bg-card 会让选中项比轨道更沉、读不出选中 -->
+    <div
+      role="tablist"
+      :aria-label="$t('pricing.title')"
+      class="mb-[30px] inline-flex gap-1 rounded-full bg-muted p-1"
+    >
+      <button
+        v-for="(tab, i) in TABS"
+        :key="tab.key"
+        :ref="(el) => (tabEls[i] = el as HTMLElement | null)"
+        type="button"
+        role="tab"
+        :aria-selected="activeTab === tab.key"
+        :tabindex="activeTab === tab.key ? 0 : -1"
+        class="cursor-pointer rounded-full px-6 py-2.5 text-sm font-semibold transition-colors"
+        :class="
+          activeTab === tab.key
+            ? 'bg-text text-bg shadow-pill'
+            : 'text-subtle hover:text-text'
+        "
+        @click="selectTab(tab.key)"
+        @keydown="onTabKeydown($event, i)"
       >
-        <!-- 点阵装饰（卡片不再 overflow-hidden，故自带圆角避免直角溢出） -->
-        <div
-          class="pointer-events-none absolute inset-0 rounded-xl3"
-          :style="{
-            color: ch.dotColor,
-            backgroundImage: 'radial-gradient(currentColor 1.6px, transparent 1.8px)',
-            backgroundSize: '13px 13px',
-            opacity: ch.dotOpacity
-          }"
-        />
+        {{ $t(tab.labelKey) }}
+      </button>
+    </div>
 
-        <!-- 渠道名 + 当前模型（主模型带「最常用」前缀）/ 折扣标签 -->
-        <div class="relative flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div
-              class="text-sm font-semibold uppercase tracking-[0.08em]"
-              :style="{ color: ch.nameColor }"
-            >
-              {{ ch.name }}
-            </div>
-            <div
-              class="mt-1 text-xs font-medium"
-              :style="{ color: ch.modelColor }"
-            >
-              <template v-if="selectedIdx(ch.key) === 0">
-                {{ $t('pricing.mostUsed') }} ·
-              </template>
-              {{ selectedModel(ch.key, ch.models).label }}
+    <!-- 渠道价格卡片（2 列）：正面展示当前选中模型，下拉框切换模型后同步刷新价格。
+         不加 items-start：同一行卡片等高才齐整（渠道名折行、单模型分组会让内容高度不一）；
+         下拉是绝对定位浮层，展开不会撑高卡片 -->
+    <div
+      role="tabpanel"
+      class="grid grid-cols-1 gap-[22px] md:grid-cols-2"
+    >
+      <div
+        v-for="ch in visibleChannels"
+        :key="ch.key"
+        class="card-surface relative rounded-xl3 px-7 py-8 shadow-card"
+        :class="{ 'z-20': open[ch.key] }"
+      >
+        <!-- 品牌头像 + 渠道名 / 当前模型 · 立减标签（无折扣的分组不出标签） -->
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-3">
+            <span
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] text-sm font-semibold text-white"
+              :style="{ background: ch.avatarBg }"
+              aria-hidden="true"
+            >{{ ch.avatar }}</span>
+            <div class="min-w-0">
+              <!-- 渠道名允许折行：Claude (Claude Code / Desktop) 这类长名截断后读不出是哪个渠道 -->
+              <div class="text-[15px] font-semibold leading-snug text-[#161a17]">
+                {{ channelName(ch) }}
+              </div>
+              <div class="mt-0.5 truncate text-xs text-[#6f7d75]">
+                {{ selectedModel(ch).label }}
+              </div>
             </div>
           </div>
           <div
-            class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
-            :style="{ background: ch.pillBg, color: ch.pillText }"
+            v-if="ch.discount > 0"
+            class="shrink-0 rounded-full bg-[#161a17] px-3 py-1.5 text-xs font-semibold text-white"
           >
             {{ $t('pricing.discount') }} {{ ch.discount }}%
           </div>
         </div>
 
-        <!-- 当前模型输入 / 输出价格（原价划线 + 现价大字） -->
-        <div class="relative mt-7 grid grid-cols-2 gap-4">
+        <!-- 当前模型输入 / 输出价格（有折扣才出划线原价） -->
+        <div class="mt-7 grid grid-cols-2 gap-4">
           <div
             v-for="side in (['input', 'output'] as const)"
             :key="side"
           >
-            <div
-              class="mb-1.5 text-xs font-medium"
-              :style="{ color: ch.labelColor }"
-            >
+            <div class="mb-1.5 text-xs font-medium text-[#6f7d75]">
               {{ $t(`pricing.${side}`) }}
             </div>
             <div
-              class="num text-sm font-medium line-through"
-              :style="{ color: ch.origColor }"
+              v-if="ch.discount > 0"
+              class="num text-sm font-medium text-[#a8b5ae] line-through"
             >
-              {{ fmt(origOf(selectedModel(ch.key, ch.models))[side]) }}
+              {{ formatPrice(origOf(selectedModel(ch))[side]) }}
             </div>
-            <div
-              class="num text-[40px] font-medium leading-none"
-              :style="{ color: ch.priceColor }"
-            >
-              {{ fmt(discounted(origOf(selectedModel(ch.key, ch.models))[side], ch.discount)) }}
+            <div class="num text-[40px] font-medium leading-none text-[#161a17]">
+              {{ payText(selectedModel(ch), side, ch.discount) }}
             </div>
           </div>
         </div>
 
-        <!-- 模型选择下拉框：默认文案「查看全部 N 个模型」，选择后显示所选型号并切换上方价格 -->
+        <!-- 模型切换：多模型走下拉，单模型分组直接标出唯一可用型号 -->
         <div
-          class="relative mt-7 border-t pt-5"
-          :style="{ borderColor: ch.dividerColor }"
+          class="relative mt-7 border-t border-[rgba(22,26,23,.09)] pt-5"
           data-model-select
         >
+          <div
+            v-if="ch.models.length === 1"
+            class="rounded-xl bg-[rgba(20,194,138,.11)] px-5 py-3.5 text-sm font-medium text-[#3d5c4f]"
+          >
+            {{ $t('pricing.onlyModel', { model: ch.models[0].label }) }}
+          </div>
+
           <button
+            v-else
             type="button"
-            class="flex w-full cursor-pointer items-center justify-between rounded-xl px-5 py-3.5 text-sm font-semibold"
-            :style="{ background: ch.btnBg, color: ch.nameColor }"
+            class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl bg-[rgba(20,194,138,.11)] px-5 py-3.5 text-sm font-semibold text-[#161a17]"
             :aria-expanded="!!open[ch.key]"
             aria-haspopup="listbox"
             @click="toggle(ch.key)"
           >
-            <span>{{
-              selectedIdx(ch.key) === 0
+            <!-- 展示主推模型时提示「查看全部」，选过别的型号后换成该型号，免得收起后看不出选了谁 -->
+            <span class="truncate">{{
+              isFeatured(ch, selectedIdx(ch))
                 ? $t('pricing.viewAll', { count: ch.models.length })
-                : selectedModel(ch.key, ch.models).label
+                : selectedModel(ch).label
             }}</span>
             <span
-              class="text-xs transition-transform duration-200"
+              class="shrink-0 text-xs transition-transform duration-200"
               :class="{ 'rotate-180': open[ch.key] }"
             >▾</span>
           </button>
 
           <!-- 下拉选项：型号 + 折后价摘要，选中项打勾。
-               绝对定位浮层（不占文档流），否则展开会把卡片整体撑高、打乱 2×2 网格 -->
+               绝对定位浮层（不占文档流），否则展开会把卡片整体撑高、打乱网格 -->
           <div
             v-if="open[ch.key]"
             role="listbox"
-            class="absolute inset-x-0 top-full z-20 mt-2 max-h-[320px] overflow-y-auto rounded-xl border shadow-card"
-            :style="{ background: ch.bg, borderColor: ch.dividerColor }"
+            class="absolute inset-x-0 top-full z-20 mt-2 max-h-[320px] overflow-y-auto rounded-xl border border-[rgba(22,26,23,.09)] bg-white shadow-menu"
           >
             <button
               v-for="(m, idx) in ch.models"
               :key="m.id"
               type="button"
               role="option"
-              :aria-selected="idx === selectedIdx(ch.key)"
+              :aria-selected="idx === selectedIdx(ch)"
               class="flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3 text-left text-sm"
-              :style="idx === selectedIdx(ch.key) ? { background: ch.btnBg } : {}"
+              :class="
+                idx === selectedIdx(ch) ? 'bg-[rgba(20,194,138,.13)]' : 'hover:bg-[rgba(20,194,138,.06)]'
+              "
               @click="pick(ch.key, idx)"
             >
-              <span
-                class="flex min-w-0 items-center gap-2 font-medium"
-                :style="{ color: ch.nameColor }"
-              >
-                <span class="truncate">{{ m.label }}</span>
+              <span class="flex min-w-0 items-center gap-2">
+                <span class="truncate font-medium text-[#161a17]">{{ m.label }}</span>
                 <span
-                  v-if="idx === 0"
-                  class="shrink-0 text-[10px] font-normal"
-                  :style="{ color: ch.modelColor }"
-                >{{ $t('pricing.mostUsed') }}</span>
+                  v-if="isFeatured(ch, idx)"
+                  class="shrink-0 text-[10px] font-normal text-[#6f7d75]"
+                >{{ featuredTagText(ch) }}</span>
               </span>
               <span class="flex shrink-0 items-center gap-2">
-                <span
-                  class="num text-xs"
-                  :style="{ color: ch.footColor }"
-                >
-                  {{ fmt(discounted(origOf(m).input, ch.discount)) }} /
-                  {{ fmt(discounted(origOf(m).output, ch.discount)) }}
+                <span class="num text-xs text-[#6f7d75]">
+                  {{ payText(m, 'input', ch.discount) }} / {{ payText(m, 'output', ch.discount) }}
                 </span>
-                <span
-                  class="w-3 text-xs"
-                  :style="{ color: ch.nameColor }"
-                >{{ idx === selectedIdx(ch.key) ? '✓' : '' }}</span>
+                <span class="w-3 text-xs text-[#161a17]">{{
+                  idx === selectedIdx(ch) ? '✓' : ''
+                }}</span>
               </span>
             </button>
           </div>
         </div>
 
-        <!-- 计价单位 + 倍率说明（倍率行仅中文展示） -->
-        <div class="relative mt-6">
-          <div
-            class="text-xs font-medium"
-            :style="{ color: ch.footColor }"
-          >
-            {{ $t('pricing.unitAll', { count: ch.models.length }) }}
+        <!-- 计价单位 + 倍率说明（倍率行仅海外模型 + 中文展示） -->
+        <div class="mt-6">
+          <div class="text-xs font-medium text-[#6f7d75]">
+            {{
+              ch.models.length === 1
+                ? $t('pricing.unitOne')
+                : $t('pricing.unitAll', { count: ch.models.length })
+            }}
           </div>
           <div
-            v-if="multiplierNote(ch.multiplier)"
-            class="mt-1 text-xs"
-            :style="{ color: ch.multColor }"
+            v-if="ch.multiplier !== undefined && multiplierNote(ch.multiplier)"
+            class="mt-1 text-xs text-[#93a29a]"
           >
             {{ multiplierNote(ch.multiplier) }}
           </div>
@@ -351,3 +325,13 @@ function multiplierNote(multiplier: number): string {
     </div>
   </div>
 </template>
+
+<style scoped>
+/*
+  卡片是固定的浅色面（深色主题下也保持浅底），与页面底色形成对比——这与改版前各渠道用
+  品牌色块的做法一致，只是统一成一张白底薄荷渐变的面，品牌辨识交给左上角头像方块。
+*/
+.card-surface {
+  background: linear-gradient(152deg, #e3f4ea 0%, #f6fcf9 46%, #ffffff 100%);
+}
+</style>

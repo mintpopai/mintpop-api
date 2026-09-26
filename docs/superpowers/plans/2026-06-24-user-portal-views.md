@@ -8,6 +8,8 @@
 
 **Tech Stack:** Vue 3.5（`<script setup lang="ts">`）、TypeScript、Vue Router 4、Pinia 2、Tailwind 3（语义 token）、Axios（`api/client.ts`）。无新增运行时依赖。
 
+**Spec:** `docs/superpowers/specs/2026-06-24-user-portal-views-design.md`
+
 设计文档：`docs/specs/2026-06-24-user-portal-views-design.md`。
 
 ## ⚠️ 与 spec 的一处偏差（测试方式）

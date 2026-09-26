@@ -1,6 +1,8 @@
 # User Portal (Mint) — 设计文档（里程碑 1：Dashboard）
 
 > 日期：2026-06-23 · 分支：user-portal
+>
+> 实现说明：本设计未产出实施计划，由会话直接按本文实现（提交 08fbffd34）；后续 `docs/superpowers/plans/2026-06-24-user-portal-views.md` 只在其基础上补其余页面，Dashboard 不在该计划范围内。
 
 ## 目标
 

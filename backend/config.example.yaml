@@ -16,6 +16,8 @@ server:
   host: "0.0.0.0"
   # Port to listen on
   # 监听端口
+  # 本地开发：本机端口段 6310–6319，本地 config.yaml 把这里改成 6310（被占用时启动失败、不换端口）；
+  # 线上（容器内）保持 8080
   port: 8080
   # Mode: "debug" for development, "release" for production
   # 运行模式："debug" 用于开发，"release" 用于生产环境

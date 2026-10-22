@@ -62,7 +62,7 @@ esac
 
 # ---------- 本地运行 ----------
 [tasks.run-backend]
-description = "本地运行已构建的后端单二进制（内嵌前端；需先 mise run build-backend + backend/config.yaml + 外部 DB/Redis）"
+description = "本地运行已构建的后端单二进制（端口 6310，内嵌前端；需先 mise run build-backend + backend/config.yaml + 外部 DB/Redis）"
 dir = "backend"
 run = '''
 if [ ! -x bin/server ]; then
@@ -72,23 +72,28 @@ fi
 exec ./bin/server
 '''
 
+# 本地端口段 6310–6319（全局登记表）：6310 backend、6311 frontend、6312 user-portal、
+# 6313 frontend 预览、6314 user-portal 预览。端口被占用即报错退出、不自动换端口。
+# frontend/vite.config.ts 是上游维护的文件，为免同步上游时冲突不改它，
+# 端口与代理目标在这里用命令行参数 / 环境变量钉死（命令行参数优先于配置文件）。
 [tasks.run-frontend]
-description = "启动 frontend（admin 前端）开发服务器（/api 代理到后端）"
+description = "启动 frontend（admin 前端）开发服务器（端口 6311，/api 代理到 6310）"
 dir = "frontend"
-run = "pnpm exec vite"
+env = { VITE_DEV_PROXY_TARGET = "http://localhost:6310" }
+run = "pnpm exec vite --port 6311 --strictPort"
 
 [tasks.run-user-portal]
-description = "启动 user-portal 开发服务器（端口 5174，/api 代理到后端）"
+description = "启动 user-portal 开发服务器（端口 6312，/api 代理到 6310）"
 dir = "user-portal"
 run = "pnpm exec vite"
 
 [tasks.preview-frontend]
-description = "本地预览 frontend 构建产物（vite preview，需先有 dist/）"
+description = "本地预览 frontend 构建产物（vite preview，端口 6313，需先有 dist/）"
 dir = "frontend"
-run = "pnpm exec vite preview"
+run = "pnpm exec vite preview --port 6313 --strictPort"
 
 [tasks.preview-user-portal]
-description = "本地预览 user-portal 构建产物（vite preview，需先有 dist/）"
+description = "本地预览 user-portal 构建产物（vite preview，端口 6314，需先有 dist/）"
 dir = "user-portal"
 run = "pnpm exec vite preview"
 

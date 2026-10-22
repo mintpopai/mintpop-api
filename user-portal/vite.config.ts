@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 
 // 开发时把 /api/v1 反向代理到后端；后端地址可用 VITE_BACKEND_ORIGIN 覆盖
-const BACKEND_ORIGIN = process.env.VITE_BACKEND_ORIGIN || 'http://localhost:8080'
+const BACKEND_ORIGIN = process.env.VITE_BACKEND_ORIGIN || 'http://localhost:6310'
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
@@ -14,14 +14,20 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  // 本地端口段 6310–6319（全局登记表）：dev 6312、preview 6314，写死 + strictPort，被占用即报错退出、不自动换端口
   server: {
-    port: 5174,
+    port: 6312,
+    strictPort: true,
     proxy: {
       '/api': {
         target: BACKEND_ORIGIN,
         changeOrigin: true
       }
     }
+  },
+  preview: {
+    port: 6314,
+    strictPort: true
   },
   // 单元测试：jsdom 环境 + 全局 API（描述/断言无需逐个 import）
   test: {

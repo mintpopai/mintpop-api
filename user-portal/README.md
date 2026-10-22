@@ -10,16 +10,29 @@ Vite 8 + Vue3(`<script setup>`) + TypeScript + Pinia 3 + Vue Router + vue-i18n +
 
 ## 本地开发
 
-前提：后端已在 `http://localhost:8080` 运行（`cd backend && go run ./cmd/server/`）。
+前提：后端已在 `http://localhost:6310` 运行（本地 `backend/config.yaml` 的 `server.port` 设为 6310，见 `config.example.yaml` 该项注释）。
 
 工具链与命令统一收口到**仓库根** `mise.toml`（子目录不再有 `mise.toml`），以下命令均在**仓库根**执行：
 
 ```bash
 mise run install-user-portal   # 安装依赖
-mise run run-user-portal       # 启动 dev server（http://localhost:5174，/api 代理到 8080）
+mise run run-user-portal       # 启动 dev server（http://localhost:6312，/api 代理到 6310）
 ```
 
 后端地址可用环境变量覆盖：`VITE_BACKEND_ORIGIN=http://其它地址 mise run run-user-portal`。
+
+本仓库在本机占用专属端口段 `6310–6319`：
+
+| 端口 | 用途 |
+|---|---|
+| 6310 | 后端（`mise run run-backend`，端口在本地 `backend/config.yaml`） |
+| 6311 | frontend（admin 前端）dev（`mise run run-frontend`） |
+| 6312 | user-portal dev（`mise run run-user-portal`） |
+| 6313 | frontend 预览（`mise run preview-frontend`） |
+| 6314 | user-portal 预览（`mise run preview-user-portal`） |
+| 6315–6319 | 预留 |
+
+端口被占用时报错退出，不允许自动换端口。容器内后端仍监听 8080，与本地端口无关。
 
 ## 常用命令（均在仓库根执行）
 
